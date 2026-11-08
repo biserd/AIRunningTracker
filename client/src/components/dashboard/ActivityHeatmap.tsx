@@ -9,7 +9,7 @@ import { getQueryFn } from "@/lib/queryClient";
 interface HeatmapDay {
   date: string;
   totalDistanceKm: number;
-  activities: Array<{ id: number; name: string; distanceKm: number; grade?: string }>;
+  activities: Array<{ id: string|number; name: string; distanceKm: number; grade?: string;detailUrl?:string }>;
 }
 
 interface HeatmapData {
@@ -18,6 +18,7 @@ interface HeatmapData {
   rangeStart: string;
   rangeEnd: string;
   unitPreference: string;
+  combinedSources?:boolean;hasStrava?:boolean;
 }
 
 function getColorClass(distanceKm: number, maxDistance: number): string {
@@ -54,7 +55,7 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
     return (
       <div 
         className={`aspect-square rounded-sm ${colorClass} cursor-default`}
-        title={`${formatDate(day.date)}: Rest day`}
+        title={`${formatDate(day.date)}: No recorded runs`}
         data-testid={`heatmap-cell-${day.date}`}
       />
     );
@@ -92,7 +93,7 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
               };
               
               return (
-                <Link key={activity.id} href={`/activity/${activity.id}`}>
+                <Link key={activity.id} href={activity.detailUrl||`/activity/${activity.id}`}>
                   <div className="flex items-center justify-between p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer group">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{activity.name}</p>
@@ -117,9 +118,10 @@ function DayCell({ day, maxDistance, unitPreference }: { day: HeatmapDay; maxDis
 
 export default function ActivityHeatmap() {
   const { data, isLoading, error } = useQuery<HeatmapData>({
-    queryKey: [`/api/activities/heatmap?range=6m`],
+    queryKey: ['/api/runs/calendar'],
+    refetchInterval:30_000,
     queryFn: getQueryFn({ on401: "throw" }),
-    staleTime: 60000,
+    staleTime: 0,
   });
 
   if (isLoading) {
@@ -169,7 +171,7 @@ export default function ActivityHeatmap() {
           <div className="text-center py-8">
             <Activity className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No activities yet</h3>
-            <p className="text-gray-500">Connect to Strava and sync your activities to see them here.</p>
+            <p className="text-gray-500">Connect Garmin or Strava and sync a run to see your activity calendar.</p>
           </div>
         </CardContent>
       </Card>
@@ -303,7 +305,7 @@ export default function ActivityHeatmap() {
               </Link>
             </div>
             <div className="shrink-0">
-              <StravaPoweredBy variant="orange" size="sm" />
+              {data.hasStrava&&<StravaPoweredBy variant="orange" size="sm" />}
             </div>
           </div>
         </div>

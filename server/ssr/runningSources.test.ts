@@ -38,7 +38,8 @@ test('connection pages deliver real, canonical, accessible content without an ac
 test('Garmin copy does not promise parity, historic import or automatic coaching', async () => {
   const html = (await renderPublicDocument('/garmin',template))!;
   assert.match(html, /No historical import/);
-  assert.match(html, /separate from Strava totals, Runner Score, AI coaching and messaging/);
+  assert.match(html, /Garmin data stays outside Runner Score, AI coaching and messaging/);
+  assert.match(html, /clear matches count once/i);
   assert.match(html, /GPS routes, detailed activity streams, workout uploads and course uploads/);
   assert.match(html, /Separate health consent/);
   assert.match(html, /Health data stays outside AI coaching, messaging and Strava/);
@@ -56,7 +57,7 @@ test('homepage and machine-readable copy discover both sources with honest scope
   }
   assert.match(html, /Garmin and Strava connections|Garmin and Strava\. One/);
   assert.match(html, /Initial release: new run summaries and a separate opt-in/);
-  assert.match(publicMarkdown('/')!, /Garmin summaries are separate/);
+  assert.match(publicMarkdown('/')!, /Garmin summaries remain outside AI coaching and Runner Score/);
   for (const source of Object.values(runningSources)) {
     assert.ok(source.title.length <= 60);
     assert.ok(source.description.length <= 160);

@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface PerformanceChartProps {
   data: Array<{
     week: string;
-    pace: number;
+    pace: number|null;
     distance: number;
   }>;
   unitPreference?: string;

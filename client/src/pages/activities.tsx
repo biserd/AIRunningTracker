@@ -16,18 +16,21 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import {RunSourceBadge,RunFeedNotice,SeparateRunCopies} from '@/components/RunningFeed';
+import type {FeedRun} from '@shared/runningFeed';
 
 interface ActivityData {
-  id: number;
+  id: string;
+  source:'strava'|'garmin'; sources:('strava'|'garmin')[]; possibleDuplicate?:boolean; detailUrl:string;deleteUrl:string;garminActivityId:string|null;stravaRecordId:number|null;separateMatch?:FeedRun['separateMatch'];
   stravaId: string;
   name: string;
   distance: number;
   movingTime: number;
-  totalElevationGain: number;
+  totalElevationGain: number|null;
   averageSpeed: number;
   startDate: string;
   type: string;
-  averageHeartrate?: number;
+  averageHeartrate?: number|null;
   grade?: "A" | "B" | "C" | "D" | "F";
 }
 
@@ -54,12 +57,7 @@ interface ActivitiesResponse {
   pageSize: number;
   totalPages: number;
   freeTier?: { capped: true; limit: number };
-}
-
-interface ActivitiesDashboardResponse {
-  user?: {
-    unitPreference?: "km" | "miles";
-  };
+  unitPreference:string;
 }
 
 export default function ActivitiesPage() {
@@ -72,20 +70,25 @@ export default function ActivitiesPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [freeCapBannerDismissed, setFreeCapBannerDismissed] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.sessionStorage.getItem('freeCapBannerDismissed') === '1';
   });
 
   const deleteActivityMutation = useMutation({
-    mutationFn: async (activityId: number) => {
-      await apiRequest(`/api/activities/${activityId}`, "DELETE");
+    mutationFn: async (activityId: string) => {
+      const run=response?.activities.find(activity=>activity.id===activityId);
+      if(!run)throw new Error('Refresh activities before deleting this source copy.');
+      await apiRequest(run.deleteUrl, "DELETE");
     },
     onSuccess: () => {
-      toast({ title: "Activity deleted", description: "The activity has been removed and your stats will update." });
-      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      toast({ title: "Source copy deleted", description: "Another connected source copy may remain. Your totals will update." });
+      queryClient.invalidateQueries({ queryKey: ['/api/runs'] });
+      queryClient.invalidateQueries({queryKey:['/api/runs/overview']});
+      queryClient.invalidateQueries({queryKey:['/api/runs/calendar']});
+      queryClient.invalidateQueries({queryKey:['/api/garmin/activities']});
+      queryClient.invalidateQueries({predicate:query=>String(query.queryKey[0]).startsWith('/api/dashboard/')});
       queryClient.invalidateQueries({ queryKey: ['/api/chart-data'] });
       setDeleteConfirmId(null);
     },
@@ -95,8 +98,10 @@ export default function ActivitiesPage() {
     },
   });
 
-  const { data: response, isLoading } = useQuery<ActivitiesResponse>({
-    queryKey: ['/api/activities', page, pageSize, minDistance, maxDistance, startDate, endDate],
+  const { data: response, isLoading,isError,refetch } = useQuery<ActivitiesResponse>({
+    queryKey: ['/api/runs', page, pageSize, minDistance, maxDistance, startDate, endDate],
+    refetchInterval:30_000,
+    staleTime:0,
     enabled: !!user,
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -113,7 +118,7 @@ export default function ActivitiesPage() {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`/api/activities?${params.toString()}`, {
+      const response = await fetch(`/api/runs?${params.toString()}`, {
         headers,
         credentials: 'include',
       });
@@ -124,12 +129,7 @@ export default function ActivitiesPage() {
     },
   });
 
-  const { data: dashboardData } = useQuery<ActivitiesDashboardResponse>({
-    queryKey: [`/api/dashboard/${user?.id}`],
-    enabled: !!user,
-  });
-
-  const unitPreference = dashboardData?.user?.unitPreference || 'km';
+  const unitPreference = response?.unitPreference || user?.unitPreference || 'km';
   const activities = response?.activities || [];
   const totalPages = response?.totalPages || 1;
   const freeCap = response?.freeTier;
@@ -143,6 +143,7 @@ export default function ActivitiesPage() {
   };
 
   const formatPace = (speedMps: number) => {
+    if(!Number.isFinite(speedMps)||speedMps<=0)return '—';
     if (unitPreference === 'miles') {
       const minutesPerMile = 26.8224 / speedMps;
       const minutes = Math.floor(minutesPerMile);
@@ -207,15 +208,16 @@ export default function ActivitiesPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">All Activities</h1>
           <p className="text-gray-600">
             {freeCap
-              ? `${response?.total || 0} recent activities visible on Free`
+              ? `${response?.total || 0} runs · Strava preview limit applies; Garmin summaries included`
               : response?.total
                 ? `${response.total} total activities`
                 : 'Complete history of your running activities'}
           </p>
+          <RunFeedNotice/>
         </div>
 
         <div className="mb-8">
-          <DashboardHeatmap />
+          {activities.some(run=>run.sources.includes('strava'))&&<><p className="mb-2 text-xs text-gray-500">Route map uses available Strava GPS data. Garmin summary sync does not include routes.</p><DashboardHeatmap hideWhenEmpty/></>}
         </div>
 
         {freeCap?.capped && !freeCapBannerDismissed && (
@@ -240,10 +242,10 @@ export default function ActivitiesPage() {
             <CardContent className="py-5 pr-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="font-semibold text-gray-900">
-                  Free includes up to your latest {freeCap.limit} runs
+                  Your Strava preview includes up to {freeCap.limit} runs
                 </p>
                 <p className="text-sm text-gray-600">
-                  Upgrade to Premium to unlock your full Strava history, AI
+                  Garmin summaries remain available here. Upgrade to Premium to unlock your full Strava history, AI
                   insights, training plans, and the Coach Chat. Start a 7-day
                   free trial. Card required; you pay $0 today.
                 </p>
@@ -368,7 +370,7 @@ export default function ActivitiesPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-strava-orange mx-auto mb-4"></div>
             <p className="text-gray-600">Loading activities...</p>
           </div>
-        ) : !activities || activities.length === 0 ? (
+        ) : isError ? <p role="alert">Your activities could not load. <Button variant="link" onClick={()=>refetch()}>Try again</Button></p> : !activities || activities.length === 0 ? (
           <Card>
             <CardContent className="py-12">
               <div className="text-center">
@@ -379,7 +381,7 @@ export default function ActivitiesPage() {
                 <p className="text-gray-500">
                   {hasActiveFilters 
                     ? 'Try adjusting your filter criteria.' 
-                    : 'Connect to Strava and sync your activities to see them here.'}
+                    : 'Connect Garmin or Strava in Settings. New Garmin runs appear after you record and sync your watch.'}
                 </p>
                 {hasActiveFilters && (
                   <Button
@@ -432,8 +434,8 @@ export default function ActivitiesPage() {
                   {activities.map((activity, index) => (
                     <div key={activity.id} className="relative">
                       {deleteConfirmId === activity.id && (
-                        <div className="absolute inset-0 z-10 bg-white/95 rounded-lg flex items-center justify-center gap-3 border-2 border-red-200">
-                          <span className="text-sm font-medium text-gray-700">Delete this activity?</span>
+                        <div className="absolute inset-0 z-10 bg-white/95 rounded-lg flex flex-wrap items-center justify-center gap-3 border-2 border-red-200 p-3 text-center">
+                          <span className="text-sm font-medium text-gray-700">Delete this {activity.source==='garmin'?'Garmin':'Strava'} copy? Other copies remain.</span>
                           <Button
                             size="sm"
                             variant="destructive"
@@ -452,8 +454,8 @@ export default function ActivitiesPage() {
                           </Button>
                         </div>
                       )}
-                      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <Link href={`/activity/${activity.id}`} className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer">
+                      <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <Link href={activity.detailUrl} className={`flex items-center gap-4 min-w-0 cursor-pointer ${activity.sources.length===2||activity.separateMatch?'flex-[1_1_100%] sm:flex-1':'flex-1'}`}>
                           {activity.grade ? (
                             <TooltipProvider>
                               <Tooltip>
@@ -476,6 +478,7 @@ export default function ActivitiesPage() {
                           
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-charcoal truncate">{activity.name}</h4>
+                            <RunSourceBadge run={activity}/>
                             <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
                               <Calendar className="h-3 w-3" />
                               <span>{formatDate(activity.startDate)}</span>
@@ -506,7 +509,7 @@ export default function ActivitiesPage() {
 
                             <div className="text-right">
                               <div className="font-semibold text-charcoal">
-                                {Math.round(activity.totalElevationGain)} m
+                                {activity.totalElevationGain===null?'—':`${Math.round(activity.totalElevationGain)} m`}
                               </div>
                               <div className="text-gray-600">Elevation</div>
                             </div>
@@ -532,6 +535,7 @@ export default function ActivitiesPage() {
                           </div>
                         </Link>
 
+                        <SeparateRunCopies run={activity}/>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -552,7 +556,7 @@ export default function ActivitiesPage() {
                               </button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Delete activity</p>
+                              <p>Delete {activity.source==='garmin'?'Garmin':'Strava'} copy</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -593,7 +597,7 @@ export default function ActivitiesPage() {
                 )}
 
                 <div className="mt-6 pt-4 border-t border-gray-100 flex justify-center">
-                  <StravaPoweredBy variant="orange" size="sm" />
+                  {activities.some(run=>run.sources.includes('strava'))&&<StravaPoweredBy variant="orange" size="sm" />}
                 </div>
               </CardContent>
             </Card>

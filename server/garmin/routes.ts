@@ -4,12 +4,17 @@ import { GarminClient, garminConfig } from './client';
 import { garminEqual } from './crypto';
 import { GarminStore } from './store';
 import {registerGarminHealthRoutes} from './healthRoutes';
+import {GarminSignin,garminSigninHtml} from './signin';
+import {randomBytes} from 'node:crypto';
 const cookie = '__Secure-garmin_oauth';
+const signinCookie='__Secure-garmin_signin';
+const readCookie=(req:{headers:{cookie?:string}},name:string)=>req.headers.cookie?.split(';').map(part=>part.trim()).find(part=>part.startsWith(name+'='))?.slice(name.length+1);
 export interface GarminRouteDependencies {
   authenticate: RequestHandler;
   store: () => Promise<GarminStore>;
   config?: typeof garminConfig;
   client?: (config: ReturnType<typeof garminConfig>) => GarminClient;
+  session?: (userId:number)=>Promise<string>;
   onConnected?: (userId: number) => Promise<void>;
 }
 const unavailable: GarminStatus = { available: false, connected: false, status: 'not_connected', connectedAt: null, lastSyncAt: null, activityCount: 0 };
@@ -17,6 +22,18 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
   registerGarminHealthRoutes(app,deps);
   const config = deps.config ?? garminConfig;
   const provider = () => (deps.client ?? (value => new GarminClient(value)))(config());
+  app.post('/api/auth/garmin-login',async(req,res)=>{
+    res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+    if(req.body?.activityConsent!==true)return res.status(400).json({message:'Please review Garmin activity sharing before continuing.'});
+    try {
+      const settings=config();
+      if(req.get('origin')!==settings.origin)return res.sendStatus(403);
+      if(!deps.session)throw new Error('GARMIN_SIGNIN_UNAVAILABLE');
+      const flow=await new GarminSignin(await deps.store(),settings.encryptionKey).start(req.body?.returnTo);
+      res.cookie(signinCookie,flow.state,{httpOnly:true,secure:true,sameSite:'lax',path:GARMIN_CALLBACK_PATH,maxAge:600_000});
+      return res.json({url:provider().authorize(flow.state,flow.verifier)});
+    }catch(error){return res.status(error instanceof Error&&error.message==='GARMIN_SIGNIN_RATE_LIMIT'?429:503).json({message:'Garmin sign-in is temporarily unavailable. Please try again shortly.'});}
+  });
   app.get('/api/garmin/status', deps.authenticate, async (req, res) => {
     res.set('Cache-Control', 'private, no-store');
     try { config(); } catch { return res.json(unavailable); }
@@ -36,8 +53,26 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
   app.get(GARMIN_CALLBACK_PATH, async (req, res) => {
     res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
     const state = req.query.state;
+    const signinState=readCookie(req,signinCookie);
+    if(typeof state==='string'&&/^[A-Za-z0-9_-]{43}$/.test(state)&&signinState&&garminEqual(state,signinState)) {
+      res.clearCookie(signinCookie,{httpOnly:true,secure:true,sameSite:'lax',path:GARMIN_CALLBACK_PATH});
+      try {
+        const settings=config(),signin=new GarminSignin(await deps.store(),settings.encryptionKey);
+        const flow=await signin.consume(state);
+        if(req.query.error||typeof req.query.code!=='string'||!req.query.code||req.query.code.length>4096)return res.redirect('/auth?error=garmin_denied');
+        const client=provider(),tokens=await client.exchange(req.query.code,flow.verifier),identity=await client.identity(tokens.access_token);
+        if(!deps.session)throw new Error('GARMIN_SIGNIN_UNAVAILABLE');
+        const owner=await signin.resolve(identity,tokens,flow.consentStartedAt),token=await deps.session(owner.userId);
+        if(owner.status==='connected'&&deps.onConnected){
+          try{await deps.onConnected(owner.userId);}catch{console.error(JSON.stringify({event:'garmin_admin_notification_failed'}));}
+        }
+        const nonce=randomBytes(16).toString('base64');
+        res.set({'X-Robots-Tag':'noindex, nofollow','Content-Security-Policy':`default-src 'none'; script-src 'nonce-${nonce}'; base-uri 'none'; frame-ancestors 'none'`});
+        return res.type('html').send(garminSigninHtml(token,flow.returnTo||(owner.isNew?'/settings?garmin=connected#garmin':'/dashboard'),nonce));
+      }catch{console.error(JSON.stringify({event:'garmin_signin_failed'}));return res.redirect('/auth?error=garmin_failed');}
+    }
     const browserState = req.headers.cookie?.split(';').map(part => part.trim()).find(part => part.startsWith(cookie + '='))?.slice(cookie.length + 1);
-    if (typeof state !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(state) || !browserState || !garminEqual(state, browserState)) return res.redirect('/settings?garmin=invalid_state');
+    if (typeof state !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(state) || !browserState || !garminEqual(state, browserState)) return res.redirect(signinState?'/auth?error=garmin_invalid_state':'/settings?garmin=invalid_state');
     res.clearCookie(cookie, { secure: true, sameSite: 'lax', path: GARMIN_CALLBACK_PATH });
     try {
       const client = provider(), store = await deps.store(), flow = await store.consume(state);

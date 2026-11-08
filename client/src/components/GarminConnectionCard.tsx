@@ -3,7 +3,7 @@ import {useMutation,useQuery} from '@tanstack/react-query';
 import {apiRequest,queryClient} from '@/lib/queryClient';
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Checkbox} from '@/components/ui/checkbox';
+import {GarminActivityConsent} from './GarminConnect';
 import {useToast} from '@/hooks/use-toast';
 import type {GarminStatus,GarminRun} from '@shared/garmin';
 import {Watch,Loader2,RefreshCw,Download} from 'lucide-react';
@@ -12,7 +12,7 @@ export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:stri
   const {toast}=useToast(),[consent,setConsent]=useState(false);
   const status=useQuery<GarminStatus>({queryKey:['/api/garmin/status'],staleTime:0,refetchInterval:30_000});
   const runs=useQuery<{activities:GarminRun[]}>({queryKey:['/api/garmin/activities'],enabled:status.data?.available===true,staleTime:0,refetchInterval:30_000});
-  const reload=()=>Promise.all([queryClient.invalidateQueries({queryKey:['/api/garmin/status']}),queryClient.invalidateQueries({queryKey:['/api/garmin/activities']})]);
+  const reload=()=>Promise.all([queryClient.invalidateQueries({queryKey:['/api/garmin/status']}),queryClient.invalidateQueries({queryKey:['/api/garmin/activities']}),queryClient.invalidateQueries({predicate:query=>String(query.queryKey[0])==='/api/runs'||String(query.queryKey[0]).startsWith('/api/runs/')})]);
   useEffect(()=>{
     const result=new URLSearchParams(window.location.search).get('garmin');
     if(!result)return;
@@ -36,10 +36,10 @@ export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:stri
       {status.isPending?<p role="status">Checking connection…</p>:status.isError?<p role="alert">Could not check Garmin sync. <Button variant="link" onClick={()=>status.refetch()}>Try again</Button></p>:!status.data?.available?<p>Garmin direct sync is being set up. Your existing Strava connection continues to work.</p>:<>
         <p role="status" className="font-medium">{connected?'Connected':status.data.status==='disconnect_pending'?'Sync stopped; finishing disconnection':status.data.status==='permission_required'?'Activity sharing permission needed':status.data.status==='reconnect_required'?'Please reconnect Garmin':'Not connected'}</p>
         <p className="text-sm text-gray-600">{status.data.lastSyncAt?`Last activity received: ${new Date(status.data.lastSyncAt).toLocaleString()}`:'Waiting for a new run after connection. Sync your watch with Garmin Connect after recording it.'}</p>
-        <p className="text-sm text-gray-600">New running activity summaries appear in this private feed. Earlier Garmin history is not imported. This initial feed stays separate from your Strava totals and AI coach, so a run synced through both services is not counted twice.</p>
+        <p className="text-sm text-gray-600">New running summaries appear on your dashboard and in Activities. Earlier Garmin activity history is not imported. Clear matches with Strava count once, with both sources labeled. Garmin summaries stay outside the AI coach and messaging services.</p>
         {!connected&&status.data.status!=='disconnect_pending'&&<>
-          <label className="flex items-start gap-3 text-sm"><Checkbox checked={consent} onCheckedChange={value=>setConsent(value===true)} aria-label="Agree to Garmin activity sharing"/><span>I agree to import my Garmin running activity summaries into RunAnalytics, hosted by Cloudflare. Garmin data will not be sent to AI services, Strava, or messaging services in this release. I can withdraw consent and delete the feed by disconnecting. <a className="underline" href="/privacy#garmin" target="_blank" rel="noreferrer">Garmin privacy details</a></span></label>
-          <Button onClick={()=>connect.mutate()} disabled={!consent||connect.isPending} data-testid="connect-garmin">{connect.isPending&&<Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Connect Garmin</Button>
+          <GarminActivityConsent checked={consent} onChange={setConsent}/>
+          <Button mutation onClick={()=>connect.mutate()} disabled={!consent||connect.isPending} data-testid="connect-garmin">{connect.isPending?<Loader2 className="mr-2 h-4 w-4 animate-spin"/>:<Watch className="mr-2 h-4 w-4"/>}{connect.isPending?'Opening Garmin…':'Connect with Garmin'}</Button>
         </>}
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild><Link href="/recovery">Health, sleep and recovery</Link></Button>

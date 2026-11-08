@@ -1,0 +1,60 @@
+Connect with Garmin: web signup, sign-in and account linking
+
+Garmin's existing OAuth2/PKCE authorization and verified application-specific
+user ID now support RunAnalytics signup and returning sign-in. The app does not
+receive an email address in this flow. New accounts have no invented email or
+password, start Free, and do not acquire marketing or health consent implicitly.
+Existing Garmin-linked owners return to their own account. Existing Strava or
+email users are instructed to sign in first and link Garmin in Settings; no
+automatic merge uses an unverified email or name.
+
+The Connect with Garmin button appears on both authentication modes and on the
+dashboard for unconnected accounts. Its sharing dialog explains new activity
+sync, separate Recovery opt-in, existing-account linking and terms/privacy.
+Connected users see Garmin status plus management and Recovery links.
+
+Anonymous challenges have their own additive D1 table (0038), hashed states,
+encrypted purpose-bound PKCE verifiers, ten-minute expiry, one-use consumption
+and a bounded issuance rate. Login initiation requires explicit sharing consent
+and the canonical same origin. The existing authenticated account-linking API
+continues to require authentication and uses its own session table/cookie.
+Both flows use the already-registered Garmin callback; no provider secret,
+permission scope or callback configuration changes are required.
+
+New owner creation and Garmin ID binding use an atomic D1 batch. Existing
+identity ownership, pending disconnect and token encryption protections apply.
+The callback hands the RunAnalytics session to same-origin storage through a
+nonce-restricted HTML response with no-store/no-referrer and frame-ancestors
+none. Credentials are absent from URL parameters and readable transfer cookies.
+
+Validation before release: 49 Garmin, Health, Strava and account-isolation tests
+passed; D1 backend build passed. Repository type checking reports the same 34
+existing diagnostics with none in the new feature files or changed UI paths.
+The merge with the existing admin-email feature preserves its best-effort,
+account-metadata-only alert after successful Garmin authorization. Sign-in
+notifications also occur once per consumed OAuth flow; callback replay and
+provider denial do not notify. The merged targeted suite passes 51 tests.
+
+Production release:
+- Source: 965edd9, including current landing pages, health/history and admin alerts.
+- Cloudflare build: e4f3fa0d-de88-484a-81aa-e5b9589d29e8 (successful).
+- Staging Worker: a09614d0-b9cb-4412-83d8-71f66381d037.
+- Immutable image: sha256:71640a015ffd5b51fca36c2dfb9652a6c176728b8fc7e0e9df108bc554d9ea9a.
+- Production Worker: 5675026b-1355-40e0-a7af-d866c5062d42.
+- Container application version: 53, one healthy active instance, no errors.
+- Installed and recorded only additive migration 0038; left the unrelated
+  pending performance-index migration unchanged.
+- Production Garmin consent/origin/authentication and published UI checks,
+  source-page/sitemap/punctuation, WhatsApp, signup daytime and Strava/public
+  tool checks passed after the new image was serving.
+- Browser verified both authentication modes, the sharing consent gate, and
+  connected Garmin status beside Strava on the existing account's dashboard.
+- With explicit owner approval, signed out and completed a real browser Garmin
+  OAuth sign-in. Garmin retained the existing four permission selections. The
+  callback returned to the same RunAnalytics account and dashboard. No new
+  Garmin-signup account was created and the anonymous challenge was consumed.
+- Post-login owner-scoped D1 verification preserved all 28 health records,
+  health consent and last live push timestamps, permissions and activity count.
+  The signed-in Recovery UI still shows both historical baselines calculated
+  from 12 prior nights. Personal readings and account identifiers stay out of
+  this release document and Git.

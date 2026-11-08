@@ -18,7 +18,7 @@ interface ActivityRoute {
   polyline: string | null;
 }
 
-export default function DashboardHeatmap() {
+export default function DashboardHeatmap({hideWhenEmpty=false}:{hideWhenEmpty?:boolean}) {
   const { user, isAuthenticated } = useAuth();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -104,6 +104,7 @@ export default function DashboardHeatmap() {
   if (!isAuthenticated) {
     return null;
   }
+  if(hideWhenEmpty&&!isLoading&&routeCount===0)return null;
 
   return (
     <Card className="bg-white dark:bg-gray-800 shadow-sm border-0">

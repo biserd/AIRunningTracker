@@ -8,7 +8,7 @@ import { garminPublicPages } from '../../shared/garminPublicContent';
 // must never become public via content negotiation or a shared cache.
 export function publicMarkdown(path: string): string | null {
   if (path === '/') return `# RunAnalytics
-Your AI running coach, wherever you run. Connect Strava for analytics and eligible voice, chat and WhatsApp coaching. Connect Garmin directly for a private feed of new run summaries and optional health and sleep trends with separate consent. Garmin summaries are separate from Strava history and do not yet power AI coaching or Runner Score. The iOS/iPad app is coming soon.
+Your AI running coach, wherever you run. Connect Strava for analytics and eligible voice, chat and WhatsApp coaching. Connect Garmin directly for new run summaries and optional health and sleep trends with separate consent. Garmin and eligible Strava runs appear together on the dashboard and in Activities; clear matches count once. Garmin summaries remain outside AI coaching and Runner Score. The iOS/iPad app is coming soon.
 
 ## Explore
 - [Garmin and Strava connections](https://aitracker.run/integrations)
