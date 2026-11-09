@@ -20,6 +20,8 @@ export interface FunnelEventSpec {
 }
 
 export const FUNNEL_EVENTS = {
+  garmin_onboarding_viewed: { side: "client", required: ["source"] },
+  garmin_preview_viewed: { side: "client", required: ["source"] },
   // --- Public acquisition tools ---
   tool_viewed: { side: "client", required: ["source", "capability"] },
   tool_completed: { side: "client", required: ["source", "capability"] },

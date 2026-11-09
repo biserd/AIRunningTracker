@@ -9,6 +9,7 @@
 import type { Capability } from "./entitlements";
 
 export const BENEFIT_COPY = {
+  garmin_planning: "Goal-based training-plan tools and coach conversations that do not use your Garmin data. Garmin run analysis and Runner Score are not unlocked by subscribing.",
   premium_preview: "See how this run compared with similar efforts, where the signal changed, and what to try next.",
   activity_history: "Unlock the full breakdown of this run, including splits, route map, coach verdict, and next-run guidance.",
   activity_metrics: "See drift, pacing stability, and baseline comparison for this run.",

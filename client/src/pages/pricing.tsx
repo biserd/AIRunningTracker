@@ -194,6 +194,7 @@ export default function PricingPage() {
 
       <section className="px-4 py-8 sm:px-6 sm:py-16">
         <div className="max-w-4xl mx-auto">
+          {upgradeIntent?.source.startsWith('garmin_')&&<p className="mx-auto mb-5 max-w-2xl rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm leading-6 text-teal-950">Garmin-connected account: Premium offers goal-based planning and coaching tools. Direct Garmin runs and health readings remain outside AI coaching and Runner Score, even with a subscription. Your existing Garmin feed and optional Recovery remain available without paying.</p>}
           {upgradeIntent && (
             <div
               className="max-w-2xl mx-auto mb-10 rounded-xl border-2 border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50 p-5"
@@ -254,6 +255,7 @@ export default function PricingPage() {
           <p className="text-xl text-gray-600 mb-8 text-center max-w-2xl mx-auto">
             One plan for run comparisons, adaptive training, and proactive coaching.
           </p>
+          {!upgradeIntent?.source.startsWith('garmin_')&&<p className="mx-auto mb-8 max-w-2xl rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-600">Using Garmin? Your run feed and optional Recovery remain available without paying. Premium adds goal-based planning and coaching tools, but direct Garmin runs and health readings are not used by AI coaching or Runner Score. History-based AI analysis currently uses a separate Strava connection.</p>}
 
           {publicIntroOffer?.active && (
             <p className="mx-auto mb-8 max-w-2xl rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-center text-sm text-gray-800" data-testid="web-intro-offer-banner">

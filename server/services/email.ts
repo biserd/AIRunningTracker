@@ -283,6 +283,14 @@ The RunAnalytics Team`;
    * preview environments link back to themselves instead of always landing on
    * the production deploy (which may not yet ship this feature).
    */
+  async sendAccountEmailVerification(email:string,token:string):Promise<void> {
+    const url=`https://aitracker.run/auth/magic-link#token=${encodeURIComponent(token)}&redirect=${encodeURIComponent('/dashboard?email=verified')}`;
+    const sent=await this.sendEmail({to:email,subject:'Verify your RunAnalytics email',
+      text:`Verify and add this email to the RunAnalytics account that requested it: ${url}\nThis link expires in 15 minutes and works once. Your email and optional follow-up preference are not added until verification. If you did not request this, ignore this message.`,
+      html:`<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px"><h1 style="color:#c2410c">RunAnalytics</h1><h2>Verify your email</h2><p>Add this email to the RunAnalytics account that requested it. You can use it for account access and billing.</p><p><a href="${url}" style="display:inline-block;padding:14px 24px;background:#c2410c;color:white;border-radius:8px">Verify and add email</a></p><p>This link expires in 15 minutes and works once. Your optional follow-up preference takes effect only after verification.</p><p>If you did not request this, ignore this message.</p></div>`});
+    if(!sent)throw new Error('EMAIL_DELIVERY_FAILED');
+  }
+
   async sendMagicLinkEmail(email: string, magicToken: string, baseUrl: string = 'https://aitracker.run', redirect?: string): Promise<void> {
     const redirectParam = redirect ? `&redirect=${encodeURIComponent(redirect)}` : '';
     const separator = baseUrl.replace(/\/$/, '') === "https://new.aitracker.run" ? "#" : "?";

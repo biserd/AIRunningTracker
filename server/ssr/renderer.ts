@@ -1290,6 +1290,7 @@ export function renderPricingPage(): string {
       <article class="ssr-content">
         <section>
           <h2>Free Plan</h2>
+          <p>Using Garmin? Your run feed and optional Recovery remain available without paying. Premium adds goal-based planning and coaching tools, but direct Garmin runs and health readings are not used by AI coaching or Runner Score. History-based AI analysis currently uses a separate Strava connection.</p>
           <p>Get started with no credit card required. Free includes:</p>
           <ul>
             <li>Strava integration &amp; activity sync</li>

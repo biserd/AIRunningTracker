@@ -7,6 +7,7 @@ import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import {GARMIN_AI_NOTICE,GARMIN_PREMIUM_BENEFIT} from '@shared/garminOnboarding';
 
 interface RecoveryResponse {
   recovery: { id: number; source: string | null; capability: string | null } | null;
@@ -41,15 +42,16 @@ export default function CheckoutRecoveryPrompt() {
     } catch { /* A corrupt local preference must not hide the prompt. */ }
   }
 
-  const benefit = recovery.source === "coach_insights_preview"
+  const garminOffer = recovery.source?.startsWith('garmin_') === true;
+  const benefit = garminOffer ? GARMIN_PREMIUM_BENEFIT : recovery.source === "coach_insights_preview"
     ? "the race outlook, training-load signals, and form trends from your running history."
     : recovery.source === "floating_ai_coach"
       ? "personalized coach answers based on your runs and goals."
       : "complete run analysis, training trends, and personalized coaching.";
   const upgradeUrl = buildUpgradeUrl({
-    source: "checkout_recovery",
+    source: garminOffer ? "garmin_checkout_recovery" : "checkout_recovery",
     capability: recovery.capability || "premium",
-    benefitKey: "dashboard_trial",
+    benefitKey: garminOffer ? "garmin_planning" : "dashboard_trial",
     returnTo: "/dashboard",
   });
 
@@ -73,6 +75,7 @@ export default function CheckoutRecoveryPrompt() {
         ><X className="h-4 w-4" /></Button>
       </div>
       <TrialOfferDetails className="mt-4" benefit={benefit} />
+      {garminOffer&&<p className="mt-3 text-sm leading-6 text-gray-700">{GARMIN_AI_NOTICE}</p>}
       <DirectCheckoutButton upgradeUrl={upgradeUrl}>
         <Button className="mt-4 bg-strava-orange text-white hover:bg-orange-600" data-testid="checkout-recovery-continue">
           {offer?.trialEligible ? "Continue my 7-day trial" : "Continue to secure Checkout"}

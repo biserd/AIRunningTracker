@@ -13,7 +13,7 @@ export function GarminConnectionCard({unitPreference='km'}:{unitPreference?:stri
   const {toast}=useToast(),[consent,setConsent]=useState(false);
   const status=useQuery<GarminStatus>({queryKey:['/api/garmin/status'],staleTime:0,refetchInterval:30_000});
   const runs=useQuery<{activities:GarminRun[]}>({queryKey:['/api/garmin/activities'],enabled:status.data?.available===true,staleTime:0,refetchInterval:30_000});
-  const reload=()=>Promise.all([queryClient.invalidateQueries({queryKey:['/api/garmin/status']}),queryClient.invalidateQueries({queryKey:['/api/garmin/activities']}),queryClient.invalidateQueries({predicate:query=>String(query.queryKey[0])==='/api/runs'||String(query.queryKey[0]).startsWith('/api/runs/')})]);
+  const reload=()=>Promise.all([queryClient.invalidateQueries({queryKey:['/api/garmin/status']}),queryClient.invalidateQueries({queryKey:['/api/garmin/activities']}),queryClient.invalidateQueries({queryKey:['/api/garmin/onboarding']}),queryClient.invalidateQueries({predicate:query=>String(query.queryKey[0])==='/api/runs'||String(query.queryKey[0]).startsWith('/api/runs/')})]);
   useEffect(()=>{
     const result=new URLSearchParams(window.location.search).get('garmin');
     if(!result)return;

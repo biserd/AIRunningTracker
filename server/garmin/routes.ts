@@ -91,7 +91,7 @@ export function registerGarminRoutes(app: Express, deps: GarminRouteDependencies
         }
         const nonce=randomBytes(16).toString('base64');
         res.set({'X-Robots-Tag':'noindex, nofollow','Content-Security-Policy':`default-src 'none'; script-src 'nonce-${nonce}'; base-uri 'none'; frame-ancestors 'none'`});
-        return res.type('html').send(garminSigninHtml(token,flow.returnTo||(owner.isNew?'/settings?garmin=connected#garmin':'/dashboard'),nonce));
+        return res.type('html').send(garminSigninHtml(token,flow.returnTo||(owner.isNew?'/dashboard?welcome=garmin':'/dashboard'),nonce));
       }catch{console.error(JSON.stringify({event:'garmin_signin_failed'}));return res.redirect('/auth?error=garmin_failed');}
     }
     const browserState = req.headers.cookie?.split(';').map(part => part.trim()).find(part => part.startsWith(cookie + '='))?.slice(cookie.length + 1);

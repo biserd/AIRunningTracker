@@ -11,6 +11,8 @@ import { registerWebWhatsApp } from "./services/webWhatsApp";
 import { registerGarminRoutes, maintainGarminConnection } from './garmin/routes';
 import { GarminStore } from './garmin/store';
 import {registerRunningFeed} from './garmin/runningFeed';
+import {registerGarminOnboarding} from './garmin/onboarding';
+import {VerifiedAccountEmail} from './services/verifiedAccountEmail';
 import {registerPhoneRuns} from './services/phoneRuns';
 import { GarminClient, garminConfig } from './garmin/client';
 import { signupRemindersEnabled } from "../shared/signupReminders";
@@ -300,6 +302,7 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
   };
   registerPhoneRuns(app,{authenticate:authenticateJWT,db:async()=>(await garminStore()).db});
   registerRunningFeed(app,{authenticate:authenticateJWT,db:async()=>(await garminStore()).db});
+  registerGarminOnboarding(app,{authenticate:authenticateJWT,store:garminStore,user:id=>storage.getUser(id)});
   registerGarminRoutes(app, { authenticate: authenticateJWT, store: garminStore,
     planDays:async(userId,planId)=>{
       const plan=await storage.getTrainingPlanById(planId);
@@ -2030,6 +2033,16 @@ ${allPages.map(page => `  <url>
   app.post("/api/auth/magic-link/verify", async (req, res) => {
     try {
       const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
+      if (token.startsWith('email_link_')) {
+        const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+        const userId=await new VerifiedAccountEmail(applicationSqlDatabase,async()=>{}).verify(token).catch(()=>null);
+        if(!userId)return res.status(400).set('Cache-Control','no-store').json({message:'This email verification link has expired or was already used. Request a new link from your signed-in account.'});
+        const user=await storage.getUser(userId);
+        if(!user)return res.status(401).json({message:'Request a new verification link.'});
+        deleteCachedByPrefix(`dashboard:${userId}:`);
+        res.set({'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});
+        return res.json({token:authService.generateToken(user),user:{id:user.id,email:user.email},accountReactivated:false});
+      }
       if (token.startsWith('signup_')) {
         const {NativeSignup}=await import('./services/nativeSignup');
         const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
@@ -2247,28 +2260,21 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Lazy email collection: called when user needs email for billing
+  // No email is attached, or marketing consent applied, until mailbox verification.
   app.post("/api/auth/add-email", authenticateJWT, async (req: any, res) => {
     try {
       const { email, marketingConsent } = z.object({ email: z.string().email(), marketingConsent: z.boolean().optional() }).parse(req.body);
       const userId = req.user.id;
 
-      // Check uniqueness
-      const existing = await storage.getUserByEmail(email);
-      if (existing && existing.id !== userId) {
-        return res.status(409).json({ message: "That email is already registered to another account." });
-      }
-
-      await storage.updateUser(userId, {
-        email,
-        ...(marketingConsent === true ? { marketingOptOut: false, marketingConsentStatus: "consented" as const, marketingConsentedAt: new Date(), marketingConsentSource: "email_capture" } : {}),
-      });
-      // Invalidate the cached dashboard payload so the saved email shows up immediately
-      deleteCachedByPrefix(`dashboard:${userId}:`);
-      res.json({ success: true });
+      const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
+      await new VerifiedAccountEmail(applicationSqlDatabase,(to,token)=>emailService.sendAccountEmailVerification(to,token)).request(userId,email,marketingConsent===true);
+      res.set('Cache-Control','no-store');
+      res.status(202).json({verificationRequired:true,message:'Check your inbox. Verify the link to add this email to your account.'});
     } catch (error: any) {
-      console.error('[AddEmail] Error:', error);
-      res.status(400).json({ message: error.message || "Failed to save email" });
+      const code=error instanceof Error?error.message:'';
+      console.error(JSON.stringify({event:'account_email_request_failed',code:['EMAIL_RATE_LIMIT','EMAIL_DELIVERY_FAILED','EMAIL_IN_USE','EMAIL_ALREADY_SET'].includes(code)?code:'invalid_request'}));
+      const status=code==='EMAIL_DELIVERY_FAILED'?503:code==='EMAIL_RATE_LIMIT'?429:code==='EMAIL_IN_USE'?409:400;
+      res.status(status).json({message:code==='EMAIL_IN_USE'?'That email belongs to another account. Sign in to it instead; accounts are not merged.':code==='EMAIL_RATE_LIMIT'?'Please wait a minute before requesting another link.':code==='EMAIL_DELIVERY_FAILED'?'The verification email could not be sent. Please try again.':'Could not request verification. Check the email and try again.'});
     }
   });
 

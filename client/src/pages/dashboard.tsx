@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { StravaConnectButton } from "@/components/StravaConnect";
 import {GarminDashboardConnection} from '@/components/GarminConnect';
+import {GarminOnboarding} from '@/components/GarminOnboarding';
 import {RecentFeedRuns,RunFeedNotice} from '@/components/RunningFeed';
 import type {FeedRun} from '@shared/runningFeed';
 import type {runningOverview} from '../../../server/garmin/runningFeed';
@@ -93,7 +94,7 @@ export default function Dashboard() {
           }
         })
         .catch(() => {});
-      
+
       // Record activation when user views dashboard (one-time event)
       const activationKey = `activation_recorded_${user.id}`;
       if (!localStorage.getItem(activationKey)) {
@@ -266,7 +267,7 @@ export default function Dashboard() {
 
   const handleSyncActivities = async () => {
     if (!user) return;
-    
+
     // Reset progress state
     setSyncProgress({
       current: 0,
@@ -274,21 +275,21 @@ export default function Dashboard() {
       activityName: 'Starting sync...',
       status: 'syncing'
     });
-    
+
     try {
       // First, get a short-lived SSE nonce (cryptographic random, NOT a JWT)
       const nonceResponse = await apiRequest(`/api/strava/sync/${user.id}/start-stream`, "POST", { maxActivities: 200 });
       const nonce = nonceResponse.sseNonce;
-      
+
       // Use EventSource with secure nonce (cannot be used for other API calls)
       const eventSource = new EventSource(
         `/api/strava/sync/${user.id}/stream?nonce=${encodeURIComponent(nonce)}`
       );
-      
+
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           if (data.type === 'complete') {
             // No new activities - show quick success message and close immediately
             if (data.syncedCount === 0) {
@@ -349,7 +350,7 @@ export default function Dashboard() {
           console.error('Error parsing SSE data:', parseError);
         }
       };
-      
+
       eventSource.onerror = (error) => {
         console.error('EventSource error:', error);
         eventSource.close();
@@ -508,6 +509,7 @@ export default function Dashboard() {
 
         {/* Show the runner's own first insight as soon as Strava data lands. */}
         {dashboardData?.user?.stravaConnected&&<PremiumPreviewTeaser />}
+        {!dashboardData?.user?.stravaConnected&&<GarminOnboarding/>}
 
         {/* Recover an unfinished Checkout without requiring marketing-email consent. */}
         <CheckoutRecoveryPrompt />
@@ -527,7 +529,7 @@ export default function Dashboard() {
           <div className="rounded-xl border border-gray-200 bg-white p-4">
           <h3 className="mb-3 font-semibold text-charcoal">Strava</h3>
           {!dashboardData?.user?.stravaConnected ? (
-            <StravaConnectButton 
+            <StravaConnectButton
               onClick={stravaConnect.connect}
               loading={stravaConnect.isConnecting}
               variant="orange"
@@ -546,7 +548,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="flex flex-col w-full">
-              <Button 
+              <Button
                 onClick={handleSyncActivities}
                 disabled={syncProgress !== null}
                 variant="outline"
@@ -565,11 +567,11 @@ export default function Dashboard() {
           </div>
           <GarminDashboardConnection/>
         </section>
-        
+
         {/* Sync Progress Indicator */}
         {syncProgress && (
           <div className="mb-8">
-            <SyncProgress 
+            <SyncProgress
               current={syncProgress.current}
               total={syncProgress.total}
               activityName={syncProgress.activityName}
@@ -578,7 +580,7 @@ export default function Dashboard() {
             />
           </div>
         )}
-        
+
         <div className="mb-6">
           <RunFeedNotice/>
           {runningFeed.data?<QuickStats stats={runningFeed.data.stats}/>:<p role="alert">Your combined running feed could not load. <Button variant="link" onClick={()=>runningFeed.refetch()}>Try again</Button></p>}
@@ -621,10 +623,10 @@ export default function Dashboard() {
           </div>
         </details>
       </main>
-      
+
       {user && dashboardData?.user?.stravaConnected && (
-        <FloatingAICoach 
-          userId={user.id} 
+        <FloatingAICoach
+          userId={user.id}
           isOpen={isChatOpen}
           onOpenChange={setIsChatOpen}
           initialConversationId={selectedConversationId}

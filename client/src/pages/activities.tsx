@@ -88,6 +88,7 @@ export default function ActivitiesPage() {
       queryClient.invalidateQueries({queryKey:['/api/runs/overview']});
       queryClient.invalidateQueries({queryKey:['/api/runs/calendar']});
       queryClient.invalidateQueries({queryKey:['/api/garmin/activities']});
+      queryClient.invalidateQueries({queryKey:['/api/garmin/onboarding']});
       queryClient.invalidateQueries({predicate:query=>String(query.queryKey[0]).startsWith('/api/dashboard/')});
       queryClient.invalidateQueries({ queryKey: ['/api/chart-data'] });
       setDeleteConfirmId(null);

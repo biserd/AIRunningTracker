@@ -4,6 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "test:garmin-onboarding": "tsx --test server/garmin/onboarding.test.ts server/services/verifiedAccountEmail.test.ts server/ssr/garminOnboarding.test.tsx server/garmin/signin.test.ts",
     "d1:schema": "tsx scripts/d1/generate.ts && tsx scripts/d1/generate-model.ts",
     "d1:inspect": "tsx scripts/d1/inspect.ts",
     "d1:import": "tsx scripts/d1/import.ts --execute-isolated-target",
