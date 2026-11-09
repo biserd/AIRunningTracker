@@ -32,3 +32,13 @@ Unchecked marketing choice opts the new address out even if an older account def
 - Applied and journaled only migration 0044 in the existing production D1. Verified its schema and zero live pending verification challenges after the migration. Other pending migrations were left untouched.
 
 This is a web/backend release. It does not change or upload an iOS binary. Garmin AI approval remains a separate prerequisite for enabling that data in the coach.
+
+## Verified production release
+
+- Source commit: `c0e6263b44c3011dd2001dfe41b56eb3de15e5e9`.
+- Staging Worker: `32a41304-2214-4fec-87a7-93ff5bdbcdaa`; staging application version 171 passed the onboarding checks before promotion.
+- Promoted immutable image: `sha256:c6476ac89c451f55083a0dc97982e0d5d22fdf030c98a77227201e26ca64b79d`.
+- Production Worker: `e5869201-a1c4-4101-b16f-bacb115ef587`, uploaded November 9, 2026 at 13:01:46 UTC with existing variables preserved. Production container application version 62 is running the promoted image, healthy with no reported errors.
+- Live checks passed November 9, 2026 at 18:55-18:56 UTC: onboarding and email endpoints require authentication, invented invalid email links are rejected, Garmin pricing disclosures and onboarding/email UI bundles are published, existing Garmin sign-in consent/origin protections and run-feed protections remain in place.
+- Regression suites: 47 targeted tests and 50 additional Garmin/email/SEO tests passed, plus existing Strava Premium preview assertions. Strict production Worker typecheck passed. The whole-repository typecheck still reports 34 pre-existing diagnostics, none in the new feature paths.
+- Verification did not send a real email, create a Checkout session, consume a real email challenge or create a Garmin grant. End-to-end real-user delivery and purchasing were not exercised by these release checks.
