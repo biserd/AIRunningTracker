@@ -24,6 +24,7 @@ import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { ShoeSeriesCharts } from "./ShoeSeriesCharts";
+import { ShoeGenerationPicker, ShoeProfileExplorer } from "./ShoeProfileExplorer";
 
 type Related = Pick<ShoeComparison, "slug" | "title">;
 export type ShoePayload = {
@@ -55,12 +56,14 @@ function Shell({ children }: { children: React.ReactNode }) {
 function Section({
   title,
   children,
+  id,
 }: {
   title: string;
   children: React.ReactNode;
+  id?: string;
 }) {
   return (
-    <section className={panel}>
+    <section id={id} className={id ? `${panel} scroll-mt-28` : panel}>
       <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-slate-900">
         {title}
       </h2>
@@ -250,7 +253,7 @@ function Questions({
     </Section>
   );
 }
-function Facts({ shoes }: { shoes: RunningShoe[] }) {
+function Facts({ shoes, id }: { shoes: RunningShoe[]; id?: string }) {
   const rows: [string, (s: RunningShoe) => string][] = [
     ["Intended category", (s) => categoryName(s.category)],
     ["Weight", (s) => shoeNumber(s.weight, " oz")],
@@ -265,7 +268,7 @@ function Facts({ shoes }: { shoes: RunningShoe[] }) {
     ["Availability", shoeAvailability],
   ];
   return (
-    <Section title="Specifications at a glance">
+    <Section title="Specifications at a glance" id={id}>
       <p className="mb-4 text-sm">
         Historical values are labeled, not newly verified. Prices are
         snapshots—not MSRP or live offers. Higher stack, lower weight and carbon
@@ -315,13 +318,15 @@ function Facts({ shoes }: { shoes: RunningShoe[] }) {
 function Links({
   title,
   items,
+  id,
 }: {
   title: string;
   items: { href: string; label: string }[];
+  id?: string;
 }) {
   if (!items.length) return null;
   return (
-    <Section title={title}>
+    <Section title={title} id={id}>
       <ul className="grid gap-3 sm:grid-cols-2">
         {items.map((i) => (
           <li key={i.href}>
@@ -400,6 +405,15 @@ export function ShoeDetailPage() {
           · Not hands-on tested
         </p>
       </header>
+      <nav aria-label="On this page" className="flex flex-wrap gap-2">
+        {[
+          ["shoe-profile", "Shoe profile"],
+          ...(series.length > 1 ? [["shoe-history", "Generation comparison"]] : []),
+          ["shoe-specs", "Full specifications"],
+          ...(data.comparisons?.length ? [["shoe-matchups", "Head-to-head matchups"]] : []),
+        ].map(([id,label]) => <a key={id} href={`#${id}`} className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 hover:border-orange-400 hover:text-orange-800 focus-visible:outline-orange-700">{label}</a>)}
+      </nav>
+      <ShoeProfileExplorer key={s.id} shoe={s} />
       {s.slug === "nike-structure-26" && <Section title="Which widths does the Structure 26 come in?">
         <p>Nike’s US men’s listing shows Regular and Wide. Its fit selector does not show a separate Extra Wide option, even though that wording appears in the URL. Check the exact listing for your market and size.</p>
         <p className="mt-2">Nike describes a ReactX midsole and a midfoot support system. Nike also recommends a half size up in the linked listing; use this as a try-on starting point, not a universal size rule.</p>
@@ -409,20 +423,16 @@ export function ShoeDetailPage() {
         <p>Running Warehouse’s testers found the upper snug for wider feet and had mixed experiences with heel hold. Try your usual race socks and check toe room and heel hold at your intended pace. Nike lists this as a road race shoe from 10K to marathon; test the fit on a familiar session before committing.</p>
         <p className="mt-2 text-sm"><a className="underline" href={VAPORFLY_4_FIT_SOURCE}>Running Warehouse’s Vaporfly 4 fit observations</a> (May 2025). RunAnalytics did not perform the fit test.</p>
       </Section>}
-      <Facts shoes={[s]} />
-      {g.sections.map((section) => (
-        <Section key={section.title} title={section.title}>
-          <p className="leading-relaxed">{section.text}</p>
-        </Section>
-      ))}
       {series.length > 1 && (
         <Section
+          id="shoe-history"
           title={`${s.seriesName || s.model}: previous models and series history`}
         >
           <p className="mb-4">
             Use these records to research changes, not to assume each
             measurement uses the same test size or source.
           </p>
+          <ShoeGenerationPicker key={s.id} shoe={s} series={series} />
           <ShoeSeriesCharts shoes={series} />
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -474,7 +484,14 @@ export function ShoeDetailPage() {
           </div>
         </Section>
       )}
+      <Facts shoes={[s]} id="shoe-specs" />
+      {g.sections.map((section) => (
+        <Section key={section.title} title={section.title}>
+          <p className="leading-relaxed">{section.text}</p>
+        </Section>
+      ))}
       <Links
+        id="shoe-matchups"
         title="Compare this shoe"
         items={(data.comparisons || []).map((c) => ({
           href: `/tools/shoes/compare/${c.slug}`,

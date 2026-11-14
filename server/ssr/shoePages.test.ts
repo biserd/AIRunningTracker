@@ -209,6 +209,30 @@ test("source status, UTC dates, missing measurements and unknown performance sta
   assert.equal(a.comfortRating, 10, "does not rewrite database objects");
 });
 
+test("shoe explorer shows sourced Boston geometry and comparable generation deltas in the first HTML", async () => {
+  const boston12 = { ...a, brand:"Adidas", model:"Adizero Boston 12", slug:"adidas-adizero-boston-12", seriesName:"Adizero Boston", versionNumber:12 };
+  const boston13 = { ...legacy, brand:"Adidas", model:"Boston 13", slug:"adidas-boston-13", seriesName:"Boston", versionNumber:13 };
+  const data = await shoePayload({
+    ...store, getShoes:async()=>[boston12,boston13], getShoeBySlug:async()=>boston13,
+  }, boston13.slug);
+  assert.equal(data?.shoe.weight, 9);
+  assert.equal(data?.shoe.price, null, "measurement review does not revalidate a price");
+  assert.equal(data?.shoe.heelStackHeight, 37);
+  assert.match(buildComparisonGuide(boston13,boston12).differences[1].text, /Boston 13: 37 mm; Adizero Boston 12: 37\.5 mm\. The recorded difference is 0\.5 mm/);
+  const { renderShoeDocument } = await import("./shoePages");
+  const html = (await renderShoeDocument("/tools/shoes/"+boston13.slug,{
+    ...store, getShoes:async()=>[boston12,boston13], getShoeBySlug:async()=>boston13,
+  },template)).html!;
+  assert.match(html, /id="shoe-profile"/);
+  assert.match(html, /Stack-height schematic/);
+  assert.match(html, /Glass-fiber ENERGYRODS/);
+  assert.match(html.replaceAll("<!-- -->", ""), /Boston 13 vs\. <a[^>]+>Adizero Boston 12/);
+  assert.match(html, /37 mm.*37\.5 mm/);
+  assert.match(html, />-0\.1 oz</);
+  assert.match(html, /id="shoe-specs"/);
+  assert.doesNotMatch(html, /Check the evidence before the numbers/);
+});
+
 test("MCP uses a bounded public allowlist, matching page evidence", () => {
   const record = sanitizeShoeRecord({
     ...a,

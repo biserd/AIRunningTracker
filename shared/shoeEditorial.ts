@@ -1,12 +1,21 @@
 import type { RunningShoe } from "./schema";
 import { safeShoeSource, shoeNumber, shoeAvailability } from "./shoeEvidence";
+import { bostonCheckedOn, bostonProfile } from "./shoeProfile";
 
 export const SHOE_EDITORIAL_VERSION = "2026-11-07.1";
 export const STRUCTURE_26_FIT_SOURCE = "https://www.nike.com/t/structure-26-mens-road-running-shoes-extra-wide-M4sx9fru/HQ2588-001";
 export const VAPORFLY_4_FIT_SOURCE = "https://www.runningwarehouse.com/reviews/nike-shoe-reviews/nike-vaporfly-4.html";
 
-/** A documented construction correction; does not revalidate stored measurements. */
+/** Reviewed corrections, with separate measurement and retail-price provenance. */
 export function withShoeEditorialCorrections(s: RunningShoe): RunningShoe {
+  const boston = bostonProfile(s.slug);
+  if (boston && (evidenceDate(s.lastVerified) ?? "") < bostonCheckedOn) {
+    const { sourceUrl, weight, heelStackHeight, forefootStackHeight, heelToToeDrop } = boston;
+    // The reviews verify the specs, not the historical offer or today's stock.
+    return { ...s, sourceUrl, weight, heelStackHeight, forefootStackHeight, heelToToeDrop,
+      dataSource: "running_warehouse", lastVerified: new Date(bostonCheckedOn), price: null,
+      description: null, availability: "unknown", availableFrom: null };
+  }
   return s.slug === "nike-structure-26" ? { ...s, stability: "mild_stability" } : s;
 }
 export const SHOE_METHODOLOGY =
@@ -195,6 +204,8 @@ export function buildShoeGuide(s: RunningShoe): ShoeGuide {
 }
 
 export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
+  a = withShoeEditorialCorrections(a);
+  b = withShoeEditorialCorrections(b);
   const endorphinUpgrade = [a.slug, b.slug].includes("saucony-endorphin-pro-4") && [a.slug, b.slug].includes("saucony-endorphin-pro-5");
   const an = shoeName(a),
     bn = shoeName(b),

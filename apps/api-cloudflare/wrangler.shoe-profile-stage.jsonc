@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aitracker-shoe-profile-stage",
+  "account_id": "73d71a2bef58f7469ecb48e2b8e84c0e",
+  "main": "../../scripts/shoe-profile-preview-worker.mjs",
+  "compatibility_date": "2026-09-13",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "../../.tmp/shoe-profile-stage/public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none"
+  }
+}
