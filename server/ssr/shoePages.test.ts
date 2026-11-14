@@ -293,6 +293,19 @@ test("head-to-head renders same-scale diagrams, exact deltas, and graceful missi
   assert.doesNotMatch(missingHtml, /mm higher|oz lighter/);
 });
 
+test("the lean matchup stylesheet is used only for head-to-head pages", async () => {
+  const { renderShoeDocument } = await import("./shoePages");
+  const cssTemplate = template.replace("</head>", '<link rel="stylesheet" href="/assets/index-123456789abc.css"><!--shoe-hub-css:/assets/shoe-hub-123456789abc.css--><!--shoe-matchup-css:/assets/shoe-matchup-123456789abc.css--></head>');
+  for (const [path, css] of [
+    ["/tools/shoes/compare/" + c.slug, "shoe-matchup"],
+    ["/tools/shoes/compare", "shoe-hub"],
+    ["/tools/shoes/" + a.slug, "index"],
+  ]) {
+    const {html} = await renderShoeDocument(path, store, cssTemplate);
+    assert.deepEqual(html?.match(/<link rel="stylesheet"[^>]+>/g), [`<link rel="stylesheet" href="/assets/${css}-123456789abc.css">`], path);
+  }
+});
+
 test("all public shoe route types render data, one canonical, one title and one H1 before JavaScript", async () => {
   const { renderShoeDocument } = await import("./shoePages");
   for (const path of [

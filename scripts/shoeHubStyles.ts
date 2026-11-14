@@ -21,6 +21,15 @@ const hubSources = [
   "components/ui/{button,toast,toaster,tooltip}.tsx",
 ];
 
+// Explicit dependencies of a hydrated head-to-head page, including the mobile
+// menu, signup CTA, saved result, and toast states. This list is independent
+// of the comparison hub's list so its optimized stylesheet stays unchanged.
+const matchupSources = [
+  "components/shoes/{ShoeEditorialPages,ShoeHeadToHead,ShoeStackSchematic}.tsx",
+  "components/{PublicHeader,Footer,StravaConnect,ToolJourneyTracker,ToolResultActions,TrackedUpgradeLink}.tsx",
+  "components/ui/{button,toast,toaster,tooltip}.tsx",
+];
+
 export function shoeHubStyles(): Plugin {
   return {
     name: "shoe-hub-styles",
@@ -45,9 +54,10 @@ export function shoeHubStyles(): Plugin {
         };
         const app = await emitStyles("index", tailwindConfig.content);
         const hub = await emitStyles("shoe-hub", hubSources.map(file => resolve("client/src", file)));
+        const matchup = await emitStyles("shoe-matchup", matchupSources.map(file => resolve("client/src", file)));
         // Link styles outside Vite's JS module graph so hydrating the hub
         // cannot fetch the unrelated full app stylesheet as a dependency.
-        html.source = html.source.replace("</head>", `<link rel="stylesheet" href="/${app}"><!--shoe-hub-css:/${hub}--></head>`);
+        html.source = html.source.replace("</head>", `<link rel="stylesheet" href="/${app}"><!--shoe-hub-css:/${hub}--><!--shoe-matchup-css:/${matchup}--></head>`);
       },
     },
   };

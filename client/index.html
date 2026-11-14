@@ -80,7 +80,8 @@
         }, { once: true });
         window.addEventListener('load', function () {
           var path = location.pathname.replace(/\/$/, '');
-          var isPerformancePage = path === '' || path === '/tools/shoes/compare';
+          var isPerformancePage = path === '' || path === '/tools/shoes/compare'
+            || /^\/tools\/shoes\/compare\/[^/]+$/.test(path);
           window.setTimeout(whenIdle, isPerformancePage ? 12000 : 3000);
         }, { once: true });
         window.addEventListener('pagehide', function () {
