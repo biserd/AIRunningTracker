@@ -11,7 +11,6 @@ import AIInsights from "@/components/dashboard/AIInsights";
 import TrainingRecommendations from "@/components/dashboard/TrainingRecommendations";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
-import CheckoutRecoveryPrompt from "@/components/dashboard/CheckoutRecoveryPrompt";
 import TodayRunDecision from "@/components/dashboard/TodayRunDecision";
 import ThisWeekPlan from "@/components/dashboard/ThisWeekPlan";
 import { SyncProgress } from "@/components/SyncProgress";
@@ -510,9 +509,6 @@ export default function Dashboard() {
         {/* Show the runner's own first insight as soon as Strava data lands. */}
         {dashboardData?.user?.stravaConnected&&<PremiumPreviewTeaser />}
         {!dashboardData?.user?.stravaConnected&&<GarminOnboarding/>}
-
-        {/* Recover an unfinished Checkout without requiring marketing-email consent. */}
-        <CheckoutRecoveryPrompt />
 
         {dashboardData?.user?.stravaConnected&&<div className="mb-6">
           <TodayRunDecision
