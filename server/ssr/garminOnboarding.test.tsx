@@ -10,16 +10,20 @@ import {readFileSync} from 'node:fs';
 (globalThis as any).React=React;
 const now=Date.parse('2026-11-09T12:00:00Z');
 const preview=garminRunPreview([{id:'fixture',name:'Fixture morning run',type:'RUNNING',startDate:'2026-11-08T12:00:00Z',offsetSeconds:0,distance:5000,duration:1800,averageSpeed:2.777,averageHeartRate:150,maxHeartRate:null,cadence:null,elevationGain:null,calories:null,device:null,manual:false}],'km',now);
-function render(overrides:Partial<GarminOnboarding>={}) {
+function render(overrides:Partial<GarminOnboarding>={}, surface:'dashboard'|'settings'='dashboard') {
  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
- client.setQueryData(['/api/stripe/trial-offer',undefined,'monthly'],{trialEligible:true,unitAmount:799,introductoryUnitAmount:399,currency:'usd',estimatedFirstChargeAt:'2026-11-16T12:00:00Z'});
+ client.setQueryData(['/api/stripe/trial-offer',undefined,'monthly'],{trialEligible:true,trialDays:7,unitAmount:799,introductoryUnitAmount:399,currency:'usd',estimatedFirstChargeAt:'2026-11-16T12:00:00Z'});
  const setup:GarminOnboarding={connected:true,connectionStatus:'connected',activityCount:1,hasEmail:false,hasPremium:false,state:'ready',preview,...overrides};
- const html=renderToString(<Router ssrPath="/dashboard"><QueryClientProvider client={client}><GarminOnboardingContent setup={setup}/></QueryClientProvider></Router>);client.clear();return html;
+ const html=renderToString(<Router ssrPath="/dashboard"><QueryClientProvider client={client}><GarminOnboardingContent setup={setup} surface={surface}/></QueryClientProvider></Router>);client.clear();return html;
 }
 test('Garmin free-run preview gives two facts, optional email, honest upsell and current trial disclosures',()=>{
  const html=render().replaceAll('<!-- -->','');assert.match(html,/Rules-based preview/);assert.match(html,/No AI processing/);assert.match(html,/5.00 km/);assert.match(html,/150 bpm/);assert.match(html,/href="\/runs\/garmin\/fixture"/);
- assert.match(html,/Add and verify email/);assert.match(html,/optional/);assert.match(html,/\$0\.00 today/);assert.match(html,/\$3.99/);assert.match(html,/\$7.99/);assert.match(html,/November 16/);assert.match(html,/Cancel anytime/);assert.match(html,/payment method/);
+ assert.match(html,/Add and verify email/);assert.match(html,/optional/);assert.match(html,/\$0\.00 today/);assert.match(html,/7-day trial/);assert.doesNotMatch(html,/Estimated first charge|\$3\.99|\$7\.99|November 16/);assert.match(html,/Cancel anytime/);assert.match(html,/payment method/);
  assert.ok(html.includes(GARMIN_AI_NOTICE));assert.doesNotMatch(html,/Unlock my complete run analysis|Strava required/);
+});
+test('the Garmin offer outside the dashboard retains detailed terms',()=>{
+ const html=render({},'settings').replaceAll('<!-- -->','');
+ assert.match(html,/Estimated first charge: November 16.*\$3\.99.*\$7\.99/);
 });
 test('waiting and paid states are useful without inventing data or showing paid subscribers an upsell',()=>{
  const waiting=render({preview:null,state:'waiting_for_run',activityCount:0});assert.match(waiting,/Waiting for your first Garmin run/);assert.match(waiting,/garmin\/setup#troubleshooting/);assert.doesNotMatch(waiting,/Fixture morning run/);

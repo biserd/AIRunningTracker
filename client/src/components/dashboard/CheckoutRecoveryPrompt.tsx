@@ -74,7 +74,7 @@ export default function CheckoutRecoveryPrompt() {
           }}
         ><X className="h-4 w-4" /></Button>
       </div>
-      <TrialOfferDetails className="mt-4" benefit={benefit} />
+      <TrialOfferDetails compact className="mt-4" benefit={benefit} />
       {garminOffer&&<p className="mt-3 text-sm leading-6 text-gray-700">{GARMIN_AI_NOTICE}</p>}
       <DirectCheckoutButton upgradeUrl={upgradeUrl}>
         <Button className="mt-4 bg-strava-orange text-white hover:bg-orange-600" data-testid="checkout-recovery-continue">

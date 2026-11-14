@@ -257,7 +257,7 @@ export default function PremiumPreviewTeaser() {
               {trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock Premium"}
             </Button>
           </DirectCheckoutButton>
-          <TrialOfferDetails className="mt-3" benefit="detailed run analytics and access to your AI coach." />
+          <TrialOfferDetails compact className="mt-3" benefit="detailed run analytics and access to your AI coach." />
         </div>
       </div>
     </PreviewShell>

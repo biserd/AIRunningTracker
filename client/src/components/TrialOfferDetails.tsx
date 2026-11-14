@@ -40,10 +40,12 @@ export function formatTrialAmount(amount: number, currency: string): string {
 export function TrialOfferDetails({
   benefit,
   billingPeriod = "monthly",
+  compact = false,
   className = "",
 }: {
   benefit: string;
   billingPeriod?: "monthly" | "annual";
+  compact?: boolean;
   className?: string;
 }) {
   const { isAuthenticated } = useAuth();
@@ -70,7 +72,9 @@ export function TrialOfferDetails({
   return (
     <div className={`rounded-xl border border-orange-200 bg-white/85 p-4 text-sm text-gray-800 ${className}`} data-testid="trial-offer-details">
       <p className="font-semibold text-gray-950">Premium unlocks {benefit}</p>
-      {offer?.trialEligible && amount && chargeDate ? (
+      {compact && offer?.trialEligible ? (
+        <p className="mt-3"><strong className="text-orange-700">{freeAmount} today.</strong> Your {offer.trialDays}-day trial starts when you complete Checkout.</p>
+      ) : offer?.trialEligible && amount && chargeDate ? (
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <p><span className="font-bold text-orange-700">{freeAmount} today</span> · Your 7-day trial starts when you complete Checkout.</p>
           <p><span className="font-bold">Estimated first charge: {chargeDate}</span> · {introductoryAmount
@@ -79,12 +83,14 @@ export function TrialOfferDetails({
         </div>
       ) : offer && amount ? (
         <p className="mt-3">This account has used its free trial. {amount} is due today, then {amount}/{interval}.</p>
-      ) : !isAuthenticated && publicOffer?.active && publicOffer.introductoryUnitAmount != null && publicOffer.regularUnitAmount != null ? (
+      ) : !compact && !isAuthenticated && publicOffer?.active && publicOffer.introductoryUnitAmount != null && publicOffer.regularUnitAmount != null ? (
         <p className="mt-3"><strong className="text-orange-700">$0 today.</strong> For eligible first-time subscribers, the first charge is about 7 days after Checkout: {formatTrialAmount(publicOffer.introductoryUnitAmount, publicOffer.currency || 'usd')} for the first {interval}, then {formatTrialAmount(publicOffer.regularUnitAmount, publicOffer.currency || 'usd')}/{interval}. Stripe shows the exact date and tax before you confirm.</p>
       ) : (
         <p className="mt-3 text-gray-600">{isLoading ? "Checking your trial and price…" : "Secure Checkout will confirm your price and first charge date before you pay."}</p>
       )}
-      <p className="mt-2 text-xs text-gray-600">Cancel anytime in subscription settings. A payment method is requested at Checkout; Stripe confirms the exact charge date and any tax before you finish.</p>
+      <p className="mt-2 text-xs text-gray-600">{compact
+        ? "Cancel anytime. A payment method is required. Review the price and renewal terms in Checkout."
+        : "Cancel anytime in subscription settings. A payment method is requested at Checkout; Stripe confirms the exact charge date and any tax before you finish."}</p>
     </div>
   );
 }
