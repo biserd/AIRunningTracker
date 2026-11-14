@@ -1,0 +1,8 @@
+# November 14 running-shoe catalogue refresh
+
+The [reviewed manifest](../data/shoes/2026-11-14-releases.json) covers confirmed US releases and recent catalogue gaps, not every 2026 launch. Nine new models and fourteen new matchups, plus an in-place stock and specs refresh for Nike Alphafly 4 (ID 792).
+
+- Running Warehouse men's US 9 measurements where available. The NNormal Cadí GTX uses the [US manufacturer listing](https://www.nnormal.com/en_US/men/shoes/cadi/nnormal-cadi_gtx_men_blue_black-NX4CD1M-001) and [fall release announcement](https://news.nnormal.com/nnormal-presents-its-fw-2026-collection-led-by-the-cadi-gore-texr); compatible weight was not published. Specs are not independent wear tests. US prices were observed at verification, not guaranteed.
+- The [PUMA Fast-RB Nitro Elite 2 launch](https://mediahub.puma.com/articles/puma-unveils-fast-rb-nitrotm-elite-2-marking-a-new-frontier-in-speed) distinguishes it from the Fast-R race line and explicitly says it is not race legal. PUMA's Deviate Pure Nitro launched in June and is a newly identified coverage gap, not a November launch.
+- Excluded other colors and the Brooks Glycerin Max 3 while its US listings show preorder or future stock. No release claim was made for 880v16, Skyflow 2, or GEL-EXCITE 12 without orderable primary listings.
+- The catalogue, comparison directory, sitemap, and public MCP all use the existing production D1 data. No schema change. New comparisons link to both models; model pages surface their complete matchup list. The public presentation accepts authored notes only for the expressly reviewed import, with no synthetic winner.

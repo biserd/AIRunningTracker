@@ -12,6 +12,8 @@ import {
   normalizedShoeModelKey,
 } from "../shared/shoeCanonicalization";
 
+const reviewedComparisonSource = "Source-checked catalogue editorial; not a wear test.";
+
 export type ShoeStore = Pick<
   IStorage,
   | "getShoes"
@@ -39,7 +41,26 @@ export function publicComparison(
   a: RunningShoe,
   b: RunningShoe,
 ) {
-  const guide = buildComparisonGuide(a, b);
+  const base = buildComparisonGuide(a, b);
+  // Opt in only explicitly reviewed copy, not stored legacy/generated winners.
+  const guide = (() => {
+    if (c.verdictReason !== reviewedComparisonSource || !c.verdict?.trim() ||
+      [a, b].some(s => s.availability === "upcoming")) return base;
+    try {
+      const notes: unknown = JSON.parse(c.keyDifferences ?? "null");
+      if (!Array.isArray(notes) || notes.length === 0 || notes.length > 6 ||
+        notes.some(note => typeof note !== "string" || !note.trim() || note.length > 400)) return base;
+      return {
+        ...base,
+        verdict: c.verdict,
+        sections: [
+          ...notes.map((text, i) => ({ title: `Buying consideration ${i + 1}`, text })),
+          ...base.sections,
+        ],
+        questions: [{ ...base.questions[0], answer: c.verdict }, ...base.questions.slice(1)],
+      };
+    } catch { return base; }
+  })();
   return {
     ...c,
     title: guide.title,
@@ -125,7 +146,6 @@ export async function shoePayload(store: ShoeStore, slug: string) {
     similarShoes,
     comparisons: comparisons
       .filter((c) => c.slug)
-      .slice(0, 8)
       .map((c) => ({ slug: c.slug, title: c.title })),
     editorial: buildShoeGuide(shoe),
   };

@@ -1,0 +1,124 @@
+{
+  "verifiedAt": "2026-11-14T00:00:00.000Z",
+  "publishReviewedComparisons": true,
+  "policy": "Fall 2026 launches and recently stocked catalogue gaps, not preorder or colour-only changes. Running Warehouse is the primary source for men's US size 9 measurements; NNormal's US product listing and fall launch announcement are used where Running Warehouse has no exact SKU. USD prices are listing snapshots. No wear-test ratings or exact launch day without evidence. Preserve existing IDs and links.",
+  "shoes": [
+    {
+      "brand": "Brooks", "model": "Adrenaline GTS 26", "slug": "brooks-adrenaline-gts-26",
+      "seriesName": "Adrenaline GTS", "versionNumber": 26, "category": "daily_trainer",
+      "weight": 10.7, "heelStackHeight": 39, "forefootStackHeight": 29, "heelToToeDrop": 10,
+      "price": 154.95, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "soft", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": null,
+      "bestFor": ["easy_runs", "long_runs"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/Brooks_Adrenaline_GTS_26/descpage-BA26M02.html",
+      "description": "A structured road trainer combining GuideRails support, nitrogen-infused DNA LOFT v3 and RoadTack rubber. The new flat-knit tongue is a fit change worth trying with your usual socks. Running Warehouse lists a 10 mm offset and multiple widths for the Primer/Marlin/Ebon men's listing; width availability varies by colour and size. Compare against GTS 25 for heel hold and how the support feels on easy runs."
+    },
+    {
+      "brand": "HOKA", "model": "Arahi 9", "slug": "hoka-arahi-9",
+      "seriesName": "Arahi", "versionNumber": 9, "category": "daily_trainer",
+      "weight": 9.7, "heelStackHeight": 41, "forefootStackHeight": 33, "heelToToeDrop": 8,
+      "price": 154.95, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "soft", "stability": "mild_stability", "hasCarbonPlate": false, "hasSuperFoam": null,
+      "bestFor": ["easy_runs", "long_runs"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/HOKA_Arahi_9/descpage-HARI9M4.html",
+      "description": "A cushioned stability trainer using HOKA's H-Frame rather than a rigid medial post. Running Warehouse measures 41/33 mm and lists an 8 mm offset. The men's Black/White listing includes standard and wide options. If you know the Arahi 8, try the new platform for heel hold and underfoot feel before treating it as a like-for-like replacement."
+    },
+    {
+      "brand": "Saucony", "model": "Endorphin Speed 6", "slug": "saucony-endorphin-speed-6",
+      "seriesName": "Endorphin Speed", "versionNumber": 6, "category": "speed_training",
+      "weight": 8.1, "heelStackHeight": 39, "forefootStackHeight": 31, "heelToToeDrop": 8,
+      "price": 179.95, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "bestFor": ["speed_work", "tempo", "long_runs"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/Saucony_Endorphin_Speed_6/descpage-SESP6M3.html",
+      "description": "A fast road trainer with PWRRUN PBX PEBA foam and a redesigned nylon plate, not a carbon plate. Running Warehouse describes a 2 mm increase in stack over Speed 5 and a revised plate with no lateral wing. Compare the rocker and midfoot feel at tempo pace; the newer foam and taller stack do not establish a faster workout."
+    },
+    {
+      "brand": "ASICS", "model": "Sonicblast 2", "slug": "asics-sonicblast-2",
+      "seriesName": "Sonicblast", "versionNumber": 2, "category": "speed_training",
+      "weight": 7.9, "heelStackHeight": 45, "forefootStackHeight": 37, "heelToToeDrop": 8,
+      "price": 189.95, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": true,
+      "bestFor": ["tempo", "long_runs", "speed_work"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/ASICS_SONICBLAST_2/descpage-ASSBM6.html",
+      "description": "A high-stack performance trainer pairing FF TURBO² cushioning and a forefoot pod with a forked Pebax ASTROPLATE. The flexible element is not a carbon plate. At 45/37 mm in the retailer's measurements, it is a materially taller platform than the Endorphin Speed 6 despite the identical listed drop. Compare control through turns and comfort as pace changes."
+    },
+    {
+      "brand": "Adidas", "model": "Adizero Adios Pro 5", "slug": "adidas-adizero-adios-pro-5",
+      "seriesName": "Adizero Adios Pro", "versionNumber": 5, "category": "racing",
+      "weight": 6.0, "heelStackHeight": 38, "forefootStackHeight": 34, "heelToToeDrop": 4,
+      "price": 274.95, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": null, "hasSuperFoam": true,
+      "bestFor": ["racing", "speed_work"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/adidas_adizero_Adios_Pro_5/descpage-A5AAPM2.html",
+      "description": "A road racer with two layers of Lightstrike Pro and a carbon-infused ENERGYRIM running around the perimeter. The rim replaces the Pro 4's EnergyRods; it is neither a conventional solid carbon plate nor an unreinforced platform. The retailer records a 4 mm drop. Try it at race pace before switching from a familiar Pro 4."
+    },
+    {
+      "brand": "Puma", "model": "Fast-RB Nitro Elite 2", "slug": "puma-fast-rb-nitro-elite-2",
+      "seriesName": "Fast-RB Nitro Elite", "versionNumber": 2, "category": "speed_training",
+      "weight": 8.7, "heelStackHeight": 57, "forefootStackHeight": 49, "heelToToeDrop": 8,
+      "price": 349.95, "releaseYear": 2026, "availability": "available", "availableFrom": "2026-10-28",
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "bestFor": ["speed_work"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/PUMA_Fast-RB_Nitro_Elite_2/descpage-P2FRBMA.html",
+      "description": "A limited experimental road shoe with two fused carbon plates and NITROFOAM ELITE cushioning. Running Warehouse reports 57/49 mm with the heel on the ground; the cantilever changes geometry under load. PUMA describes it as not race legal. This is the distinct Fast-RB line, not the similarly named Fast-R Nitro Elite 2 or 3."
+    },
+    {
+      "brand": "Puma", "model": "Deviate Pure Nitro", "slug": "puma-deviate-pure-nitro",
+      "seriesName": "Deviate Pure Nitro", "versionNumber": null, "category": "speed_training",
+      "weight": 7.5, "heelStackHeight": 37, "forefootStackHeight": 29, "heelToToeDrop": 8,
+      "price": 149.95, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": false, "hasSuperFoam": null,
+      "bestFor": ["tempo", "speed_work", "easy_runs"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/PUMA_Deviate_Pure_Nitro/descpage-PUDP1M2.html",
+      "description": "An unplated road trainer with nitrogen-infused NITROFOAM. Unlike the plated Deviate Nitro 4, the Pure is intended for runners who prefer a more flexible shoe across easy running and workouts. The men's US 9 listing measures 7.5 oz. Compare the two on a session that includes both easy and faster segments."
+    },
+    {
+      "brand": "Puma", "model": "Velocity Nitro Trail", "slug": "puma-velocity-nitro-trail",
+      "seriesName": "Velocity Nitro Trail", "versionNumber": null, "category": "trail",
+      "weight": 9.2, "heelStackHeight": 35, "forefootStackHeight": 27, "heelToToeDrop": 8,
+      "price": 139.95, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "medium", "stability": "neutral", "hasCarbonPlate": null, "hasSuperFoam": null,
+      "bestFor": ["trails", "easy_runs"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/PUMA_Velocity_Nitro_Trail/descpage-PUVT1MA.html",
+      "description": "A road-to-trail variant, not a colour of Velocity Nitro 4. It pairs NITROFOAM with 3 mm PUMAGRIP ATR lugs for pavement, gravel and moderate trails. For a route dominated by steep mud, loose rock or technical hiking, compare outsole and protection with a trail-first model rather than assuming the same use."
+    },
+    {
+      "brand": "Nnormal", "model": "Cadí GTX", "slug": "nnormal-cadi-gtx",
+      "seriesName": "Cadí GTX", "versionNumber": null, "category": "trail",
+      "weight": null, "heelStackHeight": 35, "forefootStackHeight": 29, "heelToToeDrop": 6,
+      "price": 195, "releaseYear": 2026, "availability": "available",
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": null, "hasSuperFoam": null,
+      "bestFor": ["trails", "long_runs"], "dataSource": "manufacturer",
+      "sourceUrl": "https://www.nnormal.com/en_US/men/shoes/cadi/nnormal-cadi_gtx_men_blue_black-NX4CD1M-001",
+      "description": "The waterproof Cadí road-to-trail model, distinct from the standard Cadí. NNormal lists a GORE-TEX Invisible Fit ePE membrane, Vibram Megagrip outsole with 4 mm lugs and a nominal 35/29 mm stack. The listing does not publish a comparable size-specific weight. Consider this for easy trails in wet weather; try the exact upper before buying."
+    },
+    {
+      "brand": "Nike", "model": "Alphafly 4", "slug": "nike-alphafly-4",
+      "seriesName": "Alphafly", "versionNumber": 4, "category": "racing",
+      "weight": 6.7, "heelStackHeight": 42, "forefootStackHeight": 34, "heelToToeDrop": 8,
+      "price": 279.95, "releaseYear": 2026, "availability": "available", "availableFrom": "2026-10-29",
+      "cushioningLevel": "soft", "stability": "neutral", "hasCarbonPlate": true, "hasSuperFoam": true,
+      "bestFor": ["racing", "long_runs"], "dataSource": "running_warehouse",
+      "sourceUrl": "https://www.runningwarehouse.com/Nike_Alphafly_4/descpage-NAFL4M1.html",
+      "description": "Nike's marathon racer combines ZoomX LT above a wider carbon Flyplate, ZoomX below it and dual forefoot Air Zoom units. Running Warehouse lists the men's Proto in stock and measures 6.7 oz and 42/34 mm. These are retailer measurements, not competition certification; runners entering regulated events should check the exact approved model and applicable rules.",
+      "refresh": { "id": 792, "expected": { "availability": "upcoming", "availableFrom": "2026-10-29", "weight": null, "heelStackHeight": null, "forefootStackHeight": null, "lastVerified": "2026-09-26T00:00:00.000Z" } }
+    }
+  ],
+  "comparisons": [
+    { "pair": ["brooks-adrenaline-gts-26", "brooks-adrenaline-gts-25"], "type": "evolution", "differences": ["Compare the revised tongue and collar hold.", "GTS 26 lists a 10 mm offset; the older record is historical."], "verdict": "Keep a comfortable GTS 25 if its support works for you. Try GTS 26 for width, heel hold and the feel of its offset before replacing it." },
+    { "pair": ["hoka-arahi-9", "hoka-arahi-8"], "type": "evolution", "differences": ["Arahi 9 uses a cushioned H-Frame platform and lists an 8 mm offset.", "The Arahi 8 figures are historical."], "verdict": "Try Arahi 9 on a familiar easy effort. It is not automatically an upgrade over a comfortable Arahi 8." },
+    { "pair": ["hoka-arahi-9", "brooks-adrenaline-gts-26"], "type": "category_rival", "differences": ["H-Frame versus GuideRails support.", "8 mm versus 10 mm listed offset."], "verdict": "Try both for easy runs in equivalent widths. Prioritize how the support and heel-to-toe geometry feel, not a generic support ranking." },
+    { "pair": ["saucony-endorphin-speed-6", "saucony-endorphin-speed-5"], "type": "evolution", "differences": ["The 6 adds PWRRUN PBX and revises the winged nylon plate."], "verdict": "Try the revised rocker and plate at tempo pace if replacing the Speed 5; keep the existing pair if it already suits your sessions." },
+    { "pair": ["asics-sonicblast-2", "asics-sonicblast"], "type": "evolution", "differences": ["The 2 introduces FF TURBO² cushioning and an updated Pebax ASTROPLATE."], "verdict": "Check the new upper and underfoot control before switching; the original's historical numbers are not a verified upgrade baseline." },
+    { "pair": ["asics-sonicblast-2", "saucony-endorphin-speed-6"], "type": "category_rival", "differences": ["45/37 mm versus 39/31 mm measured stack.", "Pebax ASTROPLATE versus nylon plate."], "verdict": "Try the Sonicblast for a taller platform and the Speed for a lower one; compare at the pace and on the corners you train on most." },
+    { "pair": ["adidas-adizero-adios-pro-5", "adidas-adizero-adios-pro-4"], "type": "evolution", "differences": ["ENERGYRIM perimeter reinforcement replaces EnergyRods.", "4 mm versus 6 mm listed drop."], "verdict": "Compare lower drop and fit during a race-pace workout before switching. Check actual prices; the older entry records a clearance offer." },
+    { "pair": ["adidas-adizero-adios-pro-5", "nike-alphafly-4"], "type": "category_rival", "differences": ["Carbon-infused perimeter rim versus wider Flyplate and forefoot Air Zoom.", "4 mm versus 8 mm listed drop."], "verdict": "Compare comfort and stability at goal pace in both shoes. Retail stack measurements do not establish race eligibility or which shoe is faster." },
+    { "pair": ["puma-fast-rb-nitro-elite-2", "puma-fast-r-nitro-elite-3"], "type": "category_rival", "differences": ["Fast-RB 2 is an experimental, not race-legal model; it is not a numbered replacement for Fast-R 3."], "verdict": "Do not choose the Fast-RB 2 for regulated racing. For an event, shortlist and check the approval of the exact alternative model instead." },
+    { "pair": ["puma-deviate-pure-nitro", "puma-deviate-nitro-4"], "type": "category_rival", "differences": ["Pure is unplated; Deviate Nitro 4 is plated."], "verdict": "Choose the Pure if you prefer flexibility across paces; try Deviate Nitro 4 if you specifically want a plated workout shoe." },
+    { "pair": ["puma-velocity-nitro-trail", "puma-velocity-nitro-4"], "type": "category_rival", "differences": ["The Trail uses a 3 mm PUMAGRIP ATR outsole for mixed terrain.", "Velocity Nitro 4 is a separate road model."], "verdict": "Choose for the surface you run most. The Trail is designed for mixed routes; the road model makes sense if you mostly stay on pavement." },
+    { "pair": ["puma-velocity-nitro-trail", "topo-athletic-traverse-2"], "type": "category_rival", "differences": ["Road-to-trail lugs versus a more protective trail and hiking build with forefoot rock plate."], "verdict": "Try the Puma for pavement-to-gravel runs; look at the Traverse for rocky trails and hikes where underfoot protection matters more." },
+    { "pair": ["nnormal-cadi-gtx", "puma-velocity-nitro-trail"], "type": "category_rival", "differences": ["GORE-TEX Invisible Fit and 4 mm Vibram lugs versus the Puma's 3 mm PUMAGRIP ATR outsole.", "The mixed manufacturer and retailer measurement bases do not support a precise geometry or weight delta."], "verdict": "Consider the Cadí GTX if a waterproof upper matters for your usual routes. Compare the Velocity Nitro Trail if your runs mix pavement and gravel." },
+    { "pair": ["nnormal-cadi-gtx", "nnormal-tomir-2-0"], "type": "category_rival", "differences": ["The Cadí GTX is a waterproof easy-trail model, not a numbered Tomir successor.", "The Tomir record is historical."], "verdict": "Compare the exact upper, outsole and surface needs. Do not substitute this for a size- or conditions-matched fit test." }
+  ]
+}

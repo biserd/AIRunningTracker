@@ -5,10 +5,11 @@ import { validateShoeData } from '../../server/shoe-pipeline';
 
 export type CatalogShoe = Record<string, any> & { slug: string; sourceUrl: string; brand: string; model: string };
 export type CatalogComparison = { pair: string[]; type: 'evolution' | 'category_rival' | 'popular'; differences: string[]; verdict: string };
-export type Catalog = { verifiedAt: string; policy: string; shoes: CatalogShoe[]; comparisons: (string[] | CatalogComparison)[] };
+export type Catalog = { verifiedAt: string; policy: string; publishReviewedComparisons?: boolean; shoes: CatalogShoe[]; comparisons: (string[] | CatalogComparison)[] };
 const manufacturerHosts: Record<string,string> = {
   asics: 'www.asics.com',
   lems: 'www.lemsshoes.com',
+  nnormal: 'www.nnormal.com',
   reebok: 'www.reebok.com',
   saucony: 'www.saucony.com',
 };
@@ -82,12 +83,15 @@ export function catalogStatements(catalog: Catalog): string[] {
   for (const comparison of catalog.comparisons) {
     const [a,b] = Array.isArray(comparison) ? comparison : comparison.pair;
     const details = Array.isArray(comparison) ? { type: 'popular', differences: [], verdict: 'No overall winner: choose for fit and intended use.' } : comparison;
+    const verdictReason = catalog.publishReviewedComparisons && !Array.isArray(comparison)
+      ? 'Source-checked catalogue editorial; not a wear test.'
+      : 'Specifications are not a wear test. Check source dates and availability.';
     const slug = `${a}-vs-${b}`;
     const title = `(SELECT brand || ' ' || model FROM running_shoes WHERE slug=${literal(a)}) || ' vs ' || (SELECT brand || ' ' || model FROM running_shoes WHERE slug=${literal(b)})`;
     sql.push(`INSERT INTO "_shoe_catalog_import_guard" SELECT CASE WHEN (SELECT count(*) FROM running_shoes WHERE slug IN (${literal(a)},${literal(b)}))=2 THEN 1 ELSE 0 END;`);
     sql.push(`INSERT INTO "_shoe_catalog_import_guard" SELECT CASE WHEN EXISTS(SELECT 1 FROM shoe_comparisons WHERE slug=${literal(slug)} AND (shoe1_id<>(SELECT id FROM running_shoes WHERE slug=${literal(a)}) OR shoe2_id<>(SELECT id FROM running_shoes WHERE slug=${literal(b)}))) THEN 0 ELSE 1 END;`);
     sql.push(`INSERT INTO shoe_comparisons (slug,shoe1_id,shoe2_id,comparison_type,title,meta_description,verdict,verdict_winner,verdict_reason,key_differences,best_for)
-SELECT ${literal(slug)},(SELECT id FROM running_shoes WHERE slug=${literal(a)}),(SELECT id FROM running_shoes WHERE slug=${literal(b)}),${literal(details.type)},${title},'Compare source-linked specifications, recorded US prices and intended use.',${literal(details.verdict)},NULL,'Specifications are not a wear test. Check source dates and availability.',${literal(details.differences)},json_object('shoe1',(SELECT replace(category,'_',' ') FROM running_shoes WHERE slug=${literal(a)}),'shoe2',(SELECT replace(category,'_',' ') FROM running_shoes WHERE slug=${literal(b)})) WHERE true ON CONFLICT(slug) DO UPDATE SET comparison_type=excluded.comparison_type,title=excluded.title,meta_description=excluded.meta_description,verdict=excluded.verdict,verdict_winner=NULL,verdict_reason=excluded.verdict_reason,key_differences=excluded.key_differences,best_for=excluded.best_for;`);
+SELECT ${literal(slug)},(SELECT id FROM running_shoes WHERE slug=${literal(a)}),(SELECT id FROM running_shoes WHERE slug=${literal(b)}),${literal(details.type)},${title},'Compare source-linked specifications, recorded US prices and intended use.',${literal(details.verdict)},NULL,${literal(verdictReason)},${literal(details.differences)},json_object('shoe1',(SELECT replace(category,'_',' ') FROM running_shoes WHERE slug=${literal(a)}),'shoe2',(SELECT replace(category,'_',' ') FROM running_shoes WHERE slug=${literal(b)})) WHERE true ON CONFLICT(slug) DO UPDATE SET comparison_type=excluded.comparison_type,title=excluded.title,meta_description=excluded.meta_description,verdict=excluded.verdict,verdict_winner=NULL,verdict_reason=excluded.verdict_reason,key_differences=excluded.key_differences,best_for=excluded.best_for;`);
   }
   sql.push('DROP TABLE "_shoe_catalog_import_guard";', 'PRAGMA foreign_key_check;');
   return sql;

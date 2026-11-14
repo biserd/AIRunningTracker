@@ -11,7 +11,7 @@ import {
   evidenceDate,
 } from "../../shared/shoeEditorial";
 import { sanitizeShoeRecord } from "../mcp/shoePresentation";
-import { comparisonList, type ShoeStore } from "../shoeCatalogPresentation";
+import { comparisonList, publicComparison, shoePayload, type ShoeStore } from "../shoeCatalogPresentation";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 const a = {
@@ -72,6 +72,27 @@ const c = {
   verdict: "Guaranteed faster",
 } as ShoeComparison;
 const shoes = [a, b, legacy];
+test("reviewed guidance is explicit and does not override upcoming warnings or name a winner", () => {
+  const review = {
+    ...c,
+    verdict: "Check how the lower drop feels at goal pace.",
+    verdictReason: "Source-checked catalogue editorial; not a wear test.",
+    keyDifferences: '["A revised perimeter reinforcement replaces the old rods."]',
+  };
+  const checked = publicComparison(review, a, { ...b, availability: "available" });
+  assert.match(checked.verdict, /lower drop/);
+  assert.match(checked.editorial.sections[0].text, /perimeter/);
+  assert.equal(checked.verdictWinner, null);
+  assert.match(publicComparison(review, a, b).verdict, /upcoming/i);
+});
+
+test("a predecessor page does not drop reciprocal comparison links after the eighth entry", async () => {
+  const links = Array.from({ length: 9 }, (_, i) => ({ ...c, slug: `example-pair-${i}` }));
+  const data = await shoePayload({ ...store, getShoeComparisonsByShoeId: async () => links }, a.slug!);
+  assert.equal(data?.comparisons.length, 9);
+  assert.equal(data?.comparisons.at(-1)?.slug, "example-pair-8");
+});
+
 const store = {
   getShoes: async () => shoes,
   getShoeBySlug: async (slug: string) => shoes.find((s) => s.slug === slug),
