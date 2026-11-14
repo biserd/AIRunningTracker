@@ -43,8 +43,7 @@ export function shoeHubStyles(): Plugin {
           this.emitFile({ type: "asset", fileName, source: code });
           return fileName;
         };
-        const appContent = tailwindConfig.content;
-        const app = await emitStyles("index", Array.isArray(appContent) ? appContent : appContent.files);
+        const app = await emitStyles("index", tailwindConfig.content);
         const hub = await emitStyles("shoe-hub", hubSources.map(file => resolve("client/src", file)));
         // Link styles outside Vite's JS module graph so hydrating the hub
         // cannot fetch the unrelated full app stylesheet as a dependency.

@@ -8,3 +8,8 @@
 - 2026-11-14 — [100-mile guide](https://aitracker.run/blog/ultra-marathon-training-plan-100-miler-guide): refreshed readiness guidance, sample week (illustrative, not individualized or coach-reviewed), printable checklist and updated sitemap date; URL and original publication date retained.
 
 Source `6ca5a71`; production Worker `cef7c0e3-971e-4344-84d5-db8cb6c33595`, container version 63. All six live titles, H1s and canonicals verified. Twenty-two SEO regression checks and the production Worker type check passed. No database migration.
+
+- 2026-11-14 — [Shoe comparison hub](https://aitracker.run/tools/shoes/compare): darker active navigation, hub-only stylesheet (~5.5 KB gzip) and deferred Google tag with carryover on same-tab navigation. Server-rendered anchors and first-party funnel ingestion are unchanged.
+- 2026-11-14 — [Homepage](https://aitracker.run/): deferred tag and removed automatic startup scroll snap from the tools carousel while preserving swipe and arrow controls. The original homepage Google lab run reported `NO_LCP` for both devices; the subsequent release recorded LCP on both.
+
+Production Worker `ce9adec5-f59a-4110-8fdb-e40298b09738`, container 65, source `80d725f`. Final browser check: 176 exact server-rendered anchors; one hub stylesheet; comparison events and signup-source payload verified with outbound collections and signup intercepted. Google lab reports: [hub](https://pagespeed.web.dev/analysis/https-aitracker-run-tools-shoes-compare/85wenv8a9c) 96/96 and [homepage](https://pagespeed.web.dev/analysis/https-aitracker-run/e4t3qn1r3h) 98/98 mobile/desktop, no missing LCP or blocking-time measurements. All 30 regression checks passed. No database migration.
