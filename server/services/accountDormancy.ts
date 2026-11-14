@@ -11,6 +11,12 @@ export const ACCOUNT_DORMANCY_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SCAN_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const BASE_URL = (process.env.APP_URL || "https://aitracker.run").replace(/\/$/, "");
+// Background reactivation nudges must not bypass a recipient's opt-out.
+const allowsDormancyEmail = sql`
+  COALESCE(${users.marketingOptOut}, FALSE) = FALSE
+  AND COALESCE(${users.marketingConsentStatus}, 'unknown') NOT IN ('unsubscribed', 'suppressed')
+  AND ${users.email} IS NOT NULL
+`;
 
 export type DormancySubject = Pick<
   User,
@@ -72,6 +78,7 @@ async function sendDormancyNoticeIfNeeded(userId: number, now: Date): Promise<bo
     WHERE id = ${userId}
       AND strava_webhook_paused_at IS NOT NULL
       AND dormancy_notice_sent_at IS NULL
+      AND ${allowsDormancyEmail}
       AND NOT (
         COALESCE(subscription_plan, 'free') IN ('premium', 'pro')
         AND COALESCE(subscription_status, 'active') IN ('active', 'trialing')
@@ -81,30 +88,35 @@ async function sendDormancyNoticeIfNeeded(userId: number, now: Date): Promise<bo
   const [claimed] = rowsFromResult<{ email: string | null; first_name: string | null }>(claim);
   if (!claimed) return false;
 
-  if (!claimed.email) return false;
-  const reactivateUrl = await authService.wrapWithEmailMagicLink(
-    claimed.email,
-    "/dashboard?account=reactivate",
-    BASE_URL,
-  );
-  const sent = await emailService.sendAccountDormantEmail({
-    to: claimed.email,
-    firstName: claimed.first_name,
-    reactivateUrl,
-    settingsUrl: `${BASE_URL}/settings`,
-    inactivityDays: ACCOUNT_DORMANCY_DAYS,
-  });
-
-  if (!sent) {
-    // Release the claim so the next scan can retry a transient email failure.
-    await db.execute(sql`
-      UPDATE users
-      SET dormancy_notice_sent_at = NULL
-      WHERE id = ${userId}
-        AND dormancy_notice_sent_at = ${now}
-    `);
+  let sent = false;
+  try {
+    if (!claimed.email) return false;
+    // This is optional email. On a suppressed recipient or an unavailable
+    // lookup, do not submit it to the provider or mint a reactivation link.
+    if ((await emailService.checkCloudflareSuppression(claimed.email)).status !== "clear") return false;
+    const reactivateUrl = await authService.wrapWithEmailMagicLink(
+      claimed.email,
+      "/dashboard?account=reactivate",
+      BASE_URL,
+    );
+    sent = await emailService.sendAccountDormantEmail({
+      to: claimed.email,
+      firstName: claimed.first_name,
+      reactivateUrl,
+      settingsUrl: `${BASE_URL}/settings`,
+      inactivityDays: ACCOUNT_DORMANCY_DAYS,
+    });
+    return sent;
+  } finally {
+    if (!sent) {
+      await db.execute(sql`
+        UPDATE users
+        SET dormancy_notice_sent_at = NULL
+        WHERE id = ${userId}
+          AND dormancy_notice_sent_at = ${now}
+      `);
+    }
   }
-  return sent;
 }
 
 /**
@@ -156,7 +168,7 @@ export async function pauseInactiveFreeAccounts(now: Date = new Date()): Promise
       )`,
       or(
         isNull(users.stravaWebhookPausedAt),
-        isNull(users.dormancyNoticeSentAt),
+        and(isNull(users.dormancyNoticeSentAt), allowsDormancyEmail),
       ),
     ))
     .limit(250);
