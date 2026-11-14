@@ -28,6 +28,8 @@ import { emailService } from "./services/email";
 import { runnerScoreService } from "./services/runnerScore";
 import goalsService from "./services/goals";
 import { ChatService } from "./services/chat";
+import { freeCoachMessagesRemaining, refundFreeCoachMessage, reserveFreeCoachMessage } from "./services/coachChatAllowance";
+import { FREE_COACH_CHAT_LIMIT_REACHED, FREE_COACH_CHAT_MESSAGES, type CoachChatAllowance } from "@shared/coachChatAllowance";
 import { fitnessService } from "./services/fitness";
 import { actualMetrics, autoLinkActivitiesForPlan, reconcileTrainingPlanProgress } from "./services/activityLinker";
 import { calculateYearlyStats, reverseGeocode } from "./services/yearEndRecap";
@@ -3594,6 +3596,22 @@ ${allPages.map(page => `  <url>
   });
 
   // ===== AI Running Coach Chat Endpoints =====
+
+  app.get("/api/chat/allowance", authenticateJWT, async (req: any, res) => {
+    res.setHeader("Cache-Control", "private, no-store");
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const allowance: CoachChatAllowance = {
+        remaining: canAccessCapability(user, "ai_coach")
+          ? null
+          : await freeCoachMessagesRemaining(query => db.execute(query), user.id),
+      };
+      return res.json(allowance);
+    } catch {
+      return res.status(503).json({ message: "Chat availability could not be loaded." });
+    }
+  });
   
   // Create a new conversation
   app.post("/api/chat/conversations", authenticateJWT, async (req: any, res) => {
@@ -3655,19 +3673,42 @@ ${allPages.map(page => `  <url>
 
   // Send a chat message with streaming response
   app.post("/api/chat/:conversationId/messages", authenticateJWT, async (req: any, res) => {
+    const userId: number = req.user.id;
+    let reservedFreeMessage = false;
+    const releaseUnusedMessage = async () => {
+      if (!reservedFreeMessage) return;
+      reservedFreeMessage = false;
+      await refundFreeCoachMessage(query => db.execute(query), userId).catch(() => {
+        console.error("Could not refund a free coach message");
+      });
+    };
     try {
-      const conversationId = parseInt(req.params.conversationId);
-      const { message, context } = req.body;
+      const conversationId = Number(req.params.conversationId);
+      const { message, context } = req.body ?? {};
       
-      if (isNaN(conversationId)) {
+      if (!Number.isSafeInteger(conversationId) || conversationId < 1) {
         return res.status(400).json({ message: "Invalid conversation ID" });
       }
 
-      if (!message || typeof message !== 'string') {
+      if (typeof message !== "string" || !message.trim()) {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const hasPremiumChat = canAccessCapability(user, "ai_coach");
+      if (!hasPremiumChat) {
+        if (!await storage.getConversation(conversationId, userId)) {
+          return res.status(404).json({ message: "Conversation not found" });
+        }
+        reservedFreeMessage = await reserveFreeCoachMessage(query => db.execute(query), userId);
+        if (!reservedFreeMessage) {
+          return res.status(403).json({
+            code: FREE_COACH_CHAT_LIMIT_REACHED,
+            message: `You've used your ${FREE_COACH_CHAT_MESSAGES} free messages. Continue with Premium.`,
+          });
+        }
+      }
 
       // The storage method enforces ownership before writing, so a caller
       // cannot attach content to another runner's conversation.
@@ -3676,7 +3717,10 @@ ${allPages.map(page => `  <url>
         role: "user",
         content: message
       }, userId);
-      if (!userMessage) return res.status(404).json({ message: "Conversation not found" });
+      if (!userMessage) {
+        await releaseUnusedMessage();
+        return res.status(404).json({ message: "Conversation not found" });
+      }
 
       // Set up SSE
       res.setHeader('Content-Type', 'text/event-stream');
@@ -3690,14 +3734,13 @@ ${allPages.map(page => `  <url>
       const chatService = new ChatService();
       
       // Stream AI response
-      let fullResponse = '';
       const onStream = (chunk: string) => {
-        fullResponse += chunk;
         res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
       };
 
       try {
-        const aiResponse = await chatService.chat(userId, conversationId, message, onStream, context);
+        const aiResponse = await chatService.chat(userId, conversationId, message, onStream, context, hasPremiumChat);
+        if (!aiResponse.trim()) throw new Error("The coach returned an empty response");
         
         // Save AI message
         const savedAssistantMessage = await storage.addMessage({
@@ -3706,6 +3749,7 @@ ${allPages.map(page => `  <url>
           content: aiResponse
         }, userId);
         if (!savedAssistantMessage) throw new Error("Conversation is no longer available");
+        reservedFreeMessage = false;
 
         // Send completion event
         res.write(`data: ${JSON.stringify({ type: 'complete', messageId: userMessage.id })}\n\n`);
@@ -3717,11 +3761,13 @@ ${allPages.map(page => `  <url>
         const userMessage_err = isQuotaError
           ? "The AI coach is temporarily unavailable due to high demand. Please try again in a few minutes."
           : "Sorry, I couldn't generate a response. Please try again.";
+        await releaseUnusedMessage();
         res.write(`data: ${JSON.stringify({ type: 'error', message: userMessage_err, isQuota: isQuotaError })}\n\n`);
         res.end();
       }
     } catch (error: any) {
       console.error('Chat message error:', error);
+      await releaseUnusedMessage();
       
       // If headers not sent yet, send JSON error
       if (!res.headersSent) {

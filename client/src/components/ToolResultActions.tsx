@@ -34,9 +34,7 @@ export function ToolResultActions({ source, capability = "public_tool", title, s
     {saved && <p role="status" className="mt-3 text-sm">Your saved copy will appear when you return in this browser.</p>}
     {saveError && <p role="alert" className="mt-3 text-sm">Browser storage is unavailable. Copy or print your result before leaving.</p>}
   </section>;
-  const coachHref = hasActiveSubscription
-    ? "/dashboard?openChat=true"
-    : buildUpgradeUrl({ source, capability: "ai_coach", benefitKey: "ai_coach", returnTo: "/dashboard?openChat=true" });
+  const coachHref = isAuthenticated ? "/dashboard?openChat=new" : "/auth?redirect=%2Fdashboard%3FopenChat%3Dnew";
   const planHref = hasActiveSubscription
     ? "/training-plans"
     : buildUpgradeUrl({ source, capability: "training_plans", benefitKey: "training_plan", returnTo: "/training-plans" });
@@ -44,7 +42,7 @@ export function ToolResultActions({ source, capability = "public_tool", title, s
   return (
     <section className="mt-6 rounded-xl border border-orange-200 bg-orange-50/70 p-5" aria-label="Continue with this result">
       <h3 className="font-semibold text-charcoal mb-1">Put this result to work</h3>
-      <p className="text-sm text-gray-600 mb-4">Use personalized coaching or a training plan to explore your next step. These features may require Premium.</p>
+      <p className="text-sm text-gray-600 mb-4">Try AI Coach chat for free or use Premium to build a training plan.</p>
       <div className="flex flex-col sm:flex-row gap-3">
         <TrackedUpgradeLink href={coachHref} source={source} capability="ai_coach">
           <Button className="bg-strava-orange text-white hover:bg-strava-orange/90"><Brain className="h-4 w-4 mr-2" />Ask AI Coach about this</Button>
