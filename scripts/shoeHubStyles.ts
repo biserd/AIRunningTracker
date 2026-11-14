@@ -31,16 +31,24 @@ export function shoeHubStyles(): Plugin {
         const html = bundle["index.html"];
         if (html?.type !== "asset" || typeof html.source !== "string") return;
         const from = resolve("client/src/index.css");
-        const result = await postcss([
-          tailwind({ ...tailwindConfig, content: hubSources.map(file => resolve("client/src", file)) }),
-          autoprefixer(),
-        ]).process(await readFile(from, "utf8"), { from });
-        const { code } = await transform(result.css, { loader: "css", minify: true });
-        const hash = createHash("sha256").update(code).digest("hex").slice(0, 12);
-        const fileName = `assets/shoe-hub-${hash}.css`;
-        this.emitFile({ type: "asset", fileName, source: code });
-        // Server-side selection keeps the ordinary app template unchanged.
-        html.source = html.source.replace("</head>", `<!--shoe-hub-css:/${fileName}--></head>`);
+        const source = await readFile(from, "utf8");
+        const emitStyles = async (name: string, content: string[]) => {
+          const result = await postcss([
+            tailwind({ ...tailwindConfig, content }),
+            autoprefixer(),
+          ]).process(source, { from });
+          const { code } = await transform(result.css, { loader: "css", minify: true });
+          const hash = createHash("sha256").update(code).digest("hex").slice(0, 12);
+          const fileName = `assets/${name}-${hash}.css`;
+          this.emitFile({ type: "asset", fileName, source: code });
+          return fileName;
+        };
+        const appContent = tailwindConfig.content;
+        const app = await emitStyles("index", Array.isArray(appContent) ? appContent : appContent.files);
+        const hub = await emitStyles("shoe-hub", hubSources.map(file => resolve("client/src", file)));
+        // Link styles outside Vite's JS module graph so hydrating the hub
+        // cannot fetch the unrelated full app stylesheet as a dependency.
+        html.source = html.source.replace("</head>", `<link rel="stylesheet" href="/${app}"><!--shoe-hub-css:/${hub}--></head>`);
       },
     },
   };

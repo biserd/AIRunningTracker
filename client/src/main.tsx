@@ -1,3 +1,7 @@
+// Development still uses Vite's stylesheet HMR; the production build links
+// the appropriate hashed stylesheet directly in the document.
+if (import.meta.env.DEV) void import("./index.css");
+
 const root = document.getElementById("root");
 
 async function hydratePublicTool() {
