@@ -12,6 +12,7 @@ import {
 } from "../../shared/shoeEditorial";
 import { sanitizeShoeRecord } from "../mcp/shoePresentation";
 import { comparisonList, publicComparison, shoePayload, type ShoeStore } from "../shoeCatalogPresentation";
+import { shoeSeriesHistory } from "../shoeSeries";
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 const a = {
@@ -135,6 +136,47 @@ test("mixed numbered and unnumbered runs use year order; case variants share a c
   assert.match(weightChart, /Sonicblast 2[\s\S]*?Not published/);
 });
 
+test("reviewed family aliases share the same chronology without mixing racing or trail variants", async () => {
+  const row = (id: number, slug: string, brand: string, seriesName: string, versionNumber: number | null, releaseYear: number) =>
+    ({ ...a, id, slug, model: slug, brand, seriesName, versionNumber, releaseYear });
+  const families = [
+    [row(21, "adidas-adizero-boston-12", "Adidas", "Adizero Boston", 12, 2024), row(22, "adidas-boston-13", "Adidas", "Boston", 13, 2025)],
+    [row(23, "adidas-ultraboost-light", "Adidas", "Ultraboost Light", null, 2025), row(24, "adidas-ultraboost-5", "Adidas", "Ultraboost", 5, 2024)],
+    [
+      { ...row(25, "new-balance-fresh-foam-x-1080v13", "New Balance", "Fresh Foam X 1080v", 13, 2023), model: "Fresh Foam X 1080v13" },
+      { ...row(27, "new-balance-fresh-foam-x-1080v14", "New Balance", "Fresh Foam X 1080v", 14, 2024), model: "Fresh Foam X 1080v14" },
+      { ...row(28, "new-balance-1080v15", "New Balance", "1080", 15, 2026), model: "1080v15" },
+    ],
+    [row(29, "new-balance-fuelcell-rebel-v4", "New Balance", "FuelCell Rebel v", 4, 2024), row(30, "new-balance-rebel-v5", "New Balance", "Rebel v", 5, 2025)],
+    [row(31, "puma-fast-r-2-nitro-elite", "Puma", "Fast-R 2 Nitro Elite", null, 2024), row(32, "puma-fast-r-nitro-elite-3", "Puma", "Fast-R Nitro Elite", 3, 2025)],
+    [row(33, "on-cloudsurfer-7", "On", "Cloudsurfer", 7, 2024), row(34, "on-cloudsurfer-2", "On", "Cloudsurfer", 2, 2025)],
+    [row(35, "adidas-supernova-rise", "Adidas", "Supernova Rise", null, 2025), row(36, "adidas-supernova-rise-2", "Adidas", "Supernova Rise", 2, 2024)],
+  ];
+  const legacyAlias = {
+    ...row(26, "new-balance-fresh-foam-1080-v14", "New Balance", "Fresh Foam 1080 v", 14, 2025),
+    model: "Fresh Foam 1080 v14",
+  };
+  const singles = [
+    row(37, "puma-fast-rb-nitro-elite-2", "Puma", "Fast-RB Nitro Elite", 2, 2026),
+    row(38, "on-cloudsurfer-trail", "On", "Cloudsurfer Trail", null, 2024),
+    row(39, "adidas-adizero-adios-pro-evo-2", "Adidas", "Adizero Adios Pro Evo", 2, 2025),
+  ];
+  const catalog = [...families.flat(), legacyAlias, ...singles].reverse();
+  const fixture = { ...store, getShoes: async () => catalog, getShoeBySlug: async (slug: string) => catalog.find(s => s.slug === slug) };
+  for (const family of families) {
+    const expected = family.map(s => s.slug);
+    for (const model of family) assert.deepEqual(shoeSeriesHistory(model, catalog).map(s => s.slug), expected);
+  }
+  for (const model of singles) assert.deepEqual(shoeSeriesHistory(model, catalog).map(s => s.slug), [model.slug]);
+  assert.deepEqual(shoeSeriesHistory(legacyAlias, catalog).map(s => s.slug), families[2].map(s => s.slug));
+  const { renderShoeDocument } = await import("./shoePages");
+  for (const { slug } of catalog) {
+    const result = await renderShoeDocument("/tools/shoes/" + slug, fixture, template);
+    assert.equal(result.status, 200, slug);
+    assert.equal(result.html?.includes('data-testid="series-comparison-chart"'), !singles.some(s => s.slug === slug), slug);
+  }
+});
+
 test("source status, UTC dates, missing measurements and unknown performance stay honest", () => {
   assert.equal(evidenceDate(a.lastVerified), "2026-09-26");
   assert.equal(shoeEvidence(a).status, "source_checked");
@@ -211,6 +253,10 @@ test("all public shoe route types render data, one canonical, one title and one 
     const result = await renderShoeDocument(path, store, template);
     assert.equal(result.status, 200, path);
     const html = result.html!;
+    assert.doesNotMatch(html, /Check the evidence before the numbers/);
+    if (path === "/tools/shoes/" + a.slug || path === "/tools/shoes/compare/" + c.slug) {
+      assert.match(html, /Sources, checks and editorial standards/);
+    }
     assert.equal((html.match(/<title\b/g) || []).length, 1, path);
     assert.equal((html.match(/rel="canonical"/g) || []).length, 1, path);
     assert.equal((html.match(/<h1\b/g) || []).length, 1, path);

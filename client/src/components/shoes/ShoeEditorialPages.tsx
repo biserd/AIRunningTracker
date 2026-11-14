@@ -174,13 +174,6 @@ function Meta({
     </>
   );
 }
-function EvidenceNotice({ shoes }: { shoes: RunningShoe[] }) {
-  return <section aria-label="Evidence for this comparison" className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-3 text-sm">
-    <h2 className="font-bold text-lg">Check the evidence before the numbers</h2>
-    {shoes.map(s => { const e = shoeEvidence(s); const missing = [["weight", s.weight], ["heel stack", s.heelStackHeight], ["forefoot stack", s.forefootStackHeight]].filter(([, v]) => v == null).map(([label]) => label); return <div key={s.id}><p><strong>{shoeName(s)}:</strong> {e.status === "source_checked" ? `source checked ${e.checked}` : "historical specifications · not reverified"}. {missing.length > 0 ? `Missing: ${missing.join(", ")}.` : ""}</p>{s.slug === "asics-metaspeed-tokyo" && <p className="font-semibold">Exact Tokyo variant is unconfirmed. Sky Tokyo and Edge Tokyo are separate models; confirm the SKU before choosing.</p>}{s.slug === "hoka-clifton-10" && e.status !== "source_checked" && <p className="font-semibold">The older Clifton 10 stack figures are unverified. Do not read them as a confirmed change to Clifton 11.</p>}</div>; })}
-    <p>Measurement sizes can differ. Recorded prices are dated snapshots; use the source to confirm today's offer in your size.</p>
-  </section>;
-}
 function Sources({ shoes }: { shoes: RunningShoe[] }) {
   return (
     <Section title="Sources, checks and editorial standards">
@@ -416,7 +409,6 @@ export function ShoeDetailPage() {
         <p>Running Warehouse’s testers found the upper snug for wider feet and had mixed experiences with heel hold. Try your usual race socks and check toe room and heel hold at your intended pace. Nike lists this as a road race shoe from 10K to marathon; test the fit on a familiar session before committing.</p>
         <p className="mt-2 text-sm"><a className="underline" href={VAPORFLY_4_FIT_SOURCE}>Running Warehouse’s Vaporfly 4 fit observations</a> (May 2025). RunAnalytics did not perform the fit test.</p>
       </Section>}
-      <EvidenceNotice shoes={[s]} />
       <Facts shoes={[s]} />
       {g.sections.map((section) => (
         <Section key={section.title} title={section.title}>
@@ -559,7 +551,6 @@ export function ShoeComparisonPage() {
           </Section>
         ))}
       </div>
-      <EvidenceNotice shoes={[a, b]} />
       <Facts shoes={[a, b]} />
       <Section title="What the measurements actually change">
         <div className="grid sm:grid-cols-2 gap-5">
