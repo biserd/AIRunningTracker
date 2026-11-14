@@ -3,27 +3,99 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- Keep analytics off the render-critical path. -->
+    <!-- Queue analytics immediately; load the provider after startup. -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-5WCHHHKHS9');
-      window.addEventListener('load', function () {
-        window.setTimeout(function () {
-          var loadAnalytics = function () {
-            var script = document.createElement('script');
-            script.async = true;
-            script.src = 'https://www.googletagmanager.com/gtag/js?id=G-5WCHHHKHS9';
-            document.head.appendChild(script);
+      (function () {
+        var measurementId = 'G-5WCHHHKHS9';
+        var storageKey = 'ra_ga_pending_v1';
+        var dataLayer = window.dataLayer = window.dataLayer || [];
+        var pending = [], loading = false, loaded = false, active = true;
+        var startedAt = Date.now();
+        var campaignKeys = /^(utm_[a-z_]+|gclid|dclid|gbraid|wbraid|fromTool)$/i;
+        function context() {
+          var url = new URL(location.href);
+          var attribution = new URLSearchParams();
+          url.searchParams.forEach(function (value, key) {
+            if (campaignKeys.test(key)) attribution.append(key, value.slice(0, 256));
+          });
+          var query = attribution.toString();
+          return {
+            page_location: url.origin + url.pathname + (query ? '?' + query : ''),
+            page_referrer: document.referrer.split(/[?#]/)[0],
+            page_title: document.title
           };
+        }
+        window.gtag = function () {
+          if (arguments[0] === 'event' && !loaded) {
+            var event = ['event', arguments[1], Object.assign(context(), arguments[2])];
+            if (pending.length < 40) pending.push({ at: Date.now(), event: event });
+          } else {
+            dataLayer.push(arguments);
+          }
+        };
+        window.gtag('js', new Date());
+        window.gtag('config', measurementId, { send_page_view: false });
+        function readPending() {
+          try {
+            var rows = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+            return Array.isArray(rows) ? rows.filter(function (row) {
+              return row && Date.now() - row.at < 15 * 60000 && Array.isArray(row.event) && row.event[0] === 'event';
+            }) : [];
+          } catch (_) { return []; }
+        }
+        function loadAnalytics() {
+          if (loading || !active) return;
+          loading = true;
+          var script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=' + measurementId;
+          script.onload = function () {
+            if (!active) { loading = false; return; }
+            loaded = true;
+            var batch = readPending().concat(pending);
+            pending = [];
+            try { sessionStorage.removeItem(storageKey); } catch (_) {}
+            batch.forEach(function (row) { window.gtag.apply(window, row.event); });
+          };
+          script.onerror = function () { loading = false; };
+          document.head.appendChild(script);
+        }
+        function whenIdle() {
           if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(loadAnalytics, { timeout: 3000 });
+            window.requestIdleCallback(loadAnalytics, { timeout: 2500 });
           } else {
             loadAnalytics();
           }
-        }, 3000);
-      }, { once: true });
+        }
+        function onIntent(event) {
+          if (!event.isTrusted) return;
+          window.removeEventListener('pointerdown', onIntent);
+          window.removeEventListener('keydown', onIntent);
+          window.setTimeout(whenIdle, Math.max(1500, 5500 - (Date.now() - startedAt)));
+        }
+        window.addEventListener('pointerdown', onIntent, { passive: true });
+        window.addEventListener('keydown', onIntent, { passive: true });
+        window.addEventListener('DOMContentLoaded', function () {
+          window.gtag('event', 'page_view');
+        }, { once: true });
+        window.addEventListener('load', function () {
+          var path = location.pathname.replace(/\/$/, '');
+          var isPerformancePage = path === '' || path === '/tools/shoes/compare';
+          window.setTimeout(whenIdle, isPerformancePage ? 12000 : 3000);
+        }, { once: true });
+        window.addEventListener('pagehide', function () {
+          active = false;
+          if (loaded || !pending.length) return;
+          try {
+            sessionStorage.setItem(storageKey, JSON.stringify(readPending().concat(pending).slice(-40)));
+            pending = [];
+          } catch (_) {}
+        });
+        window.addEventListener('pageshow', function (event) {
+          active = true;
+          if (event.persisted && !loaded) window.setTimeout(whenIdle, 1500);
+        });
+      })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, user-scalable=yes, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

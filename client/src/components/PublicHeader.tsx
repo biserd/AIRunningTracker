@@ -29,7 +29,7 @@ export default function PublicHeader() {
 
   const linkClass = (href: string) =>
     isActive(href)
-      ? "text-[#FC4C02] border-b-2 border-[#FC4C02] pb-0.5 font-medium text-sm transition-colors"
+      ? "text-orange-800 border-b-2 border-orange-700 pb-0.5 font-medium text-sm transition-colors"
       : "text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors";
 
   return (
@@ -92,7 +92,7 @@ export default function PublicHeader() {
                 <span
                   className={`block px-6 py-4 text-base font-medium cursor-pointer ${
                     isActive(href)
-                      ? "text-[#FC4C02] bg-orange-50"
+                      ? "text-orange-800 bg-orange-50"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                   onClick={() => setMobileOpen(false)}

@@ -63,6 +63,15 @@ export async function renderShoeDocument(
     }),
   );
   const head = Helmet.renderStatic();
+  if (path === "/tools/shoes/compare") {
+    const stylesheet = template.match(/<!--shoe-hub-css:(\/assets\/shoe-hub-[a-f0-9]{12}\.css)-->/)?.[1];
+    if (stylesheet) {
+      template = template.replace(
+        /<link\b(?=[^>]*\brel="stylesheet")(?=[^>]*\bhref="\/assets\/index-[^"]+\.css")[^>]*>/,
+        `<link rel="stylesheet" href="${stylesheet}">`,
+      );
+    }
+  }
   const html = template
     .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
     .replace(
