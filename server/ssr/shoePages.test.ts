@@ -266,6 +266,33 @@ test("comparison index uses two reads and suppresses stored synthetic winners", 
   assert.doesNotMatch(rows[0].verdict, /Guaranteed faster/);
 });
 
+test("head-to-head renders same-scale diagrams, exact deltas, and graceful missing values before JavaScript", async () => {
+  const { renderShoeDocument } = await import("./shoePages");
+  const pairPage = "/tools/shoes/compare/" + c.slug;
+  const rival = { ...b, weight: 8.2, heelStackHeight: 68, forefootStackHeight: 32, heelToToeDrop: 36 };
+  const fixture = (second: RunningShoe): ShoeStore => ({
+    ...store,
+    getShoes: async () => [a, second],
+    getShoeById: async id => [a, second].find(s => s.id === id),
+  });
+  const html = (await renderShoeDocument(pairPage, fixture(rival), template)).html!.replaceAll("<!-- -->", "");
+  assert.match(html, /data-testid="shoe-head-to-head-explorer"/);
+  assert.equal((html.match(/data-stack-scale="70"/g) ?? []).length, 2);
+  assert.match(html, /Runner 2: 28 mm higher/);
+  assert.match(html, /Runner 1: 1\.2 oz lighter/);
+  assert.match(html, /Same listed measurement/);
+  assert.equal((html.match(/data-spec-group=/g) ?? []).length, 11);
+  assert.match(html, /Sources, checks and editorial standards/);
+  const missingHtml = (await renderShoeDocument(pairPage, fixture({
+    ...rival, forefootStackHeight: null, dataSource: "legacy", lastVerified: null,
+  }), template)).html!;
+  assert.equal((missingHtml.match(/data-stack-scale=/g) ?? []).length, 1);
+  assert.match(missingHtml, /Full stack profile unavailable/);
+  assert.match(missingHtml, /Missing measurement/);
+  assert.match(missingHtml, /No verified difference/);
+  assert.doesNotMatch(missingHtml, /mm higher|oz lighter/);
+});
+
 test("all public shoe route types render data, one canonical, one title and one H1 before JavaScript", async () => {
   const { renderShoeDocument } = await import("./shoePages");
   for (const path of [

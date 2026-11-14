@@ -25,6 +25,7 @@ import Footer from "@/components/Footer";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { ShoeSeriesCharts } from "./ShoeSeriesCharts";
 import { ShoeGenerationPicker, ShoeProfileExplorer } from "./ShoeProfileExplorer";
+import { ShoeHeadToHead } from "./ShoeHeadToHead";
 
 type Related = Pick<ShoeComparison, "slug" | "title">;
 export type ShoePayload = {
@@ -557,6 +558,7 @@ export function ShoeComparisonPage() {
         <h1 className="text-3xl sm:text-4xl font-bold my-4">{g.heading ?? g.title}</h1>
         <p className="text-lg leading-relaxed">{g.verdict}</p>
       </header>
+      <ShoeHeadToHead key={slug} a={a} b={b} />
       <div className="grid gap-5 md:grid-cols-2">
         {[a, b].map((s) => (
           <Section key={s.id} title={shoeName(s)}>
@@ -568,7 +570,6 @@ export function ShoeComparisonPage() {
           </Section>
         ))}
       </div>
-      <Facts shoes={[a, b]} />
       <Section title="What the measurements actually change">
         <div className="grid sm:grid-cols-2 gap-5">
           {g.differences.map((d) => (

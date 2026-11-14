@@ -3,6 +3,7 @@ import type { RunningShoe } from "@shared/schema";
 import { shoeEvidence } from "@shared/shoeEditorial";
 import { shoeNumber } from "@shared/shoeEvidence";
 import { bostonProfile } from "@shared/shoeProfile";
+import { hasStack, ShoeStackSchematic } from "./ShoeStackSchematic";
 
 type Unit = "oz" | "g";
 const measurement = (value: number | null | undefined): value is number =>
@@ -18,8 +19,7 @@ export function ShoeProfileExplorer({ shoe }: { shoe: RunningShoe }) {
   const boston = bostonProfile(shoe.slug);
   const heel = shoe.heelStackHeight;
   const forefoot = shoe.forefootStackHeight;
-  const profile = measurement(heel) && measurement(forefoot) && heel > 0 && forefoot > 0;
-  const soleTop = (v: number) => 169 - (v / Math.max(60, heel ?? 0, forefoot ?? 0)) * 103;
+  const profile = hasStack(heel) && hasStack(forefoot);
   const specs = [
     ["Weight", formatWeight(shoe.weight, unit)], ["Heel stack", shoeNumber(heel, " mm")],
     ["Forefoot stack", shoeNumber(forefoot, " mm")], ["Listed drop", shoeNumber(shoe.heelToToeDrop, " mm")],
@@ -48,20 +48,7 @@ export function ShoeProfileExplorer({ shoe }: { shoe: RunningShoe }) {
       </div>
       <div className="min-w-0 rounded-xl border border-slate-700 bg-slate-900/60 px-4 pb-4 pt-2">
         {profile ? <>
-          <svg viewBox="0 0 420 203" className="mx-auto block w-full max-w-md" aria-hidden="true">
-            <defs><pattern id={`profile-grid-${shoe.id}`} width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#334155" strokeWidth="1" />
-            </pattern></defs>
-            <rect x="5" y="12" width="410" height="157" rx="12" fill={`url(#profile-grid-${shoe.id})`} />
-            <path d={`M35 ${soleTop(heel)-3} C37 ${soleTop(heel)-58} 54 ${soleTop(heel)-59} 78 ${soleTop(heel)-47} L104 ${soleTop(heel)-38} L137 ${soleTop(heel)-56} Q155 ${soleTop(heel)-61} 177 ${soleTop(heel)-45} L237 ${soleTop(forefoot)-17} Q270 ${soleTop(forefoot)-9} 334 ${soleTop(forefoot)-7} Q364 ${soleTop(forefoot)-5} 383 ${soleTop(forefoot)+3}`} fill="none" stroke="#64748b" strokeWidth="2" strokeDasharray="5 4" />
-            <path d={`M35 ${soleTop(heel)} L102 ${soleTop(heel)} Q156 ${soleTop(heel)} 203 ${(soleTop(heel)+soleTop(forefoot))/2} T277 ${soleTop(forefoot)} L364 ${soleTop(forefoot)} Q390 ${soleTop(forefoot)} 392 148 Q387 165 362 169 H59 Q35 169 35 146Z`} fill="#431c12" stroke="#fb923c" strokeWidth="2"/>
-            <path d="M24 169H399" stroke="#94a3b8" strokeWidth="1" />
-            {([[80,heel,"Heel"],[304,forefoot,"Forefoot"]] as const).map(([x,v,label]) => <g key={label} stroke="#fdba74" fill="#fdba74">
-              <path d={`M${x-5} ${soleTop(v)}h10 M${x} ${soleTop(v)}V169 m-5 0h10`} fill="none" strokeWidth="1.5" />
-              <text x={x+9} y={(soleTop(v)+169)/2+5} stroke="none" fontSize="15" fontWeight="700">{v} mm</text>
-              <text x={x} y="190" stroke="none" fill="#cbd5e1" textAnchor="middle" fontSize="13">{label}</text>
-            </g>)}
-          </svg>
+          <ShoeStackSchematic heel={heel} forefoot={forefoot} scaleMax={Math.max(60, heel, forefoot)} />
           <p className="text-center text-xs text-slate-300">Stack-height schematic · not a product image</p>
         </> : <p className="py-6 text-sm text-slate-300">A stack profile needs both heel and forefoot measurements. See the specifications below for what’s available.</p>}
       </div>
