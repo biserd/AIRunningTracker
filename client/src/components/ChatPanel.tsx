@@ -858,7 +858,7 @@ function ChatUpgrade({ activityId }: { activityId?: number }) {
           {trialOffer?.trialEligible ? "Start 7-day free trial" : "Upgrade to Premium"}
         </Button>
       </DirectCheckoutButton>
-      <TrialOfferDetails className="mt-3" benefit="ongoing AI coaching and training insights." />
+      <TrialOfferDetails compact={pageContext?.pageName === "Dashboard"} className="mt-3" benefit="ongoing AI coaching and training insights." />
     </div>
   );
 }
