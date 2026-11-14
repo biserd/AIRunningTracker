@@ -697,7 +697,9 @@ export default function LandingPage() {
             {/* Scrollable Tools Container */}
             <div 
               ref={toolsCarouselRef}
-              className="flex gap-4 overflow-x-auto pb-4 px-2 md:px-8 scrollbar-hide scroll-smooth snap-x snap-mandatory"
+              // Mandatory snap moved this off-screen scroller during the first
+              // layout, ending Chrome's LCP collection before the hero painted.
+              className="flex gap-4 overflow-x-auto pb-4 px-2 md:px-8 scrollbar-hide"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {/* Tool Card - Training Paces */}
