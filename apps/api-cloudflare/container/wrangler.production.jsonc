@@ -39,8 +39,8 @@
     "COACH_BINDING_CALLBACK_SECRET","COACH_AGENT_WEBHOOK_SIGNING_SECRET_V2","COACH_AGENT_WEBHOOK_URL",
     "OPENAI_API_KEY","CLOUDFLARE_EMAIL_API_TOKEN","STRAVA_CLIENT_SECRET",
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
-  // Hub performance and homepage paint release 80d725f; staging Worker aba3ddd1. No D1 migrations.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:d994663e8c69b6538f98f78e44d524b315874b7f068033e12f19d8b29ec580b8",
+  // Verified fall shoe releases and reciprocal comparisons 8a9a9ce; staging Worker 7ae74f6a. No schema changes.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:48e77ec712bf5042eaab68b6717a4a2e11118780738880c3759cfbb6bd647fd2",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
