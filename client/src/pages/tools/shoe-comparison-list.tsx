@@ -1,229 +1,95 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet";
-import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
-import { useAuth } from "@/hooks/useAuth";
-import { 
-  ArrowLeft, 
-  ArrowRight,
-  Trophy,
-  GitCompare,
-  TrendingUp,
-  Star
-} from "lucide-react";
-import type { RunningShoe, ShoeComparison } from "@shared/schema";
-import { shoeNumber } from "@shared/shoeEvidence";
-import { shoeEvidence } from "@shared/shoeEditorial";
 import { ShoeChooser } from "@/components/shoes/ShoeChooser";
+import { trackFunnelEvent } from "@/lib/analytics";
+import { comparisonHubCopy, type ShoeComparisonLink, type ShoePickerModel } from "@shared/searchPageCopy";
 
-interface ComparisonWithShoes extends ShoeComparison {
-  shoe1: RunningShoe;
-  shoe2: RunningShoe;
-}
-
-const comparisonTypeLabels: Record<string, { label: string; description: string; icon: React.ReactNode }> = {
-  evolution: { 
-    label: "Model Evolution", 
-    description: "Compare different versions of the same shoe line",
-    icon: <TrendingUp className="h-5 w-5" />
-  },
-  category_rival: { 
-    label: "Category Rivals", 
-    description: "Head-to-head matchups in the same category",
-    icon: <GitCompare className="h-5 w-5" />
-  },
-  popular: { 
-    label: "Popular Matchups", 
-    description: "Compare models across running-shoe brands",
-    icon: <Star className="h-5 w-5" />
-  }
-};
-
-function ComparisonCard({ comparison }: { comparison: ComparisonWithShoes }) {
-  const { shoe1, shoe2 } = comparison;
-  const typeInfo = comparisonTypeLabels[comparison.comparisonType] || comparisonTypeLabels.popular;
-
-  return (
-    <Link href={`/tools/shoes/compare/${comparison.slug}`}>
-      <Card className="cursor-pointer hover:shadow-lg transition-shadow group" data-testid={`comparison-card-${comparison.slug}`}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <Badge variant="outline" className="text-xs">
-              {typeInfo.label}
-            </Badge>
-            {comparison.verdictWinner && comparison.verdictWinner !== 'tie' && (
-              <Badge className="bg-green-500 text-white text-xs">
-                <Trophy className="h-3 w-3 mr-1" />
-                Winner
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <h3 className="font-semibold text-lg mb-2 group-hover:text-strava-orange transition-colors">
-            {shoe1.brand} {shoe1.model} vs {shoe2.brand} {shoe2.model}
-          </h3>
-          <div className="flex flex-wrap gap-3 justify-between text-sm text-gray-500">
-            <span>${shoe1.price} vs ${shoe2.price}</span>
-            <span>{shoeNumber(shoe1.weight, ' oz')} vs {shoeNumber(shoe2.weight, ' oz')}</span>
-          </div>
-          <p className="text-xs text-slate-600 mt-2">{[shoe1, shoe2].map(s => `${s.model}: ${shoeEvidence(s).checked || "no check date"}${shoeEvidence(s).status === "historical_unverified" ? " · historical" : ""}`).join("; ")}. Prices are recorded USD offers.</p>
-          <div className="mt-3 flex items-center text-sm text-strava-orange group-hover:translate-x-1 transition-transform">
-            View comparison <ArrowRight className="h-4 w-4 ml-1" />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
+const featuredSlugs = [
+  "saucony-endorphin-pro-4-vs-saucony-endorphin-pro-5",
+  "asics-gel-slowcush-vs-asics-gel-nimbus-28",
+  "adidas-adizero-adios-pro-4-vs-saucony-endorphin-pro-5",
+  "asics-megablast-vs-adidas-adizero-evo-sl",
+];
+const filters = [
+  ["all", "All"],
+  ["evolution", "Model updates"],
+  ["category_rival", "Category rivals"],
+  ["popular", "Popular matchups"],
+];
+const comparisonUrl = (slug: string) => `/tools/shoes/compare/${slug}`;
 
 export default function ShoeComparisonList() {
-  const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-
-  const { data: comparisons, isLoading, isError, refetch } = useQuery<ComparisonWithShoes[]>({
-    queryKey: ['/api/shoes/comparisons'],
+  const { data, isLoading, isError, refetch } = useQuery<{models: ShoePickerModel[]; links: ShoeComparisonLink[]}>({
+    queryKey: ["/api/shoes/comparison-directory"],
     queryFn: async () => {
-      const res = await fetch('/api/shoes/comparisons');
-      if (!res.ok) throw new Error('Failed to fetch comparisons');
-      return res.json();
-    }
+      const response = await fetch("/api/shoes/comparison-directory");
+      if (!response.ok) throw new Error("Could not load comparisons");
+      return response.json();
+    },
+    staleTime: 300_000,
   });
+  useEffect(() => {
+    trackFunnelEvent("tool_viewed", {source: "comparison_hub", capability: "shoe_comparison"}, {oncePerSession: true});
+  }, []);
+  const links = data?.links ?? [];
+  const featured = featuredSlugs.flatMap(slug => links.filter(row => row.slug === slug));
+  const terms = search.toLowerCase().trim().split(/\s+/);
+  const matches = links.filter(row => (filter === "all" || row.type === filter) && terms.every(term => row.title.toLowerCase().includes(term)));
 
-  const filteredComparisons = comparisons?.filter(c => 
-    (activeTab === 'all' || c.comparisonType === activeTab) && search.toLowerCase().trim().split(/\s+/).every(term => `${c.shoe1.brand} ${c.shoe1.model} ${c.shoe2.brand} ${c.shoe2.model}`.toLowerCase().includes(term))
-  ) || [];
-
-  const evolutionCount = comparisons?.filter(c => c.comparisonType === 'evolution').length || 0;
-  const rivalCount = comparisons?.filter(c => c.comparisonType === 'category_rival').length || 0;
-  const popularCount = comparisons?.filter(c => c.comparisonType === 'popular').length || 0;
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Running Shoe Comparison: Choose Models & Compare Specs</title>
-        <meta name="description" content="Compare running shoes side by side. Choose two models or browse comparison guides for weight, drop, stack, recorded prices and dated sources." />
-        <meta property="og:title" content="Running Shoe Comparison: Choose Models & Compare Specs" />
-        <meta property="og:description" content="Choose two running shoes, compare specifications and check the evidence before buying or upgrading." />
-        <link rel="canonical" href="https://aitracker.run/tools/shoes/compare" />
-      </Helmet>
-
-      <PublicHeader />
-
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <Link href="/tools/shoes" className="inline-flex items-center text-gray-600 hover:text-strava-orange mb-6" data-testid="link-back-shoes">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Running Shoe Hub
-        </Link>
-
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4" data-testid="page-title">
-            Running Shoe Comparison
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-3xl">
-            Choose two running shoes to compare weight, heel-to-toe drop, stack height, construction and recorded price. Or browse model upgrades and alternatives below. Each guide labels dated sources, historical records and missing fields; specifications help build a shortlist, while fit needs a try-on.
-          </p>
+  return <div className="min-h-screen bg-background">
+    <Helmet>
+      <title>{comparisonHubCopy.title}</title>
+      <meta name="description" content={comparisonHubCopy.description} />
+      <meta property="og:title" content={comparisonHubCopy.title} />
+      <meta property="og:description" content={comparisonHubCopy.description} />
+      <link rel="canonical" href="https://aitracker.run/tools/shoes/compare" />
+    </Helmet>
+    <PublicHeader />
+    <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+      <Link href="/tools/shoes" className="text-sm font-semibold text-orange-800 dark:text-orange-300 underline">Running shoe catalogue</Link>
+      <header>
+        <h1 className="text-3xl font-bold sm:text-5xl">{comparisonHubCopy.heading}</h1>
+        <p className="mt-3 max-w-2xl text-muted-foreground">Pick two models to compare weight, drop, stack height and construction. Or browse existing matchups with dated sources and clearly marked missing data.</p>
+      </header>
+      <ShoeChooser models={data?.models ?? []} catalogLoading={isLoading} catalogError={isError} retryCatalog={() => { void refetch(); }} />
+      {featured.length > 0 && !search.trim() && filter === "all" && <section aria-labelledby="featured-matchups">
+        <h2 id="featured-matchups" className="mb-3 text-xl font-semibold">Featured comparisons</h2>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {featured.map(row => <li key={row.slug}><Link href={comparisonUrl(row.slug)} className="block h-full rounded-xl border bg-card p-4 font-semibold hover:border-orange-500">{row.title}</Link></li>)}
+        </ul>
+      </section>}
+      <section aria-labelledby="comparison-directory" className="rounded-xl border bg-card p-4 sm:p-6">
+        <h2 id="comparison-directory" className="text-xl font-semibold">Comparison directory</h2>
+        <label htmlFor="comparison-search" className="mt-4 mb-1 block text-sm font-medium">Search existing matchups</label>
+        <input id="comparison-search" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Example: Endorphin Pro 4" className="w-full rounded-lg border bg-background p-3" />
+        <div className="my-3 flex flex-wrap gap-2" role="group" aria-label="Comparison type">
+          {filters.map(([key, label]) => <button type="button" key={key} onClick={() => setFilter(key)} aria-pressed={filter === key} className={`rounded-full border px-3 py-2 text-sm ${filter === key ? "border-orange-700 bg-orange-700 text-white" : "bg-background"}`}>{label}</button>)}
         </div>
-
-        <ShoeChooser />
-        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6" aria-label="How to choose a shoe comparison">
-          <h2 className="text-xl font-bold mb-2">Upgrading your current shoe or choosing a new one?</h2>
-          <p className="text-gray-700 mb-4">Start with its job: easy mileage, long runs or race day. Compare the same size and width, then check fit, verified construction changes and the seller’s current price. A lighter shoe is not automatically a better match.</p>
-          <Link href="/blog/how-to-compare-running-shoes" className="underline font-semibold text-orange-800">Read the running-shoe buying decision guide →</Link>
-          <p className="mt-4 text-sm text-gray-700">Planning your next race? Pair your shortlist with a <Link href="/tools/rotation-planner" className="underline text-orange-900">training shoe rotation</Link>, a <Link href="/tools/marathon-fueling" className="underline text-orange-900">practiced fueling schedule</Link> and an <Link href="/tools/aerobic-decoupling-calculator" className="underline text-orange-900">aerobic decoupling check</Link> from a steady long run.</p>
-        </section>
-        <div className="mb-6">
-          <label htmlFor="comparison-search" className="mb-2 block font-semibold">Find your models</label>
-          <input id="comparison-search" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="For example, Endorphin Pro 4 Pro 5" className="w-full rounded-lg border border-gray-300 bg-background p-3" />
-          <p aria-live="polite" className="mt-2 text-sm text-gray-600">{isLoading ? 'Loading comparisons…' : `${filteredComparisons.length} matching comparisons`}</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          {Object.entries(comparisonTypeLabels).map(([type, info]) => {
-            const count = type === 'evolution' ? evolutionCount : type === 'category_rival' ? rivalCount : popularCount;
-            return (
-              <Card key={type} className="text-center">
-                <CardContent className="pt-6">
-                  <div className="text-strava-orange mb-2">{info.icon}</div>
-                  <h3 className="font-semibold">{info.label}</h3>
-                  <p className="text-sm text-gray-500 mb-2">{info.description}</p>
-                  <Badge variant="outline">{count} comparisons</Badge>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all" data-testid="tab-all">
-              All ({comparisons?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="evolution" data-testid="tab-evolution">
-              Evolution ({evolutionCount})
-            </TabsTrigger>
-            <TabsTrigger value="category_rival" data-testid="tab-rivals">
-              Rivals ({rivalCount})
-            </TabsTrigger>
-            <TabsTrigger value="popular" data-testid="tab-popular">
-              Popular ({popularCount})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {isLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-4 w-24" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-6 w-full mb-2" />
-                  <Skeleton className="h-4 w-3/4" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : isError ? <p role="alert">Comparison guides could not load. <button onClick={() => refetch()} className="underline">Try again</button>, or use the model chooser above.</p> : filteredComparisons.length === 0 ? (
-          <div className="text-center py-12">
-            <GitCompare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No matching comparisons</h3>
-            <p className="text-gray-500 mb-4">Try a shorter model name, choose All, or build a custom comparison.</p>
-            <Link href="/tools/shoe-compare">
-              <Button variant="outline" data-testid="button-create-comparison">
-                Create Custom Comparison
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredComparisons.map((comparison) => (
-              <ComparisonCard key={comparison.id} comparison={comparison} />
-            ))}
-          </div>
-        )}
-
-        <div className="mt-12 text-center">
-          <p className="text-gray-500 mb-4">Can't find the comparison you're looking for?</p>
-          <Link href="/tools/shoe-compare">
-            <Button data-testid="button-custom-compare">
-              <GitCompare className="h-4 w-4 mr-2" />
-              Create Custom Comparison
-            </Button>
-          </Link>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  );
+        {isLoading ? <p role="status">Loading comparisons…</p> : isError && !data ? <p role="alert">Could not load comparisons. <button onClick={() => refetch()} className="underline">Try again</button>.</p> : <>
+          <p aria-live="polite" className="mb-3 text-sm text-muted-foreground">{matches.length === 0 ? "No matchups found. Try fewer words or choose All." : `${matches.length} comparisons`}</p>
+          {/* Compact anchors are included in the first HTML response, even without JavaScript. */}
+          <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+            {matches.map(row => <li key={row.slug}><Link href={comparisonUrl(row.slug)} className="block rounded px-1 py-1.5 text-sm text-orange-800 underline underline-offset-2 dark:text-orange-300">{row.title}</Link></li>)}
+          </ul>
+        </>}
+      </section>
+      <section className="rounded-xl border bg-card p-5">
+        <h2 className="text-xl font-semibold">Choose for the runs you actually do</h2>
+        <p className="mt-2 text-muted-foreground">Compare the same size and width, then try both shoes. Weight alone cannot tell you which one will fit.</p>
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <Link href="/blog/how-to-compare-running-shoes" className="underline">Shoe buying guide</Link>
+          <Link href="/tools/rotation-planner" className="underline">Plan a shoe rotation</Link>
+          <Link href="/tools/marathon-fueling" className="underline">Rehearse a fueling plan</Link>
+          <Link href="/tools/aerobic-decoupling-calculator" className="underline">Check aerobic decoupling</Link>
+        </p>
+      </section>
+    </main>
+    <Footer />
+  </div>;
 }

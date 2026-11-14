@@ -12,6 +12,8 @@ import {
   categoryName,
   safeJson,
   SHOE_METHODOLOGY,
+  STRUCTURE_26_FIT_SOURCE,
+  VAPORFLY_4_FIT_SOURCE,
 } from "@shared/shoeEditorial";
 import {
   shoeNumber,
@@ -67,11 +69,13 @@ function Section({
 }
 function Meta({
   title,
+  searchTitle,
   description,
   path,
   shoes,
 }: {
   title: string;
+  searchTitle?: string;
   description: string;
   path: string;
   shoes: RunningShoe[];
@@ -150,16 +154,16 @@ function Meta({
   return (
     <>
       <Helmet>
-        <title>{title} | RunAnalytics</title>
+        <title>{searchTitle ?? `${title} | RunAnalytics`}</title>
         <meta name="description" content={description} />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={url} />
-        <meta property="og:title" content={title} />
+        <meta property="og:title" content={searchTitle ?? title} />
         <meta property="og:description" content={description} />
         <meta property="og:url" content={url} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content={title} />
+        <meta name="twitter:title" content={searchTitle ?? title} />
         <meta name="twitter:description" content={description} />
       </Helmet>
       <script
@@ -373,6 +377,7 @@ export function ShoeDetailPage() {
     <Shell>
       <Meta
         title={g.title}
+        searchTitle={g.searchTitle}
         description={g.description}
         path={`/tools/shoes/${data.canonicalSlug || s.slug}`}
         shoes={[s]}
@@ -390,7 +395,7 @@ export function ShoeDetailPage() {
             : "Specification-based buying guide"}
         </p>
         <h1 className="text-3xl sm:text-5xl font-bold mt-3 mb-5">
-          {shoeName(s)}
+          {g.heading ?? shoeName(s)}
         </h1>
         <p className="text-lg leading-relaxed max-w-3xl">{g.summary}</p>
         <p className="mt-4 font-semibold">{shoeAvailability(s)}</p>
@@ -401,6 +406,15 @@ export function ShoeDetailPage() {
           · Not hands-on tested
         </p>
       </header>
+      {s.slug === "nike-structure-26" && <Section title="Which widths does the Structure 26 come in?">
+        <p>Nike’s US men’s listing shows Regular and Wide. Its fit selector does not show a separate Extra Wide option, even though that wording appears in the URL. Check the exact listing for your market and size.</p>
+        <p className="mt-2">Nike describes a ReactX midsole and a midfoot support system. Nike also recommends a half size up in the linked listing; use this as a try-on starting point, not a universal size rule.</p>
+        <p className="mt-2 text-sm"><a className="underline" href={STRUCTURE_26_FIT_SOURCE}>Nike US: Structure 26 men’s fit and product details</a> (checked November 14, 2026)</p>
+      </Section>}
+      {s.slug === "nike-vaporfly-4" && <Section title="How the Vaporfly 4 fits on race day">
+        <p>Running Warehouse’s testers found the upper snug for wider feet and had mixed experiences with heel hold. Try your usual race socks and check toe room and heel hold at your intended pace. Nike lists this as a road race shoe from 10K to marathon; test the fit on a familiar session before committing.</p>
+        <p className="mt-2 text-sm"><a className="underline" href={VAPORFLY_4_FIT_SOURCE}>Running Warehouse’s Vaporfly 4 fit observations</a> (May 2025). RunAnalytics did not perform the fit test.</p>
+      </Section>}
       <EvidenceNotice shoes={[s]} />
       <Facts shoes={[s]} />
       {g.sections.map((section) => (
@@ -509,6 +523,7 @@ export function ShoeComparisonPage() {
     <Shell>
       <Meta
         title={g.title}
+        searchTitle={g.searchTitle}
         description={g.description}
         path={`/tools/shoes/compare/${slug}`}
         shoes={[a, b]}
@@ -526,7 +541,7 @@ export function ShoeComparisonPage() {
         <p className="text-sm uppercase tracking-wide font-semibold text-orange-800">
           Evidence-led comparison · not a wear test
         </p>
-        <h1 className="text-3xl sm:text-4xl font-bold my-4">{g.title}</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold my-4">{g.heading ?? g.title}</h1>
         <p className="text-lg leading-relaxed">{g.verdict}</p>
       </header>
       <div className="grid gap-5 md:grid-cols-2">

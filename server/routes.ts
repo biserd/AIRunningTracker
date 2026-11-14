@@ -62,7 +62,8 @@ import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerShoePages } from './ssr/shoePages';
 import { publicShoe } from '../shared/shoeEditorial';
-import { shoePayload, comparisonPayload, comparisonList, publicComparison } from './shoeCatalogPresentation';
+import { shoePayload, comparisonPayload, comparisonList, comparisonDirectory, publicComparison } from './shoeCatalogPresentation';
+import { comparisonHubCopy } from '../shared/searchPageCopy';
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { ownsScheduledJobs, mayInitializeSchema, isMigrationStaging, isCloudflareRuntime } from './config/runtime';
 import { startRuntimeScheduler } from './runtimeServices';
@@ -516,7 +517,7 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
       keywords: "MCP documentation, MCP OAuth, running data tools, Streamable HTTP"
     },
     "/tools/shoes/compare": {
-      title: "Running Shoe Comparison: Choose Models & Compare Specs",
+      title: comparisonHubCopy.title,
       description: "Compare running shoes side by side. Choose two models or browse guides for weight, drop, stack, recorded prices and dated sources.",
       keywords: "compare running shoes, shoe comparison, running shoe specs"
     }
@@ -647,7 +648,7 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
         url: `/blog/${post.slug}`,
         changefreq: "monthly",
         priority: "0.9",
-        lastmod: sitemapDate(post.date)
+        lastmod: sitemapDate(post.updated ?? post.date)
       }));
 
       // Static routes have no maintained editorial revision dates. Omission is
@@ -7643,6 +7644,14 @@ ${allPages.map(page => `  <url>
   });
 
   // Shoe Comparison endpoints (pre-generated comparisons for SEO)
+  app.get("/api/shoes/comparison-directory", async (_req, res) => {
+    try {
+      const directory = await comparisonDirectory(storage);
+      res.set("Cache-Control", "public, max-age=60, s-maxage=300").json(directory);
+    } catch {
+      res.status(503).set("Cache-Control", "no-store").json({message: "Comparisons temporarily unavailable"});
+    }
+  });
   app.get("/api/shoes/comparisons", async(req,res)=>{
     try { res.json(await comparisonList(storage,{type:typeof req.query.type==='string'?req.query.type:undefined,limit:req.query.limit?Math.min(500,Math.max(1,Number(req.query.limit)||100)):undefined})); }
     catch {res.status(503).json({message:'Comparisons temporarily unavailable'});}

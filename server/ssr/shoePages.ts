@@ -10,7 +10,7 @@ import {
   loadPublicToolComponent,
 } from "../../client/src/publicToolApp";
 import {
-  comparisonList,
+  comparisonDirectory,
   comparisonPayload,
   shoePayload,
   type ShoeStore,
@@ -34,11 +34,7 @@ export async function renderShoeDocument(
       Array.from(new Set(shoes.map((s) => s.brand))).sort(),
     );
   } else if (path === "/tools/shoes/compare") {
-    client.setQueryData(
-      ["/api/shoes/comparisons"],
-      await comparisonList(store),
-    );
-    client.setQueryData(["/api/shoes"], canonicalizeShoeCatalog(await store.getShoes({})).canonicalShoes.map(publicShoe));
+    client.setQueryData(["/api/shoes/comparison-directory"], await comparisonDirectory(store));
   } else if (path.startsWith("/tools/shoes/compare/")) {
     const slug = path.split("/").at(-1)!;
     const [allComparisons, allShoes] = await Promise.all([store.getShoeComparisons({}), store.getShoes({})]);

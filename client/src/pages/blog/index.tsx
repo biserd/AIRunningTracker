@@ -8,6 +8,7 @@ import { SEO } from "@/components/SEO";
 import { Input } from "@/components/ui/input";
 import { useMemo, useState } from "react";
 import { editorialPosts } from "@shared/editorialPosts";
+import { blogIndexTitle } from "@shared/searchPageCopy";
 
 interface BlogPost {
   slug: string;
@@ -21,16 +22,6 @@ interface BlogPost {
 }
 
 const blogPosts: BlogPost[] = [
-  {
-    slug: "ultra-marathon-training-plan-100-miler-guide",
-    title: "Ultra Marathon Training Plan: The Complete Guide to Training for a 100 Miler",
-    description: "Everything you need to know about creating an ultra marathon training plan for your first 100 mile race. Covers periodization, back-to-back long runs, fueling, vertical gain training, tapering, and race day execution.",
-    date: "February 11, 2026",
-    readTime: "20 min read",
-    category: "Ultra Running",
-    icon: Mountain,
-    gradient: "from-emerald-600 to-teal-700"
-  },
   {
     slug: "ai-agent-coach-proactive-coaching",
     title: "AI Agent Coach: How Proactive AI Coaching Transforms Your Running",
@@ -87,10 +78,10 @@ blogPosts.unshift(...editorialPosts.map((post) => ({
   slug: post.slug,
   title: post.title,
   description: post.description,
-  date: post.dateLabel,
+  date: post.updatedLabel ?? post.dateLabel,
   readTime: post.readTime,
   category: post.category,
-  icon: post.topic === "ai" ? Brain : post.slug.includes("fueling") ? Target : TrendingUp,
+  icon: post.topic === "ultra" ? Mountain : post.topic === "ai" ? Brain : post.slug.includes("fueling") ? Target : TrendingUp,
   gradient: post.topic === "ai" ? "from-purple-600 to-indigo-700" : post.slug.includes("fueling") ? "from-amber-500 to-orange-600" : "from-blue-600 to-cyan-700",
 })));
 
@@ -109,7 +100,7 @@ export default function BlogIndex() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
-        title="Running Blog - Training Tips, AI Coaching & Analytics | RunAnalytics"
+        title={blogIndexTitle}
         description="Expert running advice, AI coaching insights, training strategies, and comprehensive analytics guides. Learn how to improve your running performance with data-driven insights."
         keywords="running blog, training tips, AI running coach, running analytics, marathon training, race preparation, running performance"
         url="https://aitracker.run/blog"

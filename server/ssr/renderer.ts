@@ -3,6 +3,7 @@ import { homepageContent, HomepageContent } from './homepageContent';
 import { getToolBySlug, ToolContent } from './toolsContent';
 import { configuredWebIntroCoupon, webIntroOfferForPrice } from '../services/webIntroOffer';
 import { runningSources } from '../../shared/runningSources';
+import { blogIndexTitle } from '../../shared/searchPageCopy';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -146,16 +147,18 @@ export function renderBlogPost(slug: string): string | null {
 
   const url = `/blog/${slug}`;
   const meta: PageMeta = {
-    title: `${post.title} | RunAnalytics`,
+    title: post.searchTitle ?? (post.heading || post.title.length + " | RunAnalytics".length > 60 ? post.title : `${post.title} | RunAnalytics`),
     description: post.description,
     keywords: `running, ${post.category.toLowerCase()}, training, ${post.title.toLowerCase().split(' ').slice(0, 3).join(', ')}`,
     type: 'article',
-    datePublished: post.date
+    datePublished: post.datePublished ?? post.date,
+    dateModified: post.updated,
   };
 
-  const structuredData = generateStructuredData(meta, url, 'BlogPosting', post.sources?.length
-    ? { citation: post.sources.filter(source => /^https?:\/\//.test(source.href)).map(source => source.href) }
-    : {});
+  const structuredData = generateStructuredData(meta, url, 'BlogPosting', {
+    headline: post.heading ?? post.title,
+    ...(post.sources?.length ? { citation: post.sources.filter(source => /^https?:\/\//.test(source.href)).map(source => source.href) } : {}),
+  });
   const head = generateHtmlHead(meta, url, structuredData);
 
   const tocHtml = post.tableOfContents 
@@ -194,7 +197,8 @@ export function renderBlogPost(slug: string): string | null {
 
   // Pick relevant tool/shoe links based on the post's category & title so each
   // post sends a unique mix of authority signals to the right destinations.
-  const relatedHtml = generateRelatedToolsForBlog(post.title, post.category);
+  const isUltra = slug === "ultra-marathon-training-plan-100-miler-guide";
+  const relatedHtml = isUltra ? "" : generateRelatedToolsForBlog(post.title, post.category);
   const editorialUpdateHtml = generateEditorialUpdateForBlog(post.slug);
 
   return `${head}
@@ -203,13 +207,14 @@ ${faqSchemaHtml}
   <div id="root">
     <header class="ssr-header">
       <div class="ssr-meta">${post.category} &bull; ${post.date} &bull; ${post.readTime}</div>
-      <h1>${escapeHtml(post.title)}</h1>
+      <h1>${escapeHtml(post.heading ?? post.title)}</h1>
+      ${post.lede && post.heading ? `<p>${escapeHtml(post.lede)}</p>` : ""}
     </header>
     
     <main class="ssr-container">
       <article class="ssr-content">
         <aside class="ssr-byline" aria-label="Article editorial information">
-          <p><strong>By the RunAnalytics Editorial Team</strong> &bull; Product and data claims reviewed &bull; Updated ${slug === "how-to-compare-running-shoes" ? escapeHtml(post.date) : "August 7, 2026"}</p>
+          <p><strong>By the RunAnalytics Editorial Team</strong> &bull; Product and data claims reviewed &bull; Updated ${escapeHtml(post.updatedLabel ?? (slug === "how-to-compare-running-shoes" ? post.date : "August 7, 2026"))}</p>
           <p>Educational content only. Training estimates depend on data quality and are not medical diagnosis.</p>
           <p><a href="/faq">Methodology and limitations</a>${slug === "how-to-compare-running-shoes" ? ' &bull; <a href="/tools/shoes/compare">Shoe comparison catalogue</a>' : ' &bull; <a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity" rel="nofollow noopener noreferrer">WHO physical activity guidance</a>'}</p>
         </aside>
@@ -221,11 +226,11 @@ ${faqSchemaHtml}
 
         ${relatedHtml}
 
-        <div class="ssr-cta">
+        ${isUltra ? "" : `<div class="ssr-cta">
           <h3>Ready to improve your running?</h3>
           <p>Get AI-powered insights from your Strava data.</p>
           <a href="/auth">Start Free &rarr;</a>
-        </div>
+        </div>`}
       </article>
     </main>
   </div>
@@ -265,12 +270,6 @@ function generateEditorialUpdateForBlog(slug: string): string {
       intro: "A useful proactive message identifies the evidence, states what is unknown and gives one proportionate action.",
       rows: [["Return after inactivity", "Recommend an easy return without claiming readiness."], ["Sudden volume increase", "Flag the load change without diagnosing injury risk."], ["Missed planned run", "Ask why before moving or stacking training."], ["Race preparation gap", "Explain the evidence and offer a safer goal or timeline."]],
       link: "/proactive-running-coach", label: "See the proactive Telegram coach",
-    },
-    "ultra-marathon-training-plan-100-miler-guide": {
-      title: "Scope and readiness",
-      intro: "This is a planning framework, not an individualized 100-mile prescription. Terrain, altitude, climate, cutoff times and medical context can materially change preparation.",
-      rows: [["Training consistency", "Review several months of repeatable training and recovery."], ["Course specificity", "Practice the surface, climbing and descending demands."], ["Fueling", "Use only products and timing rehearsed in training."], ["Safety", "Set stop criteria and follow race medical guidance."]],
-      link: "/blog/marathon-fueling-calculator-guide", label: "Build and rehearse a fueling plan",
     },
   };
   const update = updates[slug];
@@ -1058,7 +1057,7 @@ export function renderToolPage(slug: string): string | null {
 
   const url = `/tools/${slug}`;
   const meta: PageMeta = {
-    title: `${tool.title} | RunAnalytics`,
+    title: tool.heading ? tool.title : `${tool.title} | RunAnalytics`,
     description: tool.description,
     keywords: tool.keywords,
     type: 'website'
@@ -1102,7 +1101,7 @@ ${faqSchema}
   <div id="root">
     <header class="ssr-header">
       <div class="ssr-meta">Free Running Tool</div>
-      <h1>${escapeHtml(tool.title.split('|')[0].trim())}</h1>
+      <h1>${escapeHtml(tool.heading ?? tool.title.split('|')[0].trim())}</h1>
       <p style="opacity: 0.9; margin-top: 10px;">${escapeHtml(tool.description)}</p>
     </header>
     
@@ -1211,12 +1210,12 @@ ${faqSchema}
 export function renderBlogIndex(): string {
   const url = '/blog';
   const meta: PageMeta = {
-    title: "Running Blog | Training Tips & AI Coaching Insights | RunAnalytics",
+    title: blogIndexTitle,
     description: "Expert running advice, training tips, and AI coaching insights. Learn how to improve your pace, pick training plans, and run smarter.",
     keywords: "running blog, training tips, running advice, AI running coach"
   };
   const posts = [
-    { slug: "ultra-marathon-training-plan-100-miler-guide", title: "Ultra Marathon Training Plan: The Complete Guide to Training for a 100 Miler", description: "Everything you need to know about creating an ultra marathon training plan for your first 100 mile race. Covers periodization, back-to-back long runs, fueling, tapering, and race day execution.", date: "February 11, 2026", category: "Ultra Running", readTime: "20 min read" },
+    getBlogPostBySlug("ultra-marathon-training-plan-100-miler-guide")!,
     { slug: "ai-agent-coach-proactive-coaching", title: "AI Agent Coach: How Proactive AI Coaching Transforms Your Running", description: "Discover how AI Agent Coach analyzes every run and delivers personalized coaching recaps, next-step recommendations, and training insights without you asking.", date: "January 18, 2026", category: "Premium Features", readTime: "10 min read" },
     { slug: "how-to-pick-a-training-plan", title: "How to Pick a Training Plan: Complete Guide", description: "Learn how to choose the right training plan for your running goals. Discover why AI-personalized plans outperform generic schedules.", date: "January 12, 2026", category: "Training Plans", readTime: "15 min read" },
     { slug: "ai-running-coach-complete-guide-2026", title: "AI Running Coach: Complete Guide 2026", description: "Everything you need to know about AI-powered running coaches, how they work, and how to use them to improve your training.", date: "January 15, 2026", category: "AI & Technology", readTime: "8 min read" },

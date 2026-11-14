@@ -1,6 +1,9 @@
+import { racePredictorCopy } from "../../shared/searchPageCopy";
+
 export interface ToolContent {
   slug: string;
   title: string;
+  heading?: string;
   description: string;
   keywords: string;
   features: string[];
@@ -12,7 +15,7 @@ export interface ToolContent {
 export const toolsContent: ToolContent[] = [
   {
     slug: "race-predictor",
-    title: "Race Predictor for Strava Runs & Manual Race Times",
+    ...racePredictorCopy,
     description: "Predict 5K to marathon times from a recent race result. Enter it free or sign in to select a synced Strava run, then review pacing and scenario ranges.",
     keywords: "race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator",
     features: [

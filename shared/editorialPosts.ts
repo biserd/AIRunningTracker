@@ -1,11 +1,14 @@
-export type EditorialTopic = "training" | "ai" | "tools";
+export type EditorialTopic = "training" | "ai" | "tools" | "ultra";
 
 export interface EditorialPost {
   slug: string;
   title: string;
+  heading?: string;
   description: string;
   date: string;
   dateLabel: string;
+  updated?: string;
+  updatedLabel?: string;
   readTime: string;
   category: string;
   topic: EditorialTopic;
@@ -16,6 +19,43 @@ export interface EditorialPost {
 }
 
 export const editorialPosts: EditorialPost[] = [
+  {
+    slug: "ultra-marathon-training-plan-100-miler-guide",
+    title: "100-Mile Ultra Training Plan: First 100-Miler Guide",
+    heading: "100-Mile Ultramarathon Training Plan for First-Timers",
+    description: "Plan your first 100-mile ultramarathon around your running base and race terrain. See an illustrative training week, fueling rehearsal and printable race checklist.",
+    date: "2026-02-11", dateLabel: "February 11, 2026", updated: "2026-11-14", updatedLabel: "November 14, 2026",
+    readTime: "8 min read", category: "Ultra Running", topic: "ultra",
+    lede: "Build a 100-mile ultramarathon training plan from the training you already recover from and the course you intend to run. Establish a repeatable base before adding race-specific work; no single mileage target, calendar length or long-run schedule fits every runner.",
+    sections: [
+      { id: "introduction", title: "What a 100-mile plan needs to prepare you for", html: `<p>A first 100-miler is a series of tasks: keep moving at a sustainable effort, manage climbs and descents, eat and drink what you have practiced, and make decisions when tired. Start with the event's elevation profile, terrain, aid stations and cutoffs. Those details matter more than copying another runner’s mileage.</p>` },
+      { id: "prerequisites", title: "Decide whether to begin the race-specific build", html: `<p>Review several recent weeks, not your biggest week. Can you run consistently, recover from the long outing, and fit the next week around work and sleep? Practice fueling on shorter outings first. A shorter ultra or a later race may be a better next step if you cannot yet repeat the base or rehearse the terrain safely.</p><p>If you are returning from injury or have symptoms that change how you run, get appropriate professional advice before adding load. Share the course, your recent training and your available days with a qualified coach if you want an individual plan.</p>` },
+      { id: "ultra-marathon-training-plan-structure", title: "Build the calendar around the course", html: `<p>Work backward from race day: reserve time for recovery and tapering, place a rehearsal on similar terrain, and leave flexible weeks for travel, illness or a disrupted build. Use time on feet alongside distance. A steep trail outing can take longer and demand more downhill control than the same distance on a flat path.</p><p>Separate the general base from the specific build. Progress when your current schedule is repeatable, not just because a date says to increase. Change one major stressor at a time: duration, climbing, downhill exposure or intensity.</p>` },
+      { id: "periodization", title: "Training phases and what to review", html: `<ul><li><strong>Base:</strong> Establish a week of easy training and recovery you can repeat. Review how you feel after the longest outing.</li><li><strong>Build:</strong> Add race-relevant terrain and practice eating and drinking on longer outings. Keep room to recover.</li><li><strong>Race-specific rehearsal:</strong> Test gear, hiking, aid-station routines and part of the race’s terrain. A rehearsal does not need to recreate the race distance.</li><li><strong>Taper and recovery:</strong> Arrive rested, then give yourself time after the race before rebuilding.</li></ul>` },
+      { id: "sample-week", title: "Illustrative race-specific training week", html: `<p><strong>Example, not a prescription:</strong> This runner already handles their usual long outing and is preparing for a hilly trail course. Scale or omit sessions to fit your own baseline; the example intentionally does not assign mileage or pace.</p><table><thead><tr><th scope="col">Day</th><th scope="col">Purpose</th><th scope="col">What to check</th></tr></thead><tbody><tr><th scope="row">Mon</th><td>Rest</td><td>Review soreness, sleep and the time available this week.</td></tr><tr><th scope="row">Tue</th><td>Familiar easy run</td><td>Keep the usual easy effort rather than chasing a target pace.</td></tr><tr><th scope="row">Wed</th><td>Easy trail outing with familiar climbs and descents</td><td>Practice hiking steeper sections and descending under control. On a flat course, use this time to rehearse surface and steady effort instead.</td></tr><tr><th scope="row">Thu</th><td>Rest or familiar easy movement</td><td>Keep this optional if Wednesday was more demanding than expected.</td></tr><tr><th scope="row">Fri</th><td>Easy run or rest</td><td>Keep the next day’s main outing achievable.</td></tr><tr><th scope="row">Sat</th><td>Long outing within the usual range</td><td>Rehearse fuel, fluids, shoes and an aid-stop routine. Note what you actually tolerated.</td></tr><tr><th scope="row">Sun</th><td>Rest or familiar easy walk</td><td>Review the weekend before planning the next week.</td></tr></tbody></table><p><strong>If you miss a week:</strong> Do not stack missed sessions. If you are well and training has been consistent, restart with a familiar, easier week and reassess before adding back the harder outing. If illness or pain interrupted training, address that first.</p>` },
+      { id: "long-runs-and-back-to-back", title: "Long outings and back-to-back days", html: `<p>The long outing is the place to rehearse decisions, not just log distance. Back-to-back outings can give experienced runners practice moving on tired legs, but they add load and are optional. A rest day or easy walk after the long run is a reasonable alternative. Decide using recovery and repeatability, not a fixed Saturday-to-Sunday ratio.</p>` },
+      { id: "vertical-gain-training", title: "Train for the terrain, not just the distance", html: `<p>For a flatter course, practice steady effort, the actual surface and the rhythm between aid stations. For a mountain course, practice climbing, hiking, descending and moving on uneven ground. Rehearse heat, altitude or darkness only where relevant and in a setting with a safe way to stop or turn back.</p>` },
+      { id: "fueling-strategy", title: "Rehearse fueling before race day", html: `<p>Test the foods, drinks and timing you plan to use. Record what you consumed and tolerated, and check where water and supplies are available. The <a href="/tools/marathon-fueling">marathon fueling calculator</a> can help you time a shorter rehearsal; do not extrapolate its marathon output to 100 miles. Use the <a href="/blog/marathon-fueling-calculator-guide">fueling rehearsal guide</a> to log what worked, then build the ultra plan around course checkpoints and revise it after practice.</p>` },
+      { id: "mental-preparation", title: "Practice the decisions you will make when tired", html: `<p>Break the course into aid-station segments. Give each segment a simple job: refill, change a layer, eat something familiar, or check in with the crew. Make a separate plan for problems you cannot solve by slowing down. Follow the event's safety rules and ask race staff for help when needed.</p>` },
+      { id: "tapering", title: "Taper and recover without chasing missed volume", html: `<p>Reduce the total stress before race day and keep the remaining sessions familiar. Do not turn the taper into a last-minute fitness test. After the race, let recovery and how you feel guide the return rather than treating the next training block as fixed.</p>` },
+      { id: "gear-and-equipment", title: "Test gear and night logistics", html: `<p>Test shoes, socks, pack and lighting on a relevant outing. Check mandatory equipment and when you can access drop bags. For night segments, practice changing a battery and following the route in a familiar, safe setting rather than improvising on race day.</p>` },
+      { id: "race-day", title: "Printable race planning checklist", html: `<p>Print this page with your browser’s Print or Save as PDF command. Add the details from the official runner guide rather than a generic pace chart.</p><ol><li>Write down start time, intermediate cutoffs, aid-station distances and climb or descent between stops.</li><li>Allow time for refills, gear changes and slower night sections. Check cutoff times against a conservative scenario.</li><li>List practiced foods and fluids, resupply points and a backup if one item runs out.</li><li>Mark crew access, drop bags, mandatory gear, lights and spare power.</li><li>Agree on check-in points and a stop or assistance plan. Follow race medical and safety guidance.</li></ol>` },
+      { id: "ai-training-plans", title: "Review any generated plan before using it", html: `<p>A planning tool can organize a proposed week around your available days and goal. It cannot tell whether you are ready for 100 miles or see symptoms you have not reported. Read each proposed session, check the load against your recent training and approve only changes that fit. See <a href="/blog/ai-running-coach-vs-training-plan">how AI coaching differs from a fixed plan</a> before relying on it.</p>` },
+    ],
+    faqs: [
+      { question: "How long should a 100-mile training plan be?", answer: "There is no universal duration. A stable base comes first, followed by course-specific work and recovery. Allow more time when your current week is inconsistent or the terrain and duration are unfamiliar." },
+      { question: "What weekly mileage do I need for a first 100-mile race?", answer: "There is no single qualifying mileage. Start with the workload you can repeat and recover from, and account for terrain, elevation and time on feet." },
+      { question: "Are back-to-back long runs required?", answer: "No. They can help some experienced runners rehearse moving on tired legs, but they add load. Rest or a familiar easy walk after a long outing is a valid alternative." },
+      { question: "What should I do if I miss a training week?", answer: "Do not cram missed sessions into the next week. Return to familiar training when appropriate, reassess recovery, and adjust the plan or the goal date if needed." },
+    ],
+    sources: [
+      { label: "Vert.run: course-specific preparation for a 100-miler", href: "https://vert.run/100-miles-training-guide/" },
+      { label: "Ultra Ladies: base-building and example ultra plans", href: "https://www.ultraladies.com/free-training-plans.html" },
+      { label: "Western States Endurance Run: aid stations and cutoffs", href: "https://www.wser.org/aid-stations/" },
+      { label: "RunAnalytics: rehearse a fueling schedule", href: "/tools/marathon-fueling" },
+      { label: "RunAnalytics: choose a training plan", href: "/blog/how-to-pick-a-training-plan" },
+    ],
+  },
   {
     slug: "how-to-compare-running-shoes",
     title: "How to Compare Running Shoes Before You Buy",

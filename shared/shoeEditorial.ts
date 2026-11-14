@@ -2,6 +2,13 @@ import type { RunningShoe } from "./schema";
 import { safeShoeSource, shoeNumber, shoeAvailability } from "./shoeEvidence";
 
 export const SHOE_EDITORIAL_VERSION = "2026-11-07.1";
+export const STRUCTURE_26_FIT_SOURCE = "https://www.nike.com/t/structure-26-mens-road-running-shoes-extra-wide-M4sx9fru/HQ2588-001";
+export const VAPORFLY_4_FIT_SOURCE = "https://www.runningwarehouse.com/reviews/nike-shoe-reviews/nike-vaporfly-4.html";
+
+/** A documented construction correction; does not revalidate stored measurements. */
+export function withShoeEditorialCorrections(s: RunningShoe): RunningShoe {
+  return s.slug === "nike-structure-26" ? { ...s, stability: "mild_stability" } : s;
+}
 export const SHOE_METHODOLOGY =
   "Specification-based buying guidance, not a hands-on review. Running Warehouse is our preferred specification source when it lists a model; otherwise we link the manufacturer or a named specialist source. Measurement sizes and methods can differ. Categories and buying considerations are editorial interpretations, not measured performance. We do not invent comfort scores, durability mileage, fit tests or race-time gains.";
 export const shoeName = (s: Pick<RunningShoe, "brand" | "model">) =>
@@ -69,6 +76,7 @@ export function shoeEvidence(s: RunningShoe) {
 export function publicShoe(
   s: RunningShoe,
 ): RunningShoe & { evidence: ReturnType<typeof shoeEvidence> } {
+  s = withShoeEditorialCorrections(s);
   return {
     ...s,
     evidence: shoeEvidence(s),
@@ -88,6 +96,8 @@ export function publicShoe(
 type Section = { title: string; text: string };
 export type ShoeGuide = {
   title: string;
+  searchTitle?: string;
+  heading?: string;
   description: string;
   summary: string;
   sections: Section[];
@@ -111,6 +121,7 @@ const usage: Record<string, string> = {
     "Match the shoe to the actual surface: smooth paths, rocky ground and mud make different demands. Verify outsole, lug depth, protection and weather suitability in the source listing; a trail category alone does not establish those details.",
 };
 export function buildShoeGuide(s: RunningShoe): ShoeGuide {
+  s = withShoeEditorialCorrections(s);
   const name = shoeName(s),
     evidence = shoeEvidence(s),
     label =
@@ -145,10 +156,14 @@ export function buildShoeGuide(s: RunningShoe): ShoeGuide {
       text: `Use the series links to check the previous ${s.seriesName || s.model} model, but only draw numerical conclusions when both entries have comparable, dated source measurements. Keep a comfortable existing shoe unless the new version addresses a specific need. For a new model, verify sizing, width options, outsole and return policy rather than inferring them from weight or price.`,
     },
   ];
+  const structure = s.slug === "nike-structure-26";
+  const vaporfly = s.slug === "nike-vaporfly-4";
   return {
     title: `${name}: Specs & Buying Guide`,
+    ...(structure ? {searchTitle: "Nike Structure 26: Width, Fit & Specs", heading: "Nike Structure 26: Width Options and Fit"}
+      : vaporfly ? {searchTitle: "Nike Vaporfly 4: Fit, Specs & Race-Day Use", heading: "Nike Vaporfly 4: Fit and Specs"} : {}),
     description: `${name} for ${categoryName(s.category)}: weight, stack, drop, recorded price, alternatives and buying guidance. ${evidence.status === "source_checked" ? "Dated source evidence." : "Historical data clearly labeled."}`,
-    summary,
+    summary: structure ? "The Structure 26 is a supportive daily trainer. Nike documents a midfoot support system and lists regular and wide fits for the US men's model. The specification table still identifies historical measurements that need rechecking." : summary,
     sections,
     questions: [
       {
@@ -180,6 +195,7 @@ export function buildShoeGuide(s: RunningShoe): ShoeGuide {
 }
 
 export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
+  const endorphinUpgrade = [a.slug, b.slug].includes("saucony-endorphin-pro-4") && [a.slug, b.slug].includes("saucony-endorphin-pro-5");
   const an = shoeName(a),
     bn = shoeName(b),
     ae = shoeEvidence(a),
@@ -220,7 +236,9 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
       }`,
     });
   }
-  const verdict =
+  const verdict = endorphinUpgrade
+    ? "Keep a well-fitting Pro 4 that is still in good condition if you have already rehearsed in it, especially with a race approaching. If you need a replacement, try the Pro 5 for heel hold and toe room and compare actual prices in your size. Both have a carbon plate and use PWRRUN PB and HG foams; the specs do not establish a race-time gain."
+    :
     a.availability === "upcoming" || b.availability === "upcoming"
       ? `At least one model is upcoming. Shortlist an available, well-fitting shoe for an imminent race; wait for the unreleased model’s confirmed stock and missing specifications before treating it as an upgrade.`
       : !comparable
@@ -269,16 +287,18 @@ export function buildComparisonGuide(a: RunningShoe, b: RunningShoe) {
       question: sameSeries
         ? `Should I upgrade within the ${a.seriesName} series?`
         : "Can these shoes serve different roles in my rotation?",
-      answer: sections[2].text,
+      answer: sections.find(section => section.title === (sameSeries ? "Is the newer version worth upgrading to?" : "Different models, different buying decisions"))?.text ?? verdict,
     },
     {
       question: "Are the listed prices and availability current?",
-      answer: `${a.model}: ${shoeAvailability(a)}. ${b.model}: ${shoeAvailability(b)}. ${sections[3].text}`,
+      answer: `${a.model}: ${shoeAvailability(a)}. ${b.model}: ${shoeAvailability(b)}. Prices are dated records, not live quotes.`,
     },
     { question: "Is this a hands-on review?", answer: SHOE_METHODOLOGY },
   ];
   return {
     title: `${an} vs ${bn}`,
+    searchTitle: endorphinUpgrade ? "Saucony Endorphin Pro 4 vs Pro 5: What's Changed?" : undefined,
+    heading: endorphinUpgrade ? "Saucony Endorphin Pro 4 vs Pro 5" : undefined,
     description: comparable ? `${a.model} vs ${b.model}: compare drop, weight, stack, construction and recorded prices with dated sources and practical upgrade guidance.` : `${a.model} vs ${b.model}: compare specifications, source dates, missing evidence and buying considerations. Historical measurements are labeled.`,
     verdict,
     sections,

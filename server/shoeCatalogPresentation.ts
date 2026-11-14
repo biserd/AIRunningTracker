@@ -1,5 +1,6 @@
 import type { IStorage } from "./storage";
 import type { RunningShoe, ShoeComparison } from "../shared/schema";
+import type { ShoePickerModel, ShoeComparisonLink } from "../shared/searchPageCopy";
 import {
   publicShoe,
   buildComparisonGuide,
@@ -20,6 +21,19 @@ export type ShoeStore = Pick<
   | "getShoeComparisonBySlug"
   | "getShoeComparisonsByShoeId"
 >;
+export async function comparisonDirectory(store: Pick<ShoeStore, "getShoes" | "getShoeComparisons">) {
+  const [comparisons, shoes] = await Promise.all([store.getShoeComparisons({}), store.getShoes({})]);
+  const byId = new Map(shoes.map(shoe => [shoe.id, shoe]));
+  const models: ShoePickerModel[] = canonicalizeShoeCatalog(shoes).canonicalShoes.flatMap(shoe =>
+    shoe.slug ? [{ slug: shoe.slug, label: `${shoe.brand} ${shoe.model}` }] : [],
+  );
+  const links: ShoeComparisonLink[] = canonicalizeComparisons(comparisons, shoes).canonicalComparisons.flatMap(comparison => {
+    const a = byId.get(comparison.shoe1Id), b = byId.get(comparison.shoe2Id);
+    if (!comparison.slug || !a || !b) return [];
+    return [{ slug: comparison.slug, type: comparison.comparisonType, title: `${a.brand} ${a.model} vs ${b.brand} ${b.model}` }];
+  });
+  return { models, links };
+}
 export function publicComparison(
   c: ShoeComparison,
   a: RunningShoe,

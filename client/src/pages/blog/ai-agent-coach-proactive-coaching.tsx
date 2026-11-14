@@ -24,6 +24,7 @@ import { ArticleTrust } from "@/components/ArticleTrust";
 import { ArticleRefreshSections } from "@/components/ArticleRefreshSections";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { proactiveArticleSearchTitle } from "@shared/searchPageCopy";
 
 export default function AIAgentCoachBlogPost() {
   const structuredData = {
@@ -120,7 +121,7 @@ export default function AIAgentCoachBlogPost() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <SEO
-        title="AI Agent Coach: Proactive AI Coaching for Runners | RunAnalytics"
+        title={proactiveArticleSearchTitle}
         description="Learn how AI Agent Coach automatically analyzes your runs and delivers personalized coaching recaps, next-step recommendations, and training cues. Transform passive tracking into active coaching."
         keywords="AI running coach, proactive coaching, automated training feedback, Strava AI analysis, post-run coaching, running analytics AI, personalized running advice, AI agent coach"
         url="https://aitracker.run/blog/ai-agent-coach-proactive-coaching"

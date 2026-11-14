@@ -40,6 +40,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { trackFunnelEvent } from "@/lib/analytics";
+import { racePredictorCopy } from "@shared/searchPageCopy";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -230,7 +231,7 @@ export default function RacePredictor() {
   return (
     <>
       <SEO
-        title="Race Predictor for Strava Runs & Manual Race Times"
+        title={racePredictorCopy.title}
         description="Predict 5K, 10K, half marathon and marathon times. Enter a recent result free, or sign in to select a synced Strava run. Review pacing and scenario ranges."
         keywords="race predictor, ai race predictor, marathon time predictor, half marathon predictor, 10k race predictor, 5k race predictor, strava race predictor, vdot calculator"
         url="https://aitracker.run/tools/race-predictor"
@@ -250,7 +251,7 @@ export default function RacePredictor() {
         <PublicHeader />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">Race Predictor: Strava or Manual Entry</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Estimate your 5K, 10K, half marathon or marathon time from a recent race or hard effort. Enter a result below without an account, or select a run you have synced from Strava.</p><p className="mt-3 text-sm text-slate-700">For Strava: sign in → connect Strava on the dashboard → sync running data → return here and choose From Strava. The picker lists saved runs; you decide which was a representative hard effort.</p></div>
+          <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">{racePredictorCopy.heading}</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Estimate your 5K, 10K, half marathon or marathon time from one recent race or hard effort. Enter the result free without signing in, or choose a run you already synced from Strava.</p><p className="mt-3 text-sm text-slate-700">For Strava: sign in, connect and sync from Dashboard, then return here and choose From Strava. The predictor uses the saved effort you select, not an automatic prediction from your entire history.</p></div>
           <Alert className="mb-8 bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
