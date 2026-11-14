@@ -10,3 +10,11 @@ The [reviewed manifest](../data/shoes/2026-11-14-releases.json) covers confirmed
 ## Production verification
 
 Source `8a9a9ce`; Worker `9f89efc9-5799-41d2-87cd-d499f398a3d8`, container 66. The guarded import ran once against the existing production D1. The live directory has 260 canonical models and 190 comparisons, including all 176 prior links. All 34 affected public pages returned 200 with one H1 and a canonical; all 14 new comparisons showed authored guidance and reciprocal model links in the first HTML. All new models and pairs appear in the sitemap. Public MCP lookup and comparison verified. Thirty-one catalog and SEO regression checks passed.
+
+## Series history follow-up
+
+The September source-aware rewrite (`d1cf74b`) removed the Recharts series graph and kept only the history table. The restored, server-rendered charts show weight, heel/forefoot stack, drop and recorded price on separate scales. Historical values are outlined and missing data is not plotted. The exact-value, source-status table stays available to assistive technology.
+
+The renderer groups Hoka/HOKA case-insensitively and sorts mixed numbered/unnumbered series by release year; no model identities change. [Running Warehouse's men's US 9 Speed 5 measurements](https://www.runningwarehouse.com/reviews/saucony-shoe-reviews/saucony-endorphin-speed-5.html) replace the historical 8.3 oz and 32/24 mm figures with 8.4 oz and 37/29 mm. Drop remains 8 mm. The source listing records a $114.88 Black/White clearance snapshot, not a guaranteed price. The guarded update keeps ID 276 and all existing comparisons. No schema changes.
+
+Production: source `d02b0b0`, Worker `13f4a164-7a24-4dad-b3c7-5b5a7abf4434`, container 67. Verified chart ordering on eight live model pages and reciprocal links on three live comparisons, including the corrected 2 mm heel and forefoot differences on Speed 6 vs Speed 5. Charts rendered without overflow at 390 px and 1440 px with JavaScript disabled. The catalogue regression verified that all 190 comparison links remain crawlable, including all 176 original links, and all 34 pages from the November 14 release remain in the sitemap.
