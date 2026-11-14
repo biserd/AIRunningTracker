@@ -105,6 +105,36 @@ const store = {
 const template =
   '<!doctype html><html lang="en"><head><title>Generic</title><meta name="description" content="Generic"><meta property="og:title" content="Generic"><link rel="canonical" href="https://aitracker.run/"></head><body><div id="root"></div></body></html>';
 
+test("mixed numbered and unnumbered runs use year order; case variants share a chart", async () => {
+  const original = { ...a, model: "Sonicblast", slug: "sonicblast", seriesName: "Sonicblast", versionNumber: null, releaseYear: 2025, lastVerified: null };
+  const second = { ...b, model: "Sonicblast 2", slug: "sonicblast-2", seriesName: "Sonicblast", releaseYear: 2026 };
+  const arahi = [
+    { ...a, id: 7, brand: "Hoka", model: "Arahi 7", slug: "hoka-arahi-7", seriesName: "Arahi", versionNumber: 7 },
+    { ...b, id: 9, brand: "HOKA", model: "Arahi 9", slug: "hoka-arahi-9", seriesName: "Arahi", versionNumber: 9 },
+  ];
+  const models = [second, original, ...arahi];
+  const fixture = {
+    ...store,
+    getShoes: async () => models,
+    getShoeBySlug: async (slug: string) => models.find(s => s.slug === slug),
+  };
+  for (const slug of ["sonicblast", "sonicblast-2"]) {
+    const data = await shoePayload(fixture, slug);
+    assert.deepEqual(data?.seriesShoes.map(s => s.slug), ["sonicblast", "sonicblast-2"]);
+  }
+  for (const shoe of arahi) {
+    const data = await shoePayload(fixture, shoe.slug);
+    assert.deepEqual(data?.seriesShoes.map(s => s.slug), ["hoka-arahi-7", "hoka-arahi-9"]);
+  }
+  const { renderShoeDocument } = await import("./shoePages");
+  const html = (await renderShoeDocument("/tools/shoes/sonicblast-2", fixture, template)).html!;
+  assert.match(html, /data-testid="series-comparison-chart"/);
+  assert.match(html, /data-series-model="sonicblast"[^]*?data-metric="weight" data-value="7" data-evidence="historical"/);
+  const weightChart = html.match(/<figure[^>]*>[\s\S]*?<\/figure>/)?.[0] ?? "";
+  assert.equal((weightChart.match(/data-metric="weight"/g) ?? []).length, 1);
+  assert.match(weightChart, /Sonicblast 2[\s\S]*?Not published/);
+});
+
 test("source status, UTC dates, missing measurements and unknown performance stay honest", () => {
   assert.equal(evidenceDate(a.lastVerified), "2026-09-26");
   assert.equal(shoeEvidence(a).status, "source_checked");

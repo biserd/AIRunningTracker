@@ -108,20 +108,19 @@ export async function shoePayload(store: ShoeStore, slug: string) {
         (s) => normalizedShoeModelKey(s) === normalizedShoeModelKey(shoe),
       ),
     ).canonicalShoes[0]?.slug || shoe.slug;
-  const seriesShoes = allShoes
-    .filter(
-      (s) =>
-        !!shoe.seriesName &&
-        s.brand === shoe.brand &&
-        s.seriesName === shoe.seriesName &&
-        s.slug,
-    )
-    .sort(
-      (a, b) =>
-        (a.versionNumber || a.releaseYear || 0) -
-        (b.versionNumber || b.releaseYear || 0),
-    )
-    .map(publicShoe);
+  const seriesName = shoe.seriesName?.trim().toLowerCase();
+  const brand = shoe.brand.trim().toLowerCase();
+  const series = seriesName ? canonicalizeShoeCatalog(allShoes.filter(s =>
+    s.brand.trim().toLowerCase() === brand &&
+    s.seriesName?.trim().toLowerCase() === seriesName,
+  )).canonicalShoes : [];
+  // Compare versions with versions or years with years, never 2 with 2025.
+  const allNumbered = series.every(s => s.versionNumber != null);
+  const seriesShoes = series.sort((a, b) => {
+    const version = (a.versionNumber ?? Infinity) - (b.versionNumber ?? Infinity);
+    const year = (a.releaseYear ?? Infinity) - (b.releaseYear ?? Infinity);
+    return (allNumbered ? version || year : year || version) || a.id - b.id;
+  }).map(publicShoe);
   const similarShoes = allShoes
     .filter(
       (s) =>

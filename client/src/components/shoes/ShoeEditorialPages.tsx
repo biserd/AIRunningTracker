@@ -23,6 +23,7 @@ import {
 import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import { ToolResultActions } from "@/components/ToolResultActions";
+import { ShoeSeriesCharts } from "./ShoeSeriesCharts";
 
 type Related = Pick<ShoeComparison, "slug" | "title">;
 export type ShoePayload = {
@@ -430,6 +431,7 @@ export function ShoeDetailPage() {
             Use these records to research changes, not to assume each
             measurement uses the same test size or source.
           </p>
+          <ShoeSeriesCharts shoes={series} />
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead>
@@ -439,6 +441,7 @@ export function ShoeDetailPage() {
                     "Weight",
                     "Heel / forefoot",
                     "Drop",
+                    "Recorded price",
                     "Evidence",
                   ].map((x) => (
                     <th className="p-3" key={x}>
@@ -466,6 +469,7 @@ export function ShoeDetailPage() {
                     <td className="p-3">
                       {shoeNumber(x.heelToToeDrop, " mm")}
                     </td>
+                    <td className="p-3">{shoeNumber(x.price, " USD")}</td>
                     <td className="p-3">
                       {shoeEvidence(x).status === "source_checked"
                         ? "Source checked"
