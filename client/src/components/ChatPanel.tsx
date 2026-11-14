@@ -13,6 +13,10 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
+import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
+import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import { FREE_COACH_CHAT_LIMIT_REACHED, FREE_COACH_CHAT_MESSAGES, type CoachChatAllowance } from "@shared/coachChatAllowance";
 
 interface Message {
   id: number;
@@ -332,6 +336,16 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sendingRef = useRef(false);
+  const allowanceKey = ["/api/chat/allowance", userId] as const;
+  const allowance = useQuery<CoachChatAllowance>({
+    queryKey: allowanceKey,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+  const remaining = allowance.data?.remaining;
+  const atLimit = remaining === 0;
+  const canSend = remaining !== undefined && !atLimit && !allowance.isError;
 
   // Fetch conversations
   const { data: conversations = [] } = useQuery<Conversation[]>({
@@ -399,15 +413,9 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
   ];
 
   const handleSendMessage = async (message: string) => {
-    if (!message.trim() || isStreaming) return;
-
-    // Create conversation if none exists
+    if (!message.trim() || !canSend || sendingRef.current) return;
+    sendingRef.current = true;
     let conversationId = currentConversationId;
-    if (!conversationId) {
-      const newConversation = await createConversationMutation.mutateAsync(message.slice(0, 50));
-      conversationId = newConversation.id;
-    }
-
     setInputMessage("");
     setIsWaitingForResponse(true);
     setIsStreaming(true);
@@ -415,6 +423,10 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
     setChatError(null);
 
     try {
+      if (!conversationId) {
+        const newConversation = await createConversationMutation.mutateAsync(message.slice(0, 50));
+        conversationId = newConversation.id;
+      }
       const token = localStorage.getItem("auth_token");
       const response = await fetch(`/api/chat/${conversationId}/messages`, {
         method: "POST",
@@ -430,6 +442,16 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
           }
         }),
       });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        if (response.status === 403 && error?.code === FREE_COACH_CHAT_LIMIT_REACHED) {
+          queryClient.setQueryData<CoachChatAllowance>(allowanceKey, { remaining: 0 });
+          setInputMessage(message);
+          return;
+        }
+        throw new Error(error?.message || "The message could not be sent.");
+      }
 
       if (!response.body) {
         throw new Error("No response body");
@@ -459,15 +481,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                 setStreamingMessage((prev) => prev + data.content);
               } else if (data.type === "complete") {
                 streamCompleted = true;
-                queryClient.invalidateQueries({ queryKey: [`/api/chat/${conversationId}/messages`] });
-                setStreamingMessage("");
-                setIsStreaming(false);
-                setIsWaitingForResponse(false);
               } else if (data.type === "error") {
-                console.error("Chat error:", data.message);
-                setIsStreaming(false);
-                setIsWaitingForResponse(false);
-                setStreamingMessage("");
                 setChatError(data.message || "Something went wrong. Please try again.");
               }
             } catch (e) {
@@ -480,17 +494,22 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
       }
 
       if (!streamCompleted) {
-        console.log("Stream ended without complete event, resetting state");
-        setStreamingMessage("");
-        setIsStreaming(false);
-        setIsWaitingForResponse(false);
-        queryClient.invalidateQueries({ queryKey: [`/api/chat/${conversationId}/messages`] });
+        setChatError(current => current || "The reply was interrupted. Please try again.");
       }
     } catch (error) {
-      console.error("Failed to send message:", error);
+      setInputMessage(message);
+      setChatError(error instanceof Error ? error.message : "The message could not be sent.");
+    } finally {
+      // Refresh the saved reply before replacing the composer with an upgrade prompt.
+      await Promise.all([
+        conversationId ? queryClient.invalidateQueries({ queryKey: [`/api/chat/${conversationId}/messages`] }) : undefined,
+        queryClient.invalidateQueries({ queryKey: allowanceKey }),
+        queryClient.invalidateQueries({ queryKey: ["/api/chat/summaries?limit=3"] }),
+      ]);
       setIsStreaming(false);
       setIsWaitingForResponse(false);
       setStreamingMessage("");
+      sendingRef.current = false;
     }
   };
 
@@ -506,11 +525,11 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
   };
 
   // Show example prompts if no conversation is active
-  const showExamples = !currentConversationId && messages.length === 0 && !isStreaming;
+  const showExamples = canSend && !currentConversationId && messages.length === 0 && !isStreaming;
 
   // Get last assistant message for follow-up suggestions
   const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant");
-  const showFollowUpSuggestions = !isStreaming && messages.length > 0 && lastAssistantMessage;
+  const showFollowUpSuggestions = canSend && !isStreaming && messages.length > 0 && lastAssistantMessage;
 
   return (
     <TooltipProvider>
@@ -538,6 +557,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                 variant="outline"
                 size="sm"
                 onClick={handleNewChat}
+                disabled={isStreaming || atLimit}
                 className="text-purple-600 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950"
                 data-testid="button-new-chat"
               >
@@ -759,7 +779,20 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
         )}
 
         {/* Input */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+        {atLimit && !isStreaming ? (
+          <ChatUpgrade activityId={activityContext?.activityId} />
+        ) : <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+          {typeof remaining === "number" && remaining > 0 && (
+            <p role="status" className="mb-2 text-xs text-slate-600 dark:text-slate-400">
+              {remaining} of {FREE_COACH_CHAT_MESSAGES} free messages left
+            </p>
+          )}
+          {allowance.isError && (
+            <div role="alert" className="mb-2 flex items-center justify-between gap-2 text-sm">
+              Couldn’t check chat availability.
+              <Button variant="outline" size="sm" onClick={() => allowance.refetch()}>Retry</Button>
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -780,15 +813,15 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                   handleSendMessage(inputMessage);
                 }
               }}
-              placeholder="Ask about your running..."
-              disabled={isStreaming}
+              placeholder={allowance.isPending ? "Checking chat availability…" : "Ask about your running…"}
+              disabled={isStreaming || !canSend}
               rows={2}
               className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-slate-600 focus:border-purple-400 focus:ring-purple-400 focus:ring-1 focus:outline-none bg-transparent px-3 py-2 text-sm dark:text-white placeholder:text-slate-400"
               data-testid="input-chat-message"
             />
             <Button
               type="submit"
-              disabled={!inputMessage.trim() || isStreaming}
+              disabled={!inputMessage.trim() || isStreaming || !canSend}
               size="icon"
               className="rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 flex-shrink-0"
               data-testid="button-send-message"
@@ -800,8 +833,32 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
               )}
             </Button>
           </form>
-        </div>
+        </div>}
       </div>
     </TooltipProvider>
+  );
+}
+
+function ChatUpgrade({ activityId }: { activityId?: number }) {
+  const { data: trialOffer } = useTrialOffer();
+  const upgradeUrl = buildUpgradeUrl({
+    source: activityId ? "activity_ask_coach" : "floating_ai_coach",
+    capability: "ai_coach",
+    benefitKey: "ai_coach",
+    activityId,
+    returnTo: window.location.pathname,
+  });
+
+  return (
+    <div className="max-h-[45%] shrink-0 overflow-y-auto border-t border-purple-200 p-4 dark:border-purple-800">
+      <p role="status" className="font-semibold">You’ve used all {FREE_COACH_CHAT_MESSAGES} free messages</p>
+      <p className="mb-3 mt-1 text-sm text-slate-600 dark:text-slate-400">Upgrade to Premium to keep chatting with your running coach.</p>
+      <DirectCheckoutButton upgradeUrl={upgradeUrl}>
+        <Button className="bg-purple-700 text-white hover:bg-purple-800" data-testid="button-upgrade-to-premium">
+          {trialOffer?.trialEligible ? "Start 7-day free trial" : "Upgrade to Premium"}
+        </Button>
+      </DirectCheckoutButton>
+      <TrialOfferDetails className="mt-3" benefit="ongoing AI coaching and training insights." />
+    </div>
   );
 }

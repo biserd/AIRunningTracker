@@ -11,7 +11,7 @@ const openai = new OpenAI({
 });
 
 export class ChatService {
-  private async assembleUserContext(userId: number): Promise<string> {
+  private async assembleUserContext(userId: number, hasPremiumChat: boolean): Promise<string> {
     const user = await storage.getUser(userId);
     if (!user) {
       throw new Error("User not found");
@@ -21,8 +21,18 @@ export class ChatService {
     const unit = isMetric ? "km" : "mi";
     
     // Get recent activities (last 30 days)
-    const activities = await storage.getActivitiesByUserId(userId, 30);
+    const activities = await storage.getActivitiesByUserId(userId, 30, undefined, {
+      excludeLockedForFree: !hasPremiumChat,
+      summaryOnly: true,
+    });
     
+    if (!hasPremiumChat) {
+      const recent = activities.slice(0, 5).map(activity =>
+        `- ${activity.name}: ${(activity.distance / (isMetric ? 1000 : 1609.344)).toFixed(1)} ${unit}, ${Math.round(activity.movingTime / 60)} min`
+      ).join("\n");
+      return `The runner prefers ${unit}. Use their question for context and give general running advice where activity data is unavailable.
+${recent ? `Recent available runs:\n${recent}` : ""}`;
+    }
     if (activities.length === 0) {
       return `You are helping ${user.firstName || "a runner"} who has not synced any activities yet. Encourage them to connect their Strava account to get personalized insights.`;
     }
@@ -171,24 +181,25 @@ ${upcomingWorkouts.map((d: any) =>
     conversationId: number,
     userMessage: string,
     onStream: (chunk: string) => void,
-    context?: { 
+    context: {
       activityId?: number;
       page?: {
         pageName: string;
         pageDescription?: string;
         relevantData?: Record<string, any>;
       };
-    }
+    } | undefined,
+    hasPremiumChat: boolean,
   ): Promise<string> {
     // Get conversation history
     const messages = await storage.getMessagesByConversationId(conversationId, userId);
     if (!messages) throw new Error("Conversation not found");
     
     // Assemble user context
-    let userContext = await this.assembleUserContext(userId);
+    let userContext = await this.assembleUserContext(userId, hasPremiumChat);
     
     // Add page context if provided
-    if (context?.page) {
+    if (hasPremiumChat && context?.page) {
       const pageInfo = context.page;
       userContext += `
 
@@ -204,7 +215,7 @@ When the user asks questions, they may be referring to data or features visible 
     // Add specific activity context if provided
     if (context?.activityId) {
       const activity = await storage.getActivityById(context.activityId);
-      if (activity && activity.userId === userId) {
+      if (activity && activity.userId === userId && (hasPremiumChat || !activity.lockedForFree)) {
         const user = await storage.getUser(userId);
         const isMetric = user?.unitPreference !== "miles";
         const distanceInKm = activity.distance / 1000;
@@ -248,11 +259,10 @@ When the user asks about "this run", "this activity", "my run", or similar, answ
       content: msg.content
     }));
 
-    // Add current user message
-    conversationHistory.push({
-      role: "user" as const,
-      content: userMessage
-    });
+    // Older conversations can hit the history cap before the current message.
+    if (conversationHistory.at(-1)?.role !== "user" || conversationHistory.at(-1)?.content !== userMessage) {
+      conversationHistory.push({ role: "user", content: userMessage });
+    }
 
     try {
       // Use Responses API with streaming and low reasoning effort for chat
@@ -274,7 +284,7 @@ Guidelines:
 - If asked about specific workouts or dates, use the activity data provided
 - Always consider their current fitness level when making suggestions
 
-TRAINING PLAN CREATION:
+${hasPremiumChat ? `TRAINING PLAN CREATION:
 When the runner wants you to create a training plan, gather the key details through conversation (race goal, race date, target time if any, experience level, preferred run days, terrain). Once you have enough info, include a plan proposal block in your response so they can create it with one click. Format it EXACTLY like this, on its own line:
 
 :::plan-proposal{"goalType":"100k","raceDate":"2026-04-18","raceName":"Mountain 100K","goalTimeTarget":"14:00:00","experienceLevel":"intermediate","terrainType":"trail","includeSpeedwork":true,"includeLongRuns":true,"preferredRunDays":["monday","wednesday","friday","saturday","sunday"]}:::
@@ -286,7 +296,7 @@ preferredRunDays: array of lowercase day names
 goalTimeTarget: HH:MM:SS format or omit if no target
 raceDate: YYYY-MM-DD format or omit if no specific date
 
-Place the block AFTER your conversational summary of the plan. Only include fields you've confirmed with the runner. You can propose a plan proactively once you have at least the goalType. Always include a brief text summary before the block explaining what the plan will look like.`
+Place the block AFTER your conversational summary of the plan. Only include fields you've confirmed with the runner. You can propose a plan proactively once you have at least the goalType. Always include a brief text summary before the block explaining what the plan will look like.` : "Offer training advice in chat. Do not include interactive training plan proposal blocks."}`
           },
           ...conversationHistory.map(msg => ({
             role: msg.role,

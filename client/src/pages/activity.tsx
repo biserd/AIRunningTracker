@@ -1002,7 +1002,6 @@ export default function ActivityPage() {
                   isLoading={verdictLoading && !verdictData}
                   onAskCoach={() => setIsChatOpen(true)}
                   mode={featureAccess.activity.coachVerdict as 'full' | 'basic'}
-                  canAskCoach={featureAccess.activity.askCoach}
                 />
               </div>
             )}

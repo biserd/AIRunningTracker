@@ -30,6 +30,9 @@ jobs:
       - name: Test signup delivery and isolated reviewer access
         working-directory: .
         run: npx tsx --test scripts/d1/reviewer-access.test.ts server/services/magicLinkEmail.test.ts server/services/cloudflareEmail.test.ts
+      - name: Test the free web chat allowance
+        working-directory: .
+        run: npx tsx --test scripts/d1/coach-chat-allowance.test.ts
       - run: npm run check
       - run: npx tsc --noEmit -p container/tsconfig.json
       - run: npx tsc --noEmit -p container/tsconfig.production.json

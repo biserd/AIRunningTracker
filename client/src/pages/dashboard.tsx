@@ -65,7 +65,7 @@ export default function Dashboard() {
     const params = new URLSearchParams(window.location.search);
     const chatId = params.get('openChat');
     if (chatId) {
-      if (chatId === 'new') {
+      if (chatId === 'new' || chatId === 'true') {
         setSelectedConversationId(undefined);
       } else {
         setSelectedConversationId(parseInt(chatId));
@@ -612,7 +612,7 @@ export default function Dashboard() {
           <summary className="cursor-pointer px-5 py-4 font-medium text-charcoal">More analytics</summary>
           <div className="space-y-8 border-t border-gray-100 p-5">
             <ActivityHeatmap />
-            {canAccessAICoachChat && (
+            {user && (
               <RecentConversations
                 onOpenConversation={(id) => {
                   setSelectedConversationId(id);
@@ -624,7 +624,7 @@ export default function Dashboard() {
         </details>
       </main>
 
-      {user && dashboardData?.user?.stravaConnected && (
+      {user && (
         <FloatingAICoach
           userId={user.id}
           isOpen={isChatOpen}

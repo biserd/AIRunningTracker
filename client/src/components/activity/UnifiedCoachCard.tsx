@@ -34,7 +34,6 @@ interface UnifiedCoachCardProps {
   isLoading?: boolean;
   onAskCoach?: () => void;
   mode?: 'full' | 'basic';
-  canAskCoach?: boolean;
 }
 
 const gradeConfig: Record<string, { gradient: string; text: string; bg: string; border: string }> = {
@@ -199,7 +198,6 @@ export default function UnifiedCoachCard({
   isLoading,
   onAskCoach,
   mode = 'full',
-  canAskCoach = true
 }: UnifiedCoachCardProps) {
   if (isLoading) {
     return (
@@ -388,35 +386,15 @@ export default function UnifiedCoachCard({
                     Training Plan
                   </Button>
                 </Link>
-                {canAskCoach ? (
-                  <Button 
-                    size="sm" 
-                    className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white" 
-                    data-testid="button-ask-coach"
-                    onClick={onAskCoach}
-                  >
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                    Ask Coach
-                  </Button>
-                ) : (
-                  <DirectCheckoutButton upgradeUrl={buildUpgradeUrl({
-                    source: "activity_ask_coach",
-                    capability: "ai_coach",
-                    activityId,
-                    benefitKey: "ai_coach",
-                    returnTo: `/activity/${activityId}`,
-                  })}>
-                    <Button 
-                      size="sm" 
-                      className="text-xs font-semibold bg-yellow-500 hover:bg-yellow-600 text-white" 
-                      data-testid="button-ask-coach-locked"
-                    >
-                      <Lock className="h-3.5 w-3.5 mr-1.5" />
-                      Ask Coach
-                      <span className="ml-1 text-[10px] bg-yellow-600/50 px-1 rounded">PREMIUM</span>
-                    </Button>
-                  </DirectCheckoutButton>
-                )}
+                <Button
+                  size="sm"
+                  className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                  data-testid="button-ask-coach"
+                  onClick={onAskCoach}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  Ask Coach
+                </Button>
               </div>
             </div>
           </div>
