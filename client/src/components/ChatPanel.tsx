@@ -780,7 +780,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
 
         {/* Input */}
         {atLimit && !isStreaming ? (
-          <ChatUpgrade activityId={activityContext?.activityId} />
+          <ChatUpgrade activityId={activityContext?.activityId} compact={pageContext?.pageName === "Dashboard"} />
         ) : <div className="p-4 border-t border-slate-200 dark:border-slate-800">
           {typeof remaining === "number" && remaining > 0 && (
             <p role="status" className="mb-2 text-xs text-slate-600 dark:text-slate-400">
@@ -839,7 +839,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
   );
 }
 
-function ChatUpgrade({ activityId }: { activityId?: number }) {
+function ChatUpgrade({ activityId, compact }: { activityId?: number; compact?: boolean }) {
   const { data: trialOffer } = useTrialOffer();
   const upgradeUrl = buildUpgradeUrl({
     source: activityId ? "activity_ask_coach" : "floating_ai_coach",
@@ -858,7 +858,7 @@ function ChatUpgrade({ activityId }: { activityId?: number }) {
           {trialOffer?.trialEligible ? "Start 7-day free trial" : "Upgrade to Premium"}
         </Button>
       </DirectCheckoutButton>
-      <TrialOfferDetails compact={pageContext?.pageName === "Dashboard"} className="mt-3" benefit="ongoing AI coaching and training insights." />
+      <TrialOfferDetails compact={compact} className="mt-3" benefit="ongoing AI coaching and training insights." />
     </div>
   );
 }
