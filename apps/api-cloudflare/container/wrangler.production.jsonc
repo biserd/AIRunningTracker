@@ -42,7 +42,8 @@
   // Running Coach without the welcome disclosure card (source 8099992).
   // Dashboard checkout reminder removed (source 7077cf6); no schema changes.
   // Day 1, 7 and 14 signup reminders open free coach and tool experiences (source 1d2fb4c). No schema changes.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:36d7697b0db517f7eaf42faa684808f5463ce368923818486dff55ace185bf82",
+  // Signup email completion and Stripe trial attribution in /admin (source 47b8717). No schema changes.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:761dca8193e6d4dbe6f649cd5fb4df9ccca07c9a8dc785421ba004dbf3702f55",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
