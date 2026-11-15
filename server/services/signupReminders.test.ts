@@ -38,14 +38,10 @@ test("sequence is deduplicated and schedules days 1/7/14 from original signup, t
     assert.equal(await f.service.process(claimed), false, "same job cannot send twice");
     assert.equal(f.sent[index].step, ["DAY1","DAY7","DAY14"][index]);
     assert.ok(f.sent[index].unsubscribeUrl.includes("/api/marketing/unsubscribe?token="));
-    if (index === 0) {
-      const url = new URL(f.sent[index].ctaUrl);
-      assert.equal(url.pathname, "/tools/race-predictor");
-      assert.equal(url.search, "?source=signup_day1");
-      assert.equal(f.sent[index].ctaText, "Ask your running coach");
-    } else {
-      assert.ok(f.sent[index].ctaUrl.includes("/api/marketing/click?token="));
-    }
+    const url = new URL(f.sent[index].ctaUrl);
+    assert.equal(url.pathname, index === 2 ? "/tools/marathon-fueling" : "/tools/race-predictor");
+    assert.equal(url.search, `?source=signup_day${[1,7,14][index]}`);
+    assert.equal(f.sent[index].ctaText, ["Ask your running coach","Predict my race time","Build my fueling plan"][index]);
     if (index < 2) f.advance(index === 0 ? 6 : 7);
   }
   assert.equal(f.sent.length, 3); assert.equal(f.jobs.length, 3);

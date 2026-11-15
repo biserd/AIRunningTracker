@@ -1,7 +1,7 @@
 import { storage } from "../storage";
 import { beginEmailDelivery } from "../storageAtomic";
 import { emailService } from "./email";
-import { buildMarketingUrl, createMarketingToken, CLICK_SIGN_IN_TTL_SECONDS } from "./campaignSecurity";
+import { buildMarketingUrl, createMarketingToken } from "./campaignSecurity";
 import { SIGNUP_REMINDER_CAMPAIGN as CAMPAIGN, SIGNUP_REMINDER_STEPS as STEPS, SIGNUP_REMINDER_VERSION as VERSION, SIGNUP_FINAL_HOLDS_SETTING, nextSignupSendTime, signupDeliveryWindow, signupReminderExclusion, signupRemindersEnabled } from "../../shared/signupReminders";
 import type { EmailJob, User } from "@shared/schema";
 import { stableLifecycleBucket } from "../../shared/lifecycleCampaigns";
@@ -115,9 +115,7 @@ export class SignupReminderService {
     if (!await this.beginDelivery(job.id, job.claimedBy)) return false;
     const step = STEPS[index], issued = Math.floor(this.now() / 1000);
     const result = await this.sender.sendDripEmail({ to: user.email!, userName: user.firstName || user.username || "Runner", ...step, bodyText: step.body, campaign: CAMPAIGN,
-      ctaUrl: step.step === "DAY1"
-        ? "https://aitracker.run" + step.ctaPath
-        : buildMarketingUrl("/api/marketing/click", createMarketingToken({ kind: "click", userId: user.id, jobId: job.id }, CLICK_SIGN_IN_TTL_SECONDS, issued)),
+      ctaUrl: "https://aitracker.run" + step.ctaPath,
       unsubscribeUrl: buildMarketingUrl("/api/marketing/unsubscribe", createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 86400, issued)),
       beforeSend: async () => {
         const latest = await this.store.getUser(user.id), at = this.now();

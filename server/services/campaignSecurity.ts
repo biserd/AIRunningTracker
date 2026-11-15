@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { SIGNUP_VALUE_LINKS } from "../../shared/dayOneCoach";
 
 type MarketingTokenKind = "click" | "unsubscribe" | "attribution";
 
@@ -62,15 +63,17 @@ export function verifyMarketingToken(token: unknown, expectedKind: MarketingToke
   return readMarketingToken(token, expectedKind, true);
 }
 
-/** Legacy Day 1 emails, even expired ones, can open a public page, never a session. */
-export async function isLegacyDayOneLink(token: unknown,
+/** Legacy signup emails, even expired ones, can open a public page, never a session. */
+export async function legacySignupValuePath(token: unknown,
   getJob: (id: number) => Promise<{userId: number; jobType: string; status: string | null; campaign: string | null; step: string | null} | null | undefined>,
-): Promise<boolean> {
+): Promise<string | null> {
   const payload = readMarketingToken(token, "click", false);
-  if (!payload?.jobId) return false;
+  if (!payload?.jobId) return null;
   const job = await getJob(payload.jobId);
-  return Boolean(job && job.userId === payload.userId && job.jobType === "drip"
-    && job.status === "sent" && job.campaign === "signup_unpaid" && job.step === "DAY1");
+  if (!job || job.userId !== payload.userId || job.jobType !== "drip"
+    || job.status !== "sent" || job.campaign !== "signup_unpaid" || !job.step
+    || !Object.hasOwn(SIGNUP_VALUE_LINKS, job.step)) return null;
+  return SIGNUP_VALUE_LINKS[job.step as keyof typeof SIGNUP_VALUE_LINKS];
 }
 
 export function buildMarketingUrl(path: string, token: string): string {

@@ -40,8 +40,7 @@ import { dataQualityService } from "./services/dataQuality";
 import { efficiencyService } from "./services/efficiency";
 import { dripCampaignService, LIFECYCLE_CAMPAIGNS } from "./services/dripCampaign";
 import { dripCampaignWorker } from "./services/dripCampaignWorker";
-import { createMarketingToken, verifyMarketingToken, isRecentCampaignClick, isLegacyDayOneLink } from "./services/campaignSecurity";
-import { DAY_ONE_COACH_ENTRY } from "../shared/dayOneCoach";
+import { createMarketingToken, verifyMarketingToken, isRecentCampaignClick, legacySignupValuePath } from "./services/campaignSecurity";
 import { sendWeeklySummaries, weeklySummaryWorker } from "./services/weeklySummaryWorker";
 import { accountDormancyWorker, reactivateDormantAccount } from "./services/accountDormancy";
 import { stravaWebhookService } from "./services/stravaWebhook";
@@ -9224,8 +9223,9 @@ ${allPages.map(page => `  <url>
 
   app.get("/api/marketing/click", async (req: any, res) => {
     try {
-      if (await isLegacyDayOneLink(req.query.token, id => storage.getEmailJob(id))) {
-        return res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" }).redirect(303, DAY_ONE_COACH_ENTRY);
+      const publicSignupPath = await legacySignupValuePath(req.query.token, id => storage.getEmailJob(id));
+      if (publicSignupPath) {
+        return res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" }).redirect(303, publicSignupPath);
       }
       if (!await resolveCampaignClick(req.query.token)) return res.status(410).send("This sign-in link is invalid or has expired. Please sign in normally.");
       const csrf = crypto.randomBytes(24).toString("base64url");
@@ -9241,9 +9241,10 @@ ${allPages.map(page => `  <url>
 
   app.post("/api/marketing/click", async (req: any, res) => {
     try {
-      // Previously opened Day 1 confirmation pages must not mint a session either.
-      if (await isLegacyDayOneLink(req.body?.token, id => storage.getEmailJob(id))) {
-        return res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" }).redirect(303, DAY_ONE_COACH_ENTRY);
+      // Previously opened signup reminder confirmation pages must not mint a session either.
+      const publicSignupPath = await legacySignupValuePath(req.body?.token, id => storage.getEmailJob(id));
+      if (publicSignupPath) {
+        return res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" }).redirect(303, publicSignupPath);
       }
       const rawCookies = String(req.headers.cookie || "");
       const csrfCookie = rawCookies.split(";").map((part) => part.trim()).find((part) => part.startsWith("campaign_click_csrf="))?.slice("campaign_click_csrf=".length);

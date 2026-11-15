@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SEO } from "@/components/SEO";
-import { Link } from 'wouter';
+import { Link, useSearch } from 'wouter';
 import { ArrowLeft, Zap, Droplets, Calculator, AlertTriangle, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import PublicHeader from '@/components/PublicHeader';
@@ -32,6 +32,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { trackFunnelEvent } from "@/lib/analytics";
+import { SignupResultTrialOffer } from "@/components/SignupResultTrialOffer";
+import { DAY_FOURTEEN_FUELING_SOURCE } from "@shared/dayOneCoach";
 
 const MARATHON_FUELING_FAQS = [
   {
@@ -62,6 +64,10 @@ const MARATHON_FUELING_FAQS = [
 
 export default function MarathonFuelingPlanner() {
   const { isAuthenticated } = useAuth();
+  const search = useSearch();
+  const [clientReady, setClientReady] = useState(false);
+  useEffect(() => setClientReady(true), []);
+  const fromDayFourteen = clientReady && new URLSearchParams(search).get("source") === DAY_FOURTEEN_FUELING_SOURCE;
   // Input state
   const [finishHours, setFinishHours] = useState('4');
   const [finishMinutes, setFinishMinutes] = useState('00');
@@ -649,7 +655,12 @@ export default function MarathonFuelingPlanner() {
                 <Button disabled={!scheduleText} onClick={async () => { try { await navigator.clipboard.writeText(scheduleText); setReviewed(true); setCopyStatus("Practice schedule copied."); trackFunnelEvent("tool_action", { source: "marathon_fueling", capability: "fueling_plan", action: "copy_schedule" }, { dedupeParts: ["fueling", "copy"] }); } catch { setCopyStatus("Copy is unavailable. Use Print to keep the schedule."); } }}>Copy practice schedule</Button>
                 <Button variant="outline" className="ml-3" onClick={() => { setReviewed(true); trackFunnelEvent("tool_action", { source: "marathon_fueling", capability: "fueling_plan", action: "print_schedule" }, { dedupeParts: ["fueling", "print"] }); window.print(); }}>Print</Button>
                 <p role="status" className="text-sm mt-3">{copyStatus}</p>
-                {reviewed && <ToolResultActions source="marathon_fueling_result" capability="fueling_plan" title="My marathon fueling schedule" summary={scheduleText} />}
+                {fromDayFourteen ? (
+                  <>
+                    {!reviewed && <Button variant="outline" data-testid="button-review-fueling" disabled={!scheduleText} onClick={() => setReviewed(true)}>Use this schedule</Button>}
+                    {reviewed && scheduleText && <SignupResultTrialOffer after="fueling" source={DAY_FOURTEEN_FUELING_SOURCE} />}
+                  </>
+                ) : reviewed && <ToolResultActions source="marathon_fueling_result" capability="fueling_plan" title="My marathon fueling schedule" summary={scheduleText} />}
               </section>}
             </div>
           </div>

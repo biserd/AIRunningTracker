@@ -41,8 +41,8 @@ import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { racePredictorCopy } from "@shared/searchPageCopy";
-import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_SIGN_IN, DAY_ONE_COACH_SOURCE } from "@shared/dayOneCoach";
-import { DayOneTrialOffer } from "@/components/DayOneTrialOffer";
+import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_SIGN_IN, DAY_ONE_COACH_SOURCE, DAY_SEVEN_RACE_SOURCE } from "@shared/dayOneCoach";
+import { SignupResultTrialOffer } from "@/components/SignupResultTrialOffer";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -101,6 +101,7 @@ export default function RacePredictor() {
   const [clientReady, setClientReady] = useState(false);
   useEffect(() => setClientReady(true), []);
   const fromDayOne = clientReady && search.get("source") === DAY_ONE_COACH_SOURCE;
+  const fromDaySeven = clientReady && search.get("source") === DAY_SEVEN_RACE_SOURCE;
   const stayOnTool = search.get("mode") === "tool";
   useEffect(() => {
     if (fromDayOne && !stayOnTool && isAuthenticated) navigate(DAY_ONE_COACH_DASHBOARD, { replace: true });
@@ -803,7 +804,7 @@ export default function RacePredictor() {
                       </CardContent>
                     </Card>
                   )}
-                  {fromDayOne ? <DayOneTrialOffer after="prediction" /> : <ToolResultActions source="race_predictor_result" capability="race_prediction" title="My race prediction" summary={`${getDistanceLabel(form.getValues("targetDistance"))}: ${formatTime(result.predictedTime)} at ${formatPace(result.predictedPace)}/km. Scenario range ${formatTime(result.confidenceLower)}–${formatTime(result.confidenceUpper)}. Modeled estimate, not a guaranteed finish time.`} />}
+                  {fromDayOne || fromDaySeven ? <SignupResultTrialOffer after="prediction" source={fromDaySeven ? DAY_SEVEN_RACE_SOURCE : DAY_ONE_COACH_SOURCE} /> : <ToolResultActions source="race_predictor_result" capability="race_prediction" title="My race prediction" summary={`${getDistanceLabel(form.getValues("targetDistance"))}: ${formatTime(result.predictedTime)} at ${formatPace(result.predictedPace)}/km. Scenario range ${formatTime(result.confidenceLower)}–${formatTime(result.confidenceUpper)}. Modeled estimate, not a guaranteed finish time.`} />}
                 </div>
               )}
             </CardContent>

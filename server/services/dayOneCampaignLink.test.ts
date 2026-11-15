@@ -1,22 +1,24 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createMarketingToken, isLegacyDayOneLink, verifyMarketingToken } from "./campaignSecurity";
-import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_ENTRY, DAY_ONE_COACH_SIGN_IN } from "../../shared/dayOneCoach";
+import { createMarketingToken, legacySignupValuePath, verifyMarketingToken } from "./campaignSecurity";
+import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_ENTRY, DAY_ONE_COACH_SIGN_IN, SIGNUP_VALUE_LINKS } from "../../shared/dayOneCoach";
 import { sanitizeReturnTo } from "../../shared/upgradeIntent";
 
 process.env.MARKETING_LINK_SIGNING_SECRET = "fixture-day-one-marketing-secret-32-characters";
 
-test("an expired, valid Day 1 link is recognized for public routing only", async () => {
+test("expired, valid signup links are recognized for public routing only", async () => {
   const expired = createMarketingToken({kind:"click",userId:8,jobId:22}, -60);
   const job = {userId:8,jobType:"drip",status:"sent",campaign:"signup_unpaid",step:"DAY1"};
   assert.equal(verifyMarketingToken(expired,"click"),null);
-  assert.equal(await isLegacyDayOneLink(expired,async id=>id===22?job:undefined),true);
-  for (const mismatch of [{step:"DAY7"},{userId:9},{status:"pending"},{campaign:"checkout_abandoned"}]) {
-    assert.equal(await isLegacyDayOneLink(expired,async()=>({...job,...mismatch})),false);
+  for (const [step,path] of Object.entries(SIGNUP_VALUE_LINKS)) {
+    assert.equal(await legacySignupValuePath(expired,async id=>id===22?{...job,step}:undefined),path);
   }
-  assert.equal(await isLegacyDayOneLink(expired+"tampered",async()=>job),false);
+  for (const mismatch of [{step:"constructor"},{step:"DAY28"},{userId:9},{status:"pending"},{campaign:"checkout_abandoned"}]) {
+    assert.equal(await legacySignupValuePath(expired,async()=>({...job,...mismatch})),null);
+  }
+  assert.equal(await legacySignupValuePath(expired+"tampered",async()=>job),null);
   const unsubscribe=createMarketingToken({kind:"unsubscribe",userId:8,jobId:22},60);
-  assert.equal(await isLegacyDayOneLink(unsubscribe,async()=>job),false);
+  assert.equal(await legacySignupValuePath(unsubscribe,async()=>job),null);
 });
 
 test("the email entry carries only a campaign tag and sign-in returns to the coach", () => {

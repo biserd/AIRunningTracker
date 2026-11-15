@@ -17,7 +17,7 @@ import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
 import { Link } from "wouter";
 import { DAY_ONE_COACH_QUESTION, DAY_ONE_COACH_SOURCE, DAY_ONE_COACH_TOOL } from "@shared/dayOneCoach";
-import { DayOneTrialOffer } from "@/components/DayOneTrialOffer";
+import { SignupResultTrialOffer } from "@/components/SignupResultTrialOffer";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { FREE_COACH_CHAT_LIMIT_REACHED, FREE_COACH_CHAT_MESSAGES, type CoachChatAllowance } from "@shared/coachChatAllowance";
 
@@ -759,7 +759,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                   )}
                 </AnimatePresence>
               )}
-              {hasDayOneAnswer && <DayOneTrialOffer after="answer" />}
+              {hasDayOneAnswer && <SignupResultTrialOffer after="answer" />}
               <div ref={messagesEndRef} />
             </div>
           )}
