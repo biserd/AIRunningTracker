@@ -41,7 +41,8 @@
     "VITE_STRAVA_CLIENT_ID","STRIPE_SECRET_KEY","VITE_STRIPE_PUBLIC_KEY","STRAVA_SUBSCRIPTION_ID"] },
   // Running Coach without the welcome disclosure card (source 8099992).
   // Dashboard checkout reminder removed (source 7077cf6); no schema changes.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:0b54ed348fa09b9b31804f68ce2ae4c5b279457b0af82fa1539b7222803c20bb",
+  // Day 1, 7 and 14 signup reminders open free coach and tool experiences (source 1d2fb4c). No schema changes.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:36d7697b0db517f7eaf42faa684808f5463ce368923818486dff55ace185bf82",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
