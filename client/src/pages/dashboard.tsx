@@ -11,6 +11,7 @@ import AIInsights from "@/components/dashboard/AIInsights";
 import TrainingRecommendations from "@/components/dashboard/TrainingRecommendations";
 import RunnerScoreRadar from "@/components/dashboard/RunnerScoreRadar";
 import PremiumPreviewTeaser from "@/components/dashboard/PremiumPreviewTeaser";
+import { DAY_ONE_COACH_SOURCE, DAY_ONE_COACH_TOOL } from "@shared/dayOneCoach";
 import TodayRunDecision from "@/components/dashboard/TodayRunDecision";
 import ThisWeekPlan from "@/components/dashboard/ThisWeekPlan";
 import { SyncProgress } from "@/components/SyncProgress";
@@ -47,6 +48,7 @@ export default function Dashboard() {
   const stravaConnect = useStravaConnect();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [fromDayOne, setFromDayOne] = useState(false);
   const [dashboardCalendarDate, setDashboardCalendarDate] = useState(getLocalCalendarDateKey);
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
   const [syncProgress, setSyncProgress] = useState<{
@@ -64,6 +66,7 @@ export default function Dashboard() {
     const params = new URLSearchParams(window.location.search);
     const chatId = params.get('openChat');
     if (chatId) {
+      setFromDayOne(chatId === "new" && params.get("source") === DAY_ONE_COACH_SOURCE);
       if (chatId === 'new' || chatId === 'true') {
         setSelectedConversationId(undefined);
       } else {
@@ -457,6 +460,7 @@ export default function Dashboard() {
 
   // Show syncing screen when Strava is connected but the first sync hasn't finished yet
   const showSyncingScreen =
+    !fromDayOne &&
     !showEmailCaptureModal &&
     !!dashboardData?.user?.stravaConnected &&
     !dashboardData?.user?.lastSyncAt &&
@@ -507,8 +511,19 @@ export default function Dashboard() {
         )}
 
         {/* Show the runner's own first insight as soon as Strava data lands. */}
-        {dashboardData?.user?.stravaConnected&&<PremiumPreviewTeaser />}
-        {!dashboardData?.user?.stravaConnected&&<GarminOnboarding/>}
+        {fromDayOne ? (
+          <section className="mb-6 rounded-xl border border-teal-200 bg-white p-4" data-testid="day-one-dashboard">
+            <h2 className="font-semibold text-charcoal">Make your next three runs count</h2>
+            <p className="mt-1 text-sm text-gray-700">Ask your running coach for a starting point, or estimate a race time using a recent effort.</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button type="button" variant="outline" onClick={() => { setSelectedConversationId(undefined); setIsChatOpen(true); }}>Open your running coach</Button>
+              <a href={DAY_ONE_COACH_TOOL} className="text-sm font-semibold text-teal-800 underline">Try the race predictor</a>
+            </div>
+          </section>
+        ) : <>
+          {dashboardData?.user?.stravaConnected&&<PremiumPreviewTeaser />}
+          {!dashboardData?.user?.stravaConnected&&<GarminOnboarding/>}
+        </>}
 
         {dashboardData?.user?.stravaConnected&&<div className="mb-6">
           <TodayRunDecision
@@ -628,6 +643,7 @@ export default function Dashboard() {
           initialConversationId={selectedConversationId}
           pageContext={{
             pageName: "Dashboard",
+            ...(fromDayOne ? { entrySource: DAY_ONE_COACH_SOURCE } : {}),
             pageDescription: "Main dashboard showing running performance overview, charts, and quick stats",
             relevantData: {
               totalDistance: dashboardData?.stats?.totalDistance,

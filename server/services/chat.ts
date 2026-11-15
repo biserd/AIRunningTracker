@@ -5,6 +5,7 @@ import { PerformanceAnalyticsService } from "./performance";
 import { RunnerScoreService } from "./runnerScore";
 import { MLService } from "./ml";
 import { planGeneratorService } from "./planGenerator";
+import { DAY_ONE_COACH_SOURCE } from "@shared/dayOneCoach";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
@@ -185,6 +186,7 @@ ${upcomingWorkouts.map((d: any) =>
       activityId?: number;
       page?: {
         pageName: string;
+        entrySource?: string;
         pageDescription?: string;
         relevantData?: Record<string, any>;
       };
@@ -195,11 +197,15 @@ ${upcomingWorkouts.map((d: any) =>
     const messages = await storage.getMessagesByConversationId(conversationId, userId);
     if (!messages) throw new Error("Conversation not found");
     
-    // Assemble user context
-    let userContext = await this.assembleUserContext(userId, hasPremiumChat);
+    // Welcome coaching is based on what the runner shares in chat, not on
+    // imported runs, derived metrics, or settings from the dashboard.
+    const welcomeCoaching = context?.page?.entrySource === DAY_ONE_COACH_SOURCE;
+    let userContext = welcomeCoaching
+      ? "This is the runner’s welcome chat. Use only what they tell you here. For a first running week, suggest a practical starting point with easy effort and recovery, adapted to what they say they can do. If their current fitness or goal is unknown, say so instead of assuming it."
+      : await this.assembleUserContext(userId, hasPremiumChat);
     
     // Add page context if provided
-    if (hasPremiumChat && context?.page) {
+    if (!welcomeCoaching && hasPremiumChat && context?.page) {
       const pageInfo = context.page;
       userContext += `
 
@@ -213,7 +219,7 @@ When the user asks questions, they may be referring to data or features visible 
     }
 
     // Add specific activity context if provided
-    if (context?.activityId) {
+    if (!welcomeCoaching && context?.activityId) {
       const activity = await storage.getActivityById(context.activityId);
       if (activity && activity.userId === userId && (hasPremiumChat || !activity.lockedForFree)) {
         const user = await storage.getUser(userId);
@@ -271,17 +277,16 @@ When the user asks about "this run", "this activity", "my run", or similar, answ
         input: [
           {
             role: "system",
-            content: `You are an expert AI running coach. You provide personalized, data-driven insights and recommendations based on the runner's actual performance data. Be conversational, supportive, and focus on actionable advice.
+            content: `You are an AI running coach. Be conversational, supportive, and focus on actionable advice.
 
 ${userContext}
 
 Guidelines:
-- Use the runner's preferred units (${conversationHistory.length > 0 ? 'mentioned above' : 'km or miles'})
-- Reference specific activities and metrics when relevant
+- ${welcomeCoaching ? "Use the units and details the runner shares. Do not infer fitness, pace, or activity history." : "Use the runner's preferred units and reference specific activities and metrics when relevant."}
 - Be encouraging but realistic
 - Provide actionable recommendations
 - Keep responses concise (under 200 words unless asked for detail)
-- If asked about specific workouts or dates, use the activity data provided
+- ${welcomeCoaching ? "If asked about a specific workout or date, ask the runner to share the details they want you to consider." : "If asked about specific workouts or dates, use the activity data provided."}
 - Always consider their current fitness level when making suggestions
 
 ${hasPremiumChat ? `TRAINING PLAN CREATION:

@@ -115,7 +115,9 @@ export class SignupReminderService {
     if (!await this.beginDelivery(job.id, job.claimedBy)) return false;
     const step = STEPS[index], issued = Math.floor(this.now() / 1000);
     const result = await this.sender.sendDripEmail({ to: user.email!, userName: user.firstName || user.username || "Runner", ...step, bodyText: step.body, campaign: CAMPAIGN,
-      ctaUrl: buildMarketingUrl("/api/marketing/click", createMarketingToken({ kind: "click", userId: user.id, jobId: job.id }, CLICK_SIGN_IN_TTL_SECONDS, issued)),
+      ctaUrl: step.step === "DAY1"
+        ? "https://aitracker.run" + step.ctaPath
+        : buildMarketingUrl("/api/marketing/click", createMarketingToken({ kind: "click", userId: user.id, jobId: job.id }, CLICK_SIGN_IN_TTL_SECONDS, issued)),
       unsubscribeUrl: buildMarketingUrl("/api/marketing/unsubscribe", createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 86400, issued)),
       beforeSend: async () => {
         const latest = await this.store.getUser(user.id), at = this.now();

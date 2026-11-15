@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 export interface PageContext {
   pageName: string;
+  entrySource?: string;
   pageDescription?: string;
   relevantData?: Record<string, any>;
 }

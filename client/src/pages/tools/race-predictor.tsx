@@ -7,14 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { ArrowRight, Trophy, Info, Calculator, Activity as ActivityIcon, Target, TrendingUp, Zap } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,6 +41,8 @@ import { ToolEducationPanel } from "@/components/ToolEducationPanel";
 import { ToolResultActions } from "@/components/ToolResultActions";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { racePredictorCopy } from "@shared/searchPageCopy";
+import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_SIGN_IN, DAY_ONE_COACH_SOURCE } from "@shared/dayOneCoach";
+import { DayOneTrialOffer } from "@/components/DayOneTrialOffer";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -93,6 +95,16 @@ const RACE_PREDICTOR_FAQS = [
 
 export default function RacePredictor() {
   const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+  const search = new URLSearchParams(useSearch());
+  // The public tool is server-rendered without query-specific markup.
+  const [clientReady, setClientReady] = useState(false);
+  useEffect(() => setClientReady(true), []);
+  const fromDayOne = clientReady && search.get("source") === DAY_ONE_COACH_SOURCE;
+  const stayOnTool = search.get("mode") === "tool";
+  useEffect(() => {
+    if (fromDayOne && !stayOnTool && isAuthenticated) navigate(DAY_ONE_COACH_DASHBOARD, { replace: true });
+  }, [fromDayOne, isAuthenticated, navigate, stayOnTool]);
   const { toast } = useToast();
   const [result, setResult] = useState<RacePredictionResult | null>(null);
   const [activeTab, setActiveTab] = useState<string>("manual");
@@ -252,6 +264,9 @@ export default function RacePredictor() {
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">{racePredictorCopy.heading}</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Estimate your 5K, 10K, half marathon or marathon time from one recent race or hard effort. Enter the result free without signing in, or choose a run you already synced from Strava.</p><p className="mt-3 text-sm text-slate-700">For Strava: sign in, connect and sync from Dashboard, then return here and choose From Strava. The predictor uses the saved effort you select, not an automatic prediction from your entire history.</p></div>
+          {fromDayOne && <p className="mb-6 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-950" data-testid="day-one-tool-entry">
+            Try the calculator below without an account, or <Link className="font-semibold underline" href={isAuthenticated ? DAY_ONE_COACH_DASHBOARD : DAY_ONE_COACH_SIGN_IN}>{isAuthenticated ? "open your free running coach" : "sign in to ask your free running coach"}</Link>.
+          </p>}
           <Alert className="mb-8 bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-sm text-gray-700 ml-2">
@@ -788,7 +803,7 @@ export default function RacePredictor() {
                       </CardContent>
                     </Card>
                   )}
-                  <ToolResultActions source="race_predictor_result" capability="race_prediction" title="My race prediction" summary={`${getDistanceLabel(form.getValues("targetDistance"))}: ${formatTime(result.predictedTime)} at ${formatPace(result.predictedPace)}/km. Scenario range ${formatTime(result.confidenceLower)}–${formatTime(result.confidenceUpper)}. Modeled estimate, not a guaranteed finish time.`} />
+                  {fromDayOne ? <DayOneTrialOffer after="prediction" /> : <ToolResultActions source="race_predictor_result" capability="race_prediction" title="My race prediction" summary={`${getDistanceLabel(form.getValues("targetDistance"))}: ${formatTime(result.predictedTime)} at ${formatPace(result.predictedPace)}/km. Scenario range ${formatTime(result.confidenceLower)}–${formatTime(result.confidenceUpper)}. Modeled estimate, not a guaranteed finish time.`} />}
                 </div>
               )}
             </CardContent>

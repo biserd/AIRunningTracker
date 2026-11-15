@@ -39,8 +39,8 @@ export function createMarketingToken(
   return `${encoded}.${sign(encoded)}`;
 }
 
-export function verifyMarketingToken(token: unknown, expectedKind: MarketingTokenKind): MarketingTokenPayload | null {
-  if (typeof token !== "string") return null;
+function readMarketingToken(token: unknown, expectedKind: MarketingTokenKind, requireFresh: boolean): MarketingTokenPayload | null {
+  if (typeof token !== "string" || token.length > 1024) return null;
   const [encoded, signature, extra] = token.split(".");
   if (!encoded || !signature || extra) return null;
   try {
@@ -50,12 +50,27 @@ export function verifyMarketingToken(token: unknown, expectedKind: MarketingToke
     if (actualBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(actualBuffer, expectedBuffer)) return null;
     const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as MarketingTokenPayload;
     if (payload.kind !== expectedKind || !Number.isInteger(payload.userId) || payload.userId <= 0) return null;
-    if (!Number.isFinite(payload.exp) || payload.exp < Math.floor(Date.now() / 1000)) return null;
+    if (!Number.isFinite(payload.exp) || (requireFresh && payload.exp < Math.floor(Date.now() / 1000))) return null;
     if (expectedKind === "click" && (!Number.isInteger(payload.jobId) || Number(payload.jobId) <= 0)) return null;
     return payload;
   } catch {
     return null;
   }
+}
+
+export function verifyMarketingToken(token: unknown, expectedKind: MarketingTokenKind): MarketingTokenPayload | null {
+  return readMarketingToken(token, expectedKind, true);
+}
+
+/** Legacy Day 1 emails, even expired ones, can open a public page, never a session. */
+export async function isLegacyDayOneLink(token: unknown,
+  getJob: (id: number) => Promise<{userId: number; jobType: string; status: string | null; campaign: string | null; step: string | null} | null | undefined>,
+): Promise<boolean> {
+  const payload = readMarketingToken(token, "click", false);
+  if (!payload?.jobId) return false;
+  const job = await getJob(payload.jobId);
+  return Boolean(job && job.userId === payload.userId && job.jobType === "drip"
+    && job.status === "sent" && job.campaign === "signup_unpaid" && job.step === "DAY1");
 }
 
 export function buildMarketingUrl(path: string, token: string): string {

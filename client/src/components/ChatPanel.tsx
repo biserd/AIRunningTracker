@@ -15,6 +15,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
+import { Link } from "wouter";
+import { DAY_ONE_COACH_QUESTION, DAY_ONE_COACH_SOURCE, DAY_ONE_COACH_TOOL } from "@shared/dayOneCoach";
+import { DayOneTrialOffer } from "@/components/DayOneTrialOffer";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { FREE_COACH_CHAT_LIMIT_REACHED, FREE_COACH_CHAT_MESSAGES, type CoachChatAllowance } from "@shared/coachChatAllowance";
 
@@ -37,6 +40,7 @@ interface Conversation {
 
 interface PageContext {
   pageName: string;
+  entrySource?: string;
   pageDescription?: string;
   relevantData?: Record<string, any>;
 }
@@ -329,6 +333,7 @@ function MessageContent({ content, onPlanCreated }: { content: string; onPlanCre
 }
 
 export function ChatPanel({ userId, onClose, initialConversationId, activityContext, pageContext }: ChatPanelProps) {
+  const fromDayOne = pageContext?.entrySource === DAY_ONE_COACH_SOURCE;
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(initialConversationId || null);
   const [inputMessage, setInputMessage] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -386,7 +391,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingMessage]);
+  }, [messages, streamingMessage, isStreaming]);
 
   // Set conversation ID from props
   useEffect(() => {
@@ -438,7 +443,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
           message,
           context: {
             ...(activityContext ? { activityId: activityContext.activityId } : {}),
-            ...(pageContext ? { page: pageContext } : {})
+            ...(fromDayOne ? { page: { pageName: "Dashboard", entrySource: DAY_ONE_COACH_SOURCE } } : pageContext ? { page: pageContext } : {})
           }
         }),
       });
@@ -529,6 +534,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
 
   // Get last assistant message for follow-up suggestions
   const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant");
+  const hasDayOneAnswer = fromDayOne && Boolean(lastAssistantMessage?.content.trim()) && !isStreaming;
   const showFollowUpSuggestions = canSend && !isStreaming && messages.length > 0 && lastAssistantMessage;
 
   return (
@@ -577,6 +583,12 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
         <ScrollArea className="flex-1 p-4">
           {showExamples ? (
             <div className="space-y-4">
+              {fromDayOne && <div className="rounded-xl border border-teal-200 bg-teal-50 p-3 text-teal-950" data-testid="day-one-coach-starter">
+                <p className="mb-2 text-sm font-semibold">A simple question to get started</p>
+                <Button className="h-auto w-full justify-start whitespace-normal text-left" variant="outline" onClick={() => handleExampleClick(DAY_ONE_COACH_QUESTION)}>
+                  {DAY_ONE_COACH_QUESTION}
+                </Button>
+              </div>}
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Ask me anything about your running performance, training, or goals:
               </p>
@@ -747,6 +759,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
                   )}
                 </AnimatePresence>
               )}
+              {hasDayOneAnswer && <DayOneTrialOffer after="answer" />}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -762,7 +775,12 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
 
         {/* Input */}
         {atLimit && !isStreaming ? (
-          <ChatUpgrade activityId={activityContext?.activityId} compact={pageContext?.pageName === "Dashboard"} />
+          fromDayOne ? (
+            <div className="border-t p-4 text-sm">
+              <p>You’ve used your free coach messages.</p>
+              <Link className="mt-2 inline-flex font-semibold text-teal-800 underline" href={DAY_ONE_COACH_TOOL}>Get a free race prediction instead</Link>
+            </div>
+          ) : <ChatUpgrade activityId={activityContext?.activityId} compact={pageContext?.pageName === "Dashboard"} />
         ) : <div className="p-4 border-t border-slate-200 dark:border-slate-800">
           {typeof remaining === "number" && remaining > 0 && (
             <p role="status" className="mb-2 text-xs text-slate-600 dark:text-slate-400">
