@@ -43,6 +43,12 @@ interface SegmentStats {
   suppressionReasons: Record<string, number>;
 }
 interface LifecycleAnalytics { rows: Array<{ campaign: string; variant: string; sent: number; delivered: number; clicked: number; trials: number; bounced: number; complained: number }> }
+interface SignupEmailFunnel { rows: Array<{ step: "DAY1" | "DAY7" | "DAY14"; sent: number; trackable: number; clicked: number; results: number; trials: number }> }
+const SIGNUP_EMAIL_LABELS = {
+  DAY1: ["Day 1", "Free coach or race predictor"],
+  DAY7: ["Day 7", "Race predictor"],
+  DAY14: ["Day 14", "Marathon fueling planner"],
+} as const;
 interface AgentStats {
   totalRuns: number; last24Hours: number; successRate: number;
   byStatus: Array<{ status: string; count: number }>;
@@ -127,6 +133,7 @@ export default function AdminPage() {
   const campaign = useQuery<CampaignStatus>({ queryKey: ["/api/admin/campaigns/worker-status"], enabled: needs("overview", "campaigns"), staleTime: 15000, refetchInterval: 30000 });
   const segments = useQuery<SegmentStats>({ queryKey: ["/api/admin/campaigns/segment-stats"], enabled: needs("overview", "campaigns"), staleTime: 30000, refetchInterval: 60000 });
   const lifecycle = useQuery<LifecycleAnalytics>({ queryKey: ["/api/admin/campaigns/analytics"], enabled: needs("campaigns"), staleTime: 30000, refetchInterval: 60000 });
+  const signupFunnel = useQuery<SignupEmailFunnel>({ queryKey: ["/api/admin/campaigns/signup-funnel"], enabled: needs("campaigns"), staleTime: 30000, refetchInterval: 60000 });
   const agent = useQuery<AgentStats>({ queryKey: ["/api/admin/agent-stats"], enabled: needs("overview", "coach"), staleTime: 30000, refetchInterval: 30000 });
   const performance = useQuery<SystemPerformance>({ queryKey: ["/api/admin/performance"], enabled: needs("overview", "system"), staleTime: 30000, refetchInterval: 30000 });
   const welcome = useQuery<{ total: number; sent: number; pending: number }>({ queryKey: ["/api/admin/welcome-campaign/stats"], enabled: needs("campaigns"), staleTime: 30000 });
@@ -170,7 +177,31 @@ export default function AdminPage() {
 
   const renderGrowth = () => <div className="space-y-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-2xl font-bold">Growth and conversion</h2><p className="text-sm text-slate-600">Server-authoritative trial and paid events, plus product activation signals.</p></div><Select value={String(days)} onValueChange={(value) => setDays(Number(value))}><SelectTrigger className="w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="7">Last 7 days</SelectItem><SelectItem value="30">Last 30 days</SelectItem><SelectItem value="90">Last 90 days</SelectItem></SelectContent></Select></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><StatCard label="Signups" value={growth.data?.cohort.signups ?? "-"} note="New-account cohort" icon={Users} /><StatCard label="Connected" value={growth.data?.cohort.connected ?? "-"} note={growth.data ? pct(growth.data.cohort.connected, growth.data.cohort.signups) : "-"} icon={Activity} /><StatCard label="Preview ready" value={growth.data?.cohort.previewReady ?? "-"} note={growth.data ? pct(growth.data.cohort.previewReady, growth.data.cohort.signups) : "-"} icon={Target} /><StatCard label="Current trials" value={growth.data?.current.activeTrials ?? "-"} note="All active trials" icon={TestTube2} /><StatCard label="Cancellations" value={growth.data?.cancellations ?? "-"} note={`Events in ${days} days`} icon={XCircle} /></div><FunnelCard growth={growth.data} detailed /></div>;
 
-  const renderCampaigns = () => <div className="space-y-6"><div><h2 className="text-2xl font-bold">Campaign center</h2><p className="text-sm text-slate-600">Audience safety, testing, lifecycle delivery and one-time announcements in one workflow.</p></div><Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-4"><div><CardTitle>Lifecycle delivery</CardTitle><p className="mt-1 text-sm text-slate-600">{campaign.data?.nextAction}</p></div><Badge className={statusTone(campaign.data?.operationalState || "disabled")}>{(campaign.data?.operationalState || "loading").replace(/_/g, " ")}</Badge></div></CardHeader><CardContent className="space-y-5">
+  const renderSignupFunnel = () => <Card data-testid="signup-email-funnel">
+    <CardHeader>
+      <CardTitle>Signup reminder funnel</CardTitle>
+      <p className="text-sm text-slate-600">Counts are per sent email. Repeated clicks or results from the same email count once. Trials are confirmed by Stripe.</p>
+    </CardHeader>
+    <CardContent className="space-y-3">
+      {signupFunnel.isError ? <p role="status" className="text-sm text-slate-600">Couldn’t load reminder performance. Use Refresh data to try again.</p>
+        : !signupFunnel.data ? <p role="status" className="text-sm text-slate-600">Loading reminder performance…</p>
+        : <>
+          <Table aria-label="Signup reminder funnel">
+            <TableHeader><TableRow><TableHead>Email</TableHead><TableHead className="text-right">Sent</TableHead><TableHead className="text-right">Unique clicks</TableHead><TableHead className="text-right">Answer or result</TableHead><TableHead className="text-right">Trial starts</TableHead></TableRow></TableHeader>
+            <TableBody>{signupFunnel.data.rows.map(row => <TableRow key={row.step} data-testid={`signup-funnel-${row.step.toLowerCase()}`}>
+              <TableCell><span className="whitespace-nowrap font-semibold">{SIGNUP_EMAIL_LABELS[row.step][0]}</span><span className="block text-xs text-slate-600">{SIGNUP_EMAIL_LABELS[row.step][1]}</span></TableCell>
+              <TableCell className="text-right tabular-nums">{row.sent}{row.trackable < row.sent && <span className="block text-xs text-slate-600">{row.trackable} tracked</span>}</TableCell>
+              <TableCell className="text-right tabular-nums">{row.clicked}</TableCell>
+              <TableCell className="text-right tabular-nums">{row.results}</TableCell>
+              <TableCell className="text-right tabular-nums">{row.trials}</TableCell>
+            </TableRow>)}</TableBody>
+          </Table>
+          <p className="text-xs text-slate-600">Older untracked sends appear in Sent only. Clicks count when the destination opens in a browser; results include coach replies, race predictions, and fueling schedules runners choose to use, copy or print.</p>
+        </>}
+    </CardContent>
+  </Card>;
+
+  const renderCampaigns = () => <div className="space-y-6"><div><h2 className="text-2xl font-bold">Campaign center</h2><p className="text-sm text-slate-600">Audience safety, testing, lifecycle delivery and one-time announcements in one workflow.</p></div>{renderSignupFunnel()}<Card><CardHeader><div className="flex flex-wrap items-start justify-between gap-4"><div><CardTitle>Lifecycle delivery</CardTitle><p className="mt-1 text-sm text-slate-600">{campaign.data?.nextAction}</p></div><Badge className={statusTone(campaign.data?.operationalState || "disabled")}>{(campaign.data?.operationalState || "loading").replace(/_/g, " ")}</Badge></div></CardHeader><CardContent className="space-y-5">
     {campaign.data?.signupReminderSchedule?.includeUnknownConsent && <p className="rounded-lg border border-orange-100 bg-orange-50 p-3 text-sm text-orange-950">Signup reminders include accounts with unknown consent. Premium subscribers, active trials, unsubscribed or opted-out accounts and delivery-suppressed addresses are excluded. Sending requires the worker enabled and dry-run off.</p>}
     {campaign.data?.signupReminderSchedule?.daytimeWindow && <p className="rounded-lg border p-3 text-sm text-slate-600">Daytime delivery: 9 a.m.–6 p.m. in the saved local timezone. Default UTC or missing timezone uses America/New_York for this campaign only. Quiet hours are respected; reserved final reminders stay held until you enable sending.</p>}
     {!campaign.data?.readiness.ready && <div className="rounded-lg border border-red-200 bg-red-50 p-4"><p className="font-semibold text-red-900">Delivery configuration is incomplete</p><p className="mt-1 text-sm text-red-700">Missing: {Object.entries(campaign.data?.readiness.checks || {}).filter(([, ok]) => !ok).map(([key]) => key).join(", ")}</p></div>}

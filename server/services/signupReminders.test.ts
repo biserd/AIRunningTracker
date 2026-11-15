@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { parseSignupEmailReference } from "./signupEmailReference";
 process.env.DATABASE_URL ||= "postgresql://fixture:fixture@127.0.0.1:1/fixture";
 process.env.MARKETING_LINK_SIGNING_SECRET = "fixture-only-signup-link-secret-more-than-thirty-two-characters";
 const { SignupReminderService } = await import("./signupReminders");
@@ -41,6 +42,8 @@ test("sequence is deduplicated and schedules days 1/7/14 from original signup, t
     const url = new URL(f.sent[index].ctaUrl);
     assert.equal(url.pathname, index === 2 ? "/tools/marathon-fueling" : "/tools/race-predictor");
     assert.equal(url.search, `?source=signup_day${[1,7,14][index]}`);
+    assert.deepEqual(parseSignupEmailReference(url.hash.slice("#signup_ref=".length), f.jobs[index].sentAt.getTime()), { jobId: claimed.id, step: claimed.step });
+    assert.equal(f.jobs[index].metadata.signupEmailTracking, "1");
     assert.equal(f.sent[index].ctaText, ["Ask your running coach","Predict my race time","Build my fueling plan"][index]);
     if (index < 2) f.advance(index === 0 ? 6 : 7);
   }

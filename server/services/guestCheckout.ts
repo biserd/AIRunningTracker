@@ -4,6 +4,7 @@ import { NativeSignup } from './nativeSignup';
 import { guestCheckoutDetails } from './guestCheckoutPolicy';
 import { storage } from '../storage';
 import { AppleSubscriptionLedger } from './appleSubscriptions';
+import { recordSignupEmailTrial } from './signupEmailMetrics';
 
 const appSlug = () => process.env.APP_SLUG || 'aitracker';
 
@@ -17,7 +18,7 @@ export async function completedGuestCheckout(sessionId: string) {
 }
 
 /** Stripe's email is not an authentication factor. Only the recipient of this link can claim access. */
-export async function emailGuestCheckoutClaim(sessionId: string): Promise<void> {
+export async function emailGuestCheckoutClaim(sessionId: string, verifiedWebhook = false): Promise<void> {
   const { applicationSqlDatabase } = await import('../d1/runtimeDatabase');
   const { stripe, subscriptionId, email } = await completedGuestCheckout(sessionId);
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -40,6 +41,10 @@ export async function emailGuestCheckoutClaim(sessionId: string): Promise<void> 
     return;
   }
   if (!['active', 'trialing'].includes(subscription.status)) throw new Error('CHECKOUT_NOT_ACTIVE');
+  if (verifiedWebhook && user && subscription.status === 'trialing' && subscription.metadata?.app === appSlug() &&
+      subscription.metadata?.guestCheckout === 'true') {
+    await recordSignupEmailTrial(subscriptionId, subscription.metadata, user.id);
+  }
   const issued = await new NativeSignup(
     applicationSqlDatabase,
     (to, token) => emailService.sendCheckoutClaimEmail(to, token, sessionId),

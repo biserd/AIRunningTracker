@@ -5,6 +5,7 @@ import { buildMarketingUrl, createMarketingToken } from "./campaignSecurity";
 import { SIGNUP_REMINDER_CAMPAIGN as CAMPAIGN, SIGNUP_REMINDER_STEPS as STEPS, SIGNUP_REMINDER_VERSION as VERSION, SIGNUP_FINAL_HOLDS_SETTING, nextSignupSendTime, signupDeliveryWindow, signupReminderExclusion, signupRemindersEnabled } from "../../shared/signupReminders";
 import type { EmailJob, User } from "@shared/schema";
 import { stableLifecycleBucket } from "../../shared/lifecycleCampaigns";
+import { signupEmailCtaPath } from "./signupEmailReference";
 
 type Store = Pick<typeof storage, "getSystemSetting" | "getUser" | "getAllUsers" | "getUserCampaign" | "getActiveCampaigns" | "exitUserCampaign" | "cancelEmailJobsForUser" | "createUserCampaign" | "updateUserCampaign" | "getEmailJobByDedupeKey" | "getEmailJob" | "createEmailJob" | "updateEmailJob" | "getLastSentEmailForUser" | "updateUser">;
 export class SignupReminderService {
@@ -115,7 +116,7 @@ export class SignupReminderService {
     if (!await this.beginDelivery(job.id, job.claimedBy)) return false;
     const step = STEPS[index], issued = Math.floor(this.now() / 1000);
     const result = await this.sender.sendDripEmail({ to: user.email!, userName: user.firstName || user.username || "Runner", ...step, bodyText: step.body, campaign: CAMPAIGN,
-      ctaUrl: "https://aitracker.run" + step.ctaPath,
+      ctaUrl: "https://aitracker.run" + signupEmailCtaPath(job.id, step.step, this.now()),
       unsubscribeUrl: buildMarketingUrl("/api/marketing/unsubscribe", createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 86400, issued)),
       beforeSend: async () => {
         const latest = await this.store.getUser(user.id), at = this.now();
@@ -131,7 +132,8 @@ export class SignupReminderService {
       await this.store.updateEmailJob(job.id, { status: reason === "recipient_no_longer_eligible" ? "cancelled" : retry && retryCount <= 5 ? "retry_scheduled" : "failed", retryCount, nextAttemptAt: retry && retryCount <= 5 ? new Date(this.now() + (softBounce ? 25 : Math.min(24, 2 ** retryCount)) * 3600000) : null, errorMessage: reason, claimedAt: null, claimedBy: null, leaseExpiresAt: null });
       return false;
     }
-    await this.store.updateEmailJob(job.id, { status: "sent", sentAt: new Date(this.now()), providerMessageId: result.providerMessageId || null, errorMessage: null });
+    await this.store.updateEmailJob(job.id, { status: "sent", sentAt: new Date(this.now()), providerMessageId: result.providerMessageId || null, errorMessage: null,
+      metadata: { ...(current.metadata as Record<string, unknown> | null), signupEmailTracking: "1" } });
     if (index === STEPS.length - 1 && job.enrollmentId) await this.store.updateUserCampaign(job.enrollmentId, { state: "completed", exitedAt: new Date(this.now()), exitReason: "completed" });
     else await this.schedule(user);
     return true;

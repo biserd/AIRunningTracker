@@ -81,6 +81,9 @@ import {
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { buildUpgradeUrl, isBenefitKey, sanitizeReturnTo } from "@shared/upgradeIntent";
 import { recordFunnelEvent } from "./services/funnelAnalytics";
+import { resolveSignupEmailReference, signupEmailFromCookie, signupEmailStripeMetadata } from "./services/signupEmailMetrics";
+import { signupEmailCookie, signupEmailResultMatches, signupEmailStep, SIGNUP_EMAIL_TTL_SECONDS } from "./services/signupEmailReference";
+import { signupEmailFunnelQuery } from "./services/signupEmailFunnelQuery";
 import { validToolOfferSource } from "@shared/funnelEvents";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
@@ -1101,11 +1104,19 @@ ${allPages.map(page => `  <url>
         }
       }
 
+      const safeProps = { ...(props ?? {}) };
+      // Never trust an email delivery identifier supplied by the client.
+      delete safeProps.signupEmailJobId;
+      const step = signupEmailStep(safeProps.source);
+      if (event === "tool_completed" && step && signupEmailResultMatches(step, safeProps.capability)) {
+        const job = await signupEmailFromCookie(req.headers.cookie, safeProps.source, userId);
+        if (job) safeProps.signupEmailJobId = String(job.id);
+      }
       const result = await recordFunnelEvent({
         event,
         dedupeKey,
         userId,
-        props: (props ?? {}) as any,
+        props: safeProps as any,
       });
       if (result.errors?.length) {
         return res.status(400).json({ message: "Invalid event", errors: result.errors });
@@ -1174,6 +1185,7 @@ ${allPages.map(page => `  <url>
         billingPeriod, regularUnitAmount: price.unit_amount, currency: price.currency,
         firstTimeSubscriber: true, couponId: configuredWebIntroCoupon(billingPeriod),
       });
+      const signupEmail = signupEmailStripeMetadata(await signupEmailFromCookie(req.headers.cookie, source), source);
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         line_items: [{ price: priceId, quantity: 1 }],
@@ -1189,7 +1201,7 @@ ${allPages.map(page => `  <url>
         subscription_data: {
           trial_period_days: 7,
           metadata: {
-            app: process.env.APP_SLUG || 'aitracker', guestCheckout: 'true',
+            app: process.env.APP_SLUG || 'aitracker', guestCheckout: 'true', ...signupEmail,
             source: source || 'pricing', ...(offer ? { webIntroCampaign: 'web_intro_2026' } : {}),
           },
         },
@@ -1375,6 +1387,7 @@ ${allPages.map(page => `  <url>
       const attributionJob = attribution && attribution.userId === userId && attribution.jobId ? await storage.getEmailJob(attribution.jobId) : undefined;
       const attributedSource = attributionJob ? `lifecycle:${attributionJob.campaign}:${attributionJob.step}` : undefined;
       const safeSource = (attributedSource || (typeof source === 'string' ? source : 'pricing')).slice(0, 80);
+      const signupEmail = signupEmailStripeMetadata(await signupEmailFromCookie(req.headers.cookie, source, userId), source);
       const safeActivityId = Number.isInteger(activityId) && activityId > 0 ? activityId : undefined;
       const safeBenefitKey = isBenefitKey(benefitKey) ? benefitKey : undefined;
       const safePendingResourceId = typeof pendingResourceId === 'string' ? pendingResourceId.slice(0, 80) : undefined;
@@ -1424,6 +1437,7 @@ ${allPages.map(page => `  <url>
             ...(attributionJob?.campaign ? { lifecycleCampaign: attributionJob.campaign } : {}),
             ...(attributionJob?.step ? { lifecycleStep: attributionJob.step } : {}),
             ...(attributionJob?.campaignVersion ? { lifecycleCampaignVersion: String(attributionJob.campaignVersion) } : {}),
+            ...signupEmail,
           }
         }
       });
@@ -9221,6 +9235,29 @@ ${allPages.map(page => `  <url>
   const escapeCampaignHtml = (value: string) => value.replace(/[&<>"']/g, (character) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character] || character));
 
+  // Tracking happens in the opened browser, not in a redirect, and never signs anyone in.
+  app.post("/api/marketing/signup-click", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      if (!req.is("application/json") || req.get("Sec-Fetch-Site") === "cross-site") return res.sendStatus(204);
+      const { ref, source } = req.body ?? {};
+      const job = await resolveSignupEmailReference(ref, source);
+      const step = signupEmailStep(source);
+      if (!job || !step) return res.sendStatus(204);
+      await storage.claimEmailClick({
+        userId: job.userId, jobId: job.id, campaign: job.campaign, step: job.step,
+        source: "signup_direct", ctaKey: source, dedupeKey: `signup-direct:${job.id}`,
+      });
+      res.cookie(signupEmailCookie(step), ref, {
+        maxAge: SIGNUP_EMAIL_TTL_SECONDS * 1000, httpOnly: true, sameSite: "lax",
+        secure: process.env.NODE_ENV === "production", path: "/api",
+      });
+      return res.sendStatus(204);
+    } catch {
+      return res.sendStatus(503);
+    }
+  });
+
   app.get("/api/marketing/click", async (req: any, res) => {
     try {
       const publicSignupPath = await legacySignupValuePath(req.query.token, id => storage.getEmailJob(id));
@@ -9289,6 +9326,23 @@ ${allPages.map(page => `  <url>
   };
   app.get("/api/marketing/unsubscribe", unsubscribeMarketing);
   app.post("/api/marketing/unsubscribe", unsubscribeMarketing);
+
+  // The signup series uses direct deliveries; report their funnel separately from legacy click totals.
+  app.get("/api/admin/campaigns/signup-funnel", authenticateAdmin, async (_req, res) => {
+    res.set("Cache-Control", "private, no-store");
+    try {
+      const result = await db.execute(sql.raw(signupEmailFunnelQuery));
+      const byStep = new Map((result.rows as any[]).map(row => [row.step, row]));
+      return res.json({ rows: (["DAY1", "DAY7", "DAY14"] as const).map(step => {
+        const row = byStep.get(step);
+        return { step, sent: Number(row?.sent ?? 0), trackable: Number(row?.trackable ?? 0),
+          clicked: Number(row?.clicked ?? 0), results: Number(row?.results ?? 0), trials: Number(row?.trials ?? 0) };
+      }) });
+    } catch (error) {
+      console.error("Signup email funnel report failed", error);
+      return res.status(500).json({ message: "Signup reminder performance is unavailable" });
+    }
+  });
 
   // Admin: Get campaign analytics
   app.get("/api/admin/campaigns/analytics", authenticateAdmin, async (req: any, res) => {

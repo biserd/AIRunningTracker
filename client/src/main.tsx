@@ -1,3 +1,6 @@
+import { registerSignupEmailLanding } from "./lib/signupEmailAttribution";
+registerSignupEmailLanding();
+
 // Development still uses Vite's stylesheet HMR; the production build links
 // the appropriate hashed stylesheet directly in the document.
 if (import.meta.env.DEV) void import("./index.css");

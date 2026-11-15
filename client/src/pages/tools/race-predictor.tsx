@@ -43,6 +43,7 @@ import { trackFunnelEvent } from "@/lib/analytics";
 import { racePredictorCopy } from "@shared/searchPageCopy";
 import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_SIGN_IN, DAY_ONE_COACH_SOURCE, DAY_SEVEN_RACE_SOURCE } from "@shared/dayOneCoach";
 import { SignupResultTrialOffer } from "@/components/SignupResultTrialOffer";
+import { afterSignupEmailClick } from "@/lib/signupEmailAttribution";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -104,7 +105,9 @@ export default function RacePredictor() {
   const fromDaySeven = clientReady && search.get("source") === DAY_SEVEN_RACE_SOURCE;
   const stayOnTool = search.get("mode") === "tool";
   useEffect(() => {
-    if (fromDayOne && !stayOnTool && isAuthenticated) navigate(DAY_ONE_COACH_DASHBOARD, { replace: true });
+    let alive = true;
+    if (fromDayOne && !stayOnTool && isAuthenticated) afterSignupEmailClick(() => { if (alive) navigate(DAY_ONE_COACH_DASHBOARD, { replace: true }); });
+    return () => { alive = false; };
   }, [fromDayOne, isAuthenticated, navigate, stayOnTool]);
   const { toast } = useToast();
   const [result, setResult] = useState<RacePredictionResult | null>(null);

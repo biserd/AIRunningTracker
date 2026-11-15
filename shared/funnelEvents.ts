@@ -54,6 +54,7 @@ export const FUNNEL_EVENTS = {
 
   // --- Trial / paid lifecycle (server-authoritative, from Stripe webhooks) ---
   trial_started: { side: "server", required: ["subscriptionId"] },
+  signup_email_trial_started: { side: "server", required: ["subscriptionId", "signupEmailJobId", "source"] },
   trial_converted: { side: "server", required: ["subscriptionId"] },
   subscription_activated: { side: "server", required: ["subscriptionId"] },
   cancellation_scheduled: { side: "server", required: ["subscriptionId"] },

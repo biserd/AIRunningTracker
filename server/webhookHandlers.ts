@@ -10,6 +10,7 @@ import { buildFunnelDedupeKey, billingPeriodFromInterval, conversionEventForSubs
 import { deliverBillingWebhook } from './services/billingWebhookDelivery';
 import { createBillingWebhookStore } from './runtimeServices';
 import { emailGuestCheckoutClaim } from './services/guestCheckout';
+import { recordSignupEmailTrial } from './services/signupEmailMetrics';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hello@bigappledigital.nyc';
 const APP_SLUG = process.env.APP_SLUG || 'aitracker';
@@ -262,7 +263,7 @@ export class WebhookHandlers {
 
     if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type) &&
         event.data.object?.metadata?.guestCheckout === 'true') {
-      await emailGuestCheckoutClaim(event.data.object.id);
+      await emailGuestCheckoutClaim(event.data.object.id, true);
       return;
     }
     
@@ -436,6 +437,9 @@ export class WebhookHandlers {
           prev.status ?? null,
         );
         if (conversionEvent) {
+          if (conversionEvent === "trial_started" && resolved.plan === "premium") {
+            await recordSignupEmailTrial(subscription.id, subscription.metadata, user.id);
+          }
           await recordFunnelEvent({
             event: conversionEvent,
             dedupeKey: buildFunnelDedupeKey(conversionEvent, [subscription.id]),

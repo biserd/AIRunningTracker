@@ -4,6 +4,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_SOURCE } from "@shared/dayOneCoach";
+import { afterSignupEmailClick } from "@/lib/signupEmailAttribution";
 
 export function SignupResultTrialOffer({ after, source = DAY_ONE_COACH_SOURCE }: {
   after: "answer" | "prediction" | "fueling";
@@ -13,7 +14,7 @@ export function SignupResultTrialOffer({ after, source = DAY_ONE_COACH_SOURCE }:
   const capability = after === "answer" ? "ai_coach" : "training_plans";
   const resultCapability = after === "prediction" ? "race_prediction" : after === "fueling" ? "fueling_plan" : "ai_coach";
   useEffect(() => {
-    trackFunnelEvent("tool_completed", { source, capability: resultCapability }, { oncePerSession: true, dedupeParts: [source, after] });
+    afterSignupEmailClick(() => trackFunnelEvent("tool_completed", { source, capability: resultCapability }, { oncePerSession: true, dedupeParts: [source, after] }));
     if (!hasActiveSubscription && !isLoading) {
       trackFunnelEvent("offer_viewed", { source, capability }, { oncePerSession: true, dedupeParts: [source, after] });
     }
