@@ -62,6 +62,11 @@ export default function MagicLinkPage() {
         notifyExtensionAuth(body.token, body.user || {});
         setStatus("ok");
 
+        if (credentials.token?.startsWith("email_link_")) {
+          // A fresh route fetches the newly verified account even in this tab.
+          window.location.replace(credentials.redirect);
+          return;
+        }
         setLocation(credentials.redirect, { replace: true });
       } catch {
           setStatus("error");

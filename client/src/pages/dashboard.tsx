@@ -496,7 +496,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-light-grey">
       <AppHeader />
 
-      <EmailCaptureModal open={showEmailCaptureModal} userId={user.id} />
+      <EmailCaptureModal open={showEmailCaptureModal} />
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6">
@@ -619,20 +619,17 @@ export default function Dashboard() {
           </div>
         )}
 
-        <details className="mt-8 rounded-xl border border-gray-200 bg-white shadow-sm">
-          <summary className="cursor-pointer px-5 py-4 font-medium text-charcoal">More analytics</summary>
-          <div className="space-y-8 border-t border-gray-100 p-5">
-            <ActivityHeatmap />
-            {user && (
-              <RecentConversations
-                onOpenConversation={(id) => {
-                  setSelectedConversationId(id);
-                  setIsChatOpen(true);
-                }}
-              />
-            )}
-          </div>
-        </details>
+        <section className="mt-8 space-y-8" aria-label="Activity analytics">
+          <ActivityHeatmap />
+          {user && (
+            <RecentConversations
+              onOpenConversation={(id) => {
+                setSelectedConversationId(id);
+                setIsChatOpen(true);
+              }}
+            />
+          )}
+        </section>
       </main>
 
       {user && (

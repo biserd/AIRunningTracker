@@ -1689,6 +1689,7 @@ ${allPages.map(page => `  <url>
 
   // Get current user data (for authenticated queries)
   app.get("/api/user", authenticateJWT, async (req: any, res) => {
+    res.set("Cache-Control", "private, no-store");
     try {
       const user = await storage.getUser(req.user.id);
       if (!user) {
@@ -2280,11 +2281,12 @@ ${allPages.map(page => `  <url>
   // No email is attached, or marketing consent applied, until mailbox verification.
   app.post("/api/auth/add-email", authenticateJWT, async (req: any, res) => {
     try {
-      const { email, marketingConsent } = z.object({ email: z.string().email(), marketingConsent: z.boolean().optional() }).parse(req.body);
+      const { email, marketingConsent, returnTo } = z.object({ email: z.string().email(), marketingConsent: z.boolean().optional(), returnTo: z.string().optional() }).parse(req.body);
       const userId = req.user.id;
 
       const {applicationSqlDatabase}=await import('./d1/runtimeDatabase');
-      await new VerifiedAccountEmail(applicationSqlDatabase,(to,token)=>emailService.sendAccountEmailVerification(to,token)).request(userId,email,marketingConsent===true);
+      const destination = sanitizeReturnTo(returnTo) ?? undefined;
+      await new VerifiedAccountEmail(applicationSqlDatabase,(to,token)=>emailService.sendAccountEmailVerification(to,token,destination)).request(userId,email,marketingConsent===true);
       res.set('Cache-Control','no-store');
       res.status(202).json({verificationRequired:true,message:'Check your inbox. Verify the link to add this email to your account.'});
     } catch (error: any) {
