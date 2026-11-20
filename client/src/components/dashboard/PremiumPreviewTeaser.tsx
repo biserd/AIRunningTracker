@@ -3,14 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ArrowUpRight, LockKeyhole, Loader2, Sparkles } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Loader2, Sparkles } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { trackFunnelEvent } from "@/lib/analytics";
-import { buildUpgradeUrl } from "@shared/upgradeIntent";
+import { STARTER_SOURCE } from "@shared/starterJourney";
 import { formatRunDistance, formatRunPace, runUnitLabels } from "@shared/runFormatting";
 import { previewCoachingTip } from "@shared/previewCoachingTip";
-import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
-import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
 import { isReadOnlyStaging } from '@/lib/runtime';
 
 interface PremiumPreviewTeaserData {
@@ -64,7 +62,6 @@ function FreeCoachingTip({ tip }: { tip: string }) {
 
 export default function PremiumPreviewTeaser() {
   const { isFree, isLoading: subscriptionLoading } = useSubscription();
-  const { data: trialOffer } = useTrialOffer();
   const queryClient = useQueryClient();
   const query = useQuery<PremiumPreviewTeaserData>({
     queryKey: ["/api/premium-preview"],
@@ -198,13 +195,6 @@ export default function PremiumPreviewTeaser() {
     { label: "Average pace", value: distanceMeters > 0 && movingTimeSec > 0 ? `${formatRunPace(movingTimeSec, distanceMeters, preview.unitPreference)} ${paceUnit}` : null },
     { label: "Average HR", value: averageHeartrate && averageHeartrate > 0 ? `${Math.round(averageHeartrate)} bpm` : null },
   ].filter(metric => metric.value !== null);
-  const upgradeUrl = buildUpgradeUrl({
-    source: "premium_preview_dashboard",
-    capability: "activity_deep_dive",
-    activityId,
-    benefitKey: "premium_preview",
-    returnTo: `/activity/${activityId}`,
-  });
   return (
     <PreviewShell testId="premium-preview-teaser">
       <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-700">
@@ -216,11 +206,10 @@ export default function PremiumPreviewTeaser() {
       </p>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2 lg:items-start">
-        <div className="space-y-3">
           <section className="rounded-xl border border-amber-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Your run snapshot" data-testid="premium-preview-first-insight">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-xs font-bold uppercase tracking-wide text-amber-800">Your run snapshot</h3>
-              <Link href={`/activity/${activityId}`} className="inline-flex items-center gap-1 text-sm font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-950">
+              <Link href={`/activity/${activityId}?from=${STARTER_SOURCE}`} className="inline-flex items-center gap-1 text-sm font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-950">
                 View this run <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </div>
@@ -237,28 +226,6 @@ export default function PremiumPreviewTeaser() {
             <p className="mt-3 text-sm font-medium leading-relaxed text-gray-900">{preview.findings[0]}</p>
           </section>
           <FreeCoachingTip tip={previewCoachingTip(preview.sourceData, preview.comparison)} />
-        </div>
-        <div className="rounded-xl border border-orange-200 bg-orange-100/70 p-5" data-testid="premium-preview-deeper-analysis">
-          <div className="flex items-center gap-2 text-amber-800">
-            <LockKeyhole className="h-4 w-4" aria-hidden="true" />
-            <p className="text-xs font-bold uppercase tracking-wide">RunAnalytics Premium</p>
-          </div>
-          <h3 className="mt-3 text-lg font-bold text-gray-900">Go beyond a single run</h3>
-          <p className="mt-2 text-sm text-gray-700">Break down your runs in more detail and see how your training changes over time.</p>
-          <DirectCheckoutButton
-            upgradeUrl={upgradeUrl}
-            onBeforeCheckout={() => trackFunnelEvent(
-              "preview_cta_clicked",
-              { source: "premium_preview_dashboard", capability: "activity_deep_dive", activityId },
-              { dedupeParts: ["dashboard", activityId, Date.now()] },
-            )}
-          >
-            <Button className="mt-4 w-full bg-orange-600 text-white hover:bg-orange-700" data-testid="premium-preview-teaser-cta">
-              {trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock Premium"}
-            </Button>
-          </DirectCheckoutButton>
-          <TrialOfferDetails compact className="mt-3" benefit="detailed run analytics and access to your AI coach." />
-        </div>
       </div>
     </PreviewShell>
   );

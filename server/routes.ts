@@ -84,6 +84,7 @@ import { recordFunnelEvent } from "./services/funnelAnalytics";
 import { resolveSignupEmailReference, signupEmailFromCookie, signupEmailStripeMetadata } from "./services/signupEmailMetrics";
 import { signupEmailCookie, signupEmailResultMatches, signupEmailStep, SIGNUP_EMAIL_TTL_SECONDS } from "./services/signupEmailReference";
 import { signupEmailFunnelQuery } from "./services/signupEmailFunnelQuery";
+import { registerStarterJourneyRoutes } from "./services/starterJourneyRoutes";
 import { validToolOfferSource } from "@shared/funnelEvents";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
@@ -291,6 +292,8 @@ async function isStripeTrialEligible(
 }
 
 export async function registerRoutes(app: Express, runtime?: { schedulerDatabase: SqlDatabase }): Promise<Server> {
+  registerStarterJourneyRoutes(app, { authenticate: authenticateJWT, admin: authenticateAdmin,
+    database: async () => (await import("./d1/runtimeDatabase")).applicationSqlDatabase });
   const garminStore = async () => {
     if (!process.env.D1_TRANSPORT_SECRET) throw new Error('GARMIN_D1_REQUIRED');
     const { applicationSqlDatabase } = await import('./d1/runtimeDatabase');

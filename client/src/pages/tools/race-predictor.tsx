@@ -43,6 +43,8 @@ import { trackFunnelEvent } from "@/lib/analytics";
 import { racePredictorCopy } from "@shared/searchPageCopy";
 import { DAY_ONE_COACH_DASHBOARD, DAY_ONE_COACH_SIGN_IN, DAY_ONE_COACH_SOURCE, DAY_SEVEN_RACE_SOURCE } from "@shared/dayOneCoach";
 import { SignupResultTrialOffer } from "@/components/SignupResultTrialOffer";
+import { STARTER_SOURCE } from "@shared/starterJourney";
+import { trackStarterAction } from "@/lib/starterJourney";
 import { afterSignupEmailClick } from "@/lib/signupEmailAttribution";
 
 const manualInputSchema = z.object({
@@ -95,7 +97,7 @@ const RACE_PREDICTOR_FAQS = [
 ];
 
 export default function RacePredictor() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [, navigate] = useLocation();
   const search = new URLSearchParams(useSearch());
   // The public tool is server-rendered without query-specific markup.
@@ -142,6 +144,7 @@ export default function RacePredictor() {
     },
     onSuccess: (data) => {
       setResult(data as RacePredictionResult);
+      if (search.get("source") === STARTER_SOURCE && Number.isFinite(data?.predictedTime)) trackStarterAction(user?.id, "prediction_completed");
     },
     onError: (error: any) => {
       toast({

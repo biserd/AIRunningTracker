@@ -30,6 +30,8 @@ import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculat
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails";
+import { STARTER_SOURCE } from "@shared/starterJourney";
+import { trackStarterAction } from "@/lib/starterJourney";
 import { trackFunnelEvent } from "@/lib/analytics";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
 import { formatRunDistance, formatRunPace, runUnitLabels } from "@shared/runFormatting";
@@ -223,8 +225,9 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
   );
 }
 
-function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: PremiumPreviewData; createdAt?: string | null; unitPreference?: string }) {
-  const { data: trialOffer } = useTrialOffer();
+function PremiumPreviewCard({ preview, createdAt, unitPreference, onOpenDeepDive, showExplore }: {
+  preview: PremiumPreviewData; createdAt?: string | null; unitPreference?: string; onOpenDeepDive: () => void; showExplore: boolean;
+}) {
   // Freshness: age (days) of the preview at the moment it's shown.
   const freshnessDays = createdAt
     ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000))
@@ -245,13 +248,6 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preview.sourceData.activityId]);
 
-  const upgradeUrl = buildUpgradeUrl({
-    source: "premium_preview",
-    capability: "activity_deep_dive",
-    activityId: preview.sourceData.activityId,
-    benefitKey: "premium_preview",
-    returnTo: `/activity/${preview.sourceData.activityId}`,
-  });
   const src = preview.sourceData;
   const durationMin = Math.floor(src.movingTimeSec / 60);
   const useMiles = unitPreference === "miles";
@@ -323,31 +319,22 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
             {comparison.baselineCadence !== null && <div><p className="text-[10px] font-semibold uppercase text-yellow-700">Usual cadence</p><p className="text-sm font-bold text-gray-900">{comparison.baselineCadence} spm</p></div>}
           </div>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        {showExplore && <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
           </p>
-          <DirectCheckoutButton
-            upgradeUrl={upgradeUrl}
-            onBeforeCheckout={() =>
+          <Button variant="outline" size="sm" data-testid="premium-preview-deep-dive" onClick={() => {
               trackFunnelEvent("preview_cta_clicked", {
                 source: "premium_preview",
                 capability: "activity_deep_dive",
                 activityId: preview.sourceData.activityId,
                 freshnessDays,
-              }, { dedupeParts: [preview.sourceData.activityId, Date.now()] })
-            }
-          >
-            <Button
-              size="sm"
-              className="bg-yellow-500 hover:bg-yellow-600 text-white"
-              data-testid="premium-preview-upgrade"
-            >
-              <Sparkles className="h-4 w-4 mr-1" /> {trialOffer?.trialEligible ? "Start my 7-day trial" : "Unlock my complete run analysis"}
-            </Button>
-          </DirectCheckoutButton>
-        </div>
-        <TrialOfferDetails benefit="this run's splits, charts, comparison with similar efforts, and personalized coach guidance." />
+              }, { dedupeParts: [preview.sourceData.activityId, Date.now()] });
+              onOpenDeepDive();
+          }}>
+            Explore Deep Dive
+          </Button>
+        </div>}
       </CardContent>
     </Card>
   );
@@ -356,6 +343,7 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference }: { preview: P
 export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
   const activityId = params?.id;
+  const fromStarter = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("from") === STARTER_SOURCE;
   const [viewMode, setViewMode] = useState<ViewMode>("story");
   const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -368,10 +356,10 @@ export default function ActivityPage() {
   });
 
   useEffect(() => {
-    if (userData?.activityViewMode) {
+    if (userData?.activityViewMode && !fromStarter) {
       setViewMode(userData.activityViewMode as ViewMode);
     }
-  }, [userData?.activityViewMode]);
+  }, [userData?.activityViewMode, fromStarter]);
 
   const updatePreferenceMutation = useMutation({
     mutationFn: async (newMode: ViewMode) => {
@@ -499,6 +487,9 @@ export default function ActivityPage() {
   const hydrationTriggered = useRef(false);
 
   const activity = activityData?.activity;
+  useEffect(() => {
+    if (fromStarter && activity?.id && !isLocked) trackStarterAction(userData?.id, "run_opened");
+  }, [activity?.id, fromStarter, isLocked, userData?.id]);
   const needsHydration = featureAccess.activity.performanceMetrics && activity && (
     activity.hydrationStatus === 'pending' || 
     (!activity.streamsData || activity.streamsData === 'null')
@@ -987,6 +978,8 @@ export default function ActivityPage() {
             preview={premiumPreview}
             createdAt={premiumPreviewData?.createdAt}
             unitPreference={userData?.unitPreference}
+            showExplore={viewMode !== "deep_dive"}
+            onOpenDeepDive={() => handleViewModeChange("deep_dive")}
           />
         )}
 

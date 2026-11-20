@@ -32,6 +32,9 @@ import { Link } from "wouter";
 import { useFeatureAccess, useSubscription } from "@/hooks/useSubscription";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { useStravaConnect } from "@/hooks/useStravaConnect";
+import { StarterActions } from "@/components/dashboard/StarterActions";
+import { STARTER_SOURCE } from "@shared/starterJourney";
+import { trackStarterAction } from "@/lib/starterJourney";
 
 function getLocalCalendarDateKey(date: Date = new Date()) {
   return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
@@ -44,11 +47,12 @@ function getLocalIsoDateKey(date: Date = new Date()) {
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { canAccessAICoachChat, canAccessAdvancedInsights } = useFeatureAccess();
-  const { isFree } = useSubscription();
+  const { isFree, isLoading: subscriptionLoading } = useSubscription();
   const stravaConnect = useStravaConnect();
   const [chartTimeRange, setChartTimeRange] = useState<string>("30days");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [fromDayOne, setFromDayOne] = useState(false);
+  const [fromStarter, setFromStarter] = useState(false);
   const [dashboardCalendarDate, setDashboardCalendarDate] = useState(getLocalCalendarDateKey);
   const [selectedConversationId, setSelectedConversationId] = useState<number | undefined>();
   const [syncProgress, setSyncProgress] = useState<{
@@ -400,6 +404,17 @@ export default function Dashboard() {
 
 
 
+  const dashboardReady = !!dashboardData && !runningFeed.isPending && !isLoading && !subscriptionLoading && !error;
+  useEffect(() => {
+    if (!dashboardReady || !user?.id) return;
+    const record = () => {
+      if (document.visibilityState === "visible") trackStarterAction(user.id, isFree && !fromDayOne ? "dashboard_started" : "dashboard_return");
+    };
+    record();
+    document.addEventListener("visibilitychange", record);
+    return () => document.removeEventListener("visibilitychange", record);
+  }, [dashboardReady, user?.id, isFree, fromDayOne]);
+
   // Early returns: safe here because every hook above has already run.
   if (authLoading) {
     return (
@@ -466,7 +481,7 @@ export default function Dashboard() {
     !dashboardData?.user?.lastSyncAt &&
     (dashboardData?.activities?.length ?? 0) === 0 && !runningFeed.data?.recent.length && !runningFeed.data?.garminConnected;
 
-  if (showSyncingScreen) {
+  if (showSyncingScreen && !isFree) {
     return (
       <div className="min-h-screen bg-light-grey">
         <AppHeader />
@@ -503,6 +518,13 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-charcoal sm:text-3xl">{isFree&&dashboardData?.user?.stravaConnected ? "Your latest run, clearly explained" : "Your running today"}</h1>
           <p className="mt-1 text-sm text-gray-500">{!dashboardData?.user?.stravaConnected?'Your run summaries, totals and recent progress.':isFree ? "A personal comparison, one next step, and your recent progress." : "One next step, your latest evidence, and this week’s progress."}</p>
         </div>
+
+        {isFree && showSyncingScreen && <p className="mb-4 rounded-lg border bg-white p-3 text-sm text-gray-600" role="status">We’re importing your first Strava runs. You can explore the free tools while we sync.</p>}
+        {isFree && !subscriptionLoading && !fromDayOne && <StarterActions
+          runs={runningFeed.data?.recent ?? []}
+          units={runningFeed.data?.unitPreference}
+          onOpenCoach={() => { setFromStarter(true); setSelectedConversationId(undefined); setIsChatOpen(true); }}
+        />}
 
         {!runningFeed.data?.garminConnected&&!dashboardData?.user?.stravaConnected&&!runningFeed.data?.recent.length && (
           <div className="mb-6">
@@ -551,7 +573,8 @@ export default function Dashboard() {
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
               <div>
                 <p className="font-medium text-charcoal">Strava connected</p>
-                <p>Your free preview uses your initial activity window. Start a trial to keep importing and analyzing new runs.</p>
+                <p>Your free preview uses your initial activity window.</p>
+                <Link href={buildUpgradeUrl({ source: "dashboard_sync_limit", capability: "unlimited_sync", benefitKey: "unlimited_sync", returnTo: "/dashboard" })} className="underline underline-offset-2">Keep syncing new Strava runs</Link>
                 {dashboardData?.user?.lastSyncAt && (
                   <p className="mt-0.5 text-xs text-gray-500">Last update: {new Date(dashboardData.user.lastSyncAt).toLocaleString()}</p>
                 )}
@@ -598,9 +621,7 @@ export default function Dashboard() {
           {runningFeed.data&&<RecentFeedRuns runs={runningFeed.data.recent} units={runningFeed.data.unitPreference}/>}
         </div>
 
-        <div className="mb-8">
-          {dashboardData?.user?.stravaConnected&&<ThisWeekPlan />}
-        </div>
+        {dashboardData?.user?.stravaConnected && <ThisWeekPlan hideEmpty={isFree} />}
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <PerformanceChart
@@ -636,11 +657,11 @@ export default function Dashboard() {
         <FloatingAICoach
           userId={user.id}
           isOpen={isChatOpen}
-          onOpenChange={setIsChatOpen}
+          onOpenChange={(open) => { setIsChatOpen(open); if (!open) setFromStarter(false); }}
           initialConversationId={selectedConversationId}
           pageContext={{
             pageName: "Dashboard",
-            ...(fromDayOne ? { entrySource: DAY_ONE_COACH_SOURCE } : {}),
+            ...(fromDayOne ? { entrySource: DAY_ONE_COACH_SOURCE } : fromStarter ? { entrySource: STARTER_SOURCE } : {}),
             pageDescription: "Main dashboard showing running performance overview, charts, and quick stats",
             relevantData: {
               totalDistance: dashboardData?.stats?.totalDistance,

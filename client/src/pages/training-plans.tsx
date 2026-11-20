@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { queryClient, apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureAccess } from "@/hooks/useSubscription";
@@ -18,12 +18,13 @@ import { Link, useLocation } from "wouter";
 import { 
   Plus, Calendar, Target, Clock, ChevronRight, ChevronLeft,
   Loader2, CheckCircle, AlertTriangle, TrendingUp, Footprints,
-  Sparkles, ArrowRight, RefreshCw, Archive, Lock, Crown
+  Sparkles, ArrowRight, RefreshCw, Archive
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
-import { DirectCheckoutButton } from "@/components/DirectCheckoutButton";
 import { getRunFrequencyWarnings, normalizePreferredRunDays } from "@shared/trainingPlanSafety";
+import { STARTER_GOALS, starterWeekWorkouts, type SavedStarterWeek } from "@shared/starterJourney";
+import { trackStarterAction } from "@/lib/starterJourney";
 
 const KM_TO_MILES = 0.621371;
 
@@ -89,6 +90,32 @@ export default function TrainingPlans() {
   const [secondaryTerrainType, setSecondaryTerrainType] = useState<string>("trail");
   const [conflictWarnings, setConflictWarnings] = useState<Array<{type: string; severity: string; message: string; recommendation?: string}>>([]);
   const [recommendedMode, setRecommendedMode] = useState<string>("single");
+  const [starterEntry] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("starter") === "1");
+  const openedStarter = useRef(false);
+  const savedWeek = useQuery<{ week: SavedStarterWeek | null }>({
+    queryKey: ["/api/onboarding/starter-week"],
+    queryFn: () => apiRequest("/api/onboarding/starter-week"),
+    enabled: Boolean(user && !canAccessTrainingPlans && starterEntry),
+  });
+  useEffect(() => {
+    if (!starterEntry || openedStarter.current || !user || canAccessTrainingPlans || savedWeek.isPending) return;
+    openedStarter.current = true;
+    const week = savedWeek.data?.week;
+    if (week) {
+      setGoalType(week.goalType);
+      setRaceDate(week.raceDate || "");
+      setPreferredDays(week.preferredDays);
+      setIncludeSpeedwork(week.includeSpeedwork);
+      setIncludeLongRuns(week.includeLongRuns);
+      setWizardStep("preview");
+    } else {
+      setGoalType("general_fitness");
+      setPreferredDays(["monday", "saturday"]);
+      setIncludeSpeedwork(false);
+      setWizardStep("goal");
+    }
+    setShowWizard(true);
+  }, [canAccessTrainingPlans, savedWeek.data, savedWeek.isPending, starterEntry, user]);
   
   const useMiles = (user as any)?.unitPreference === "miles";
 
@@ -124,6 +151,15 @@ export default function TrainingPlans() {
   });
   const approvedPreferredDays = normalizePreferredRunDays(preferredDays);
   const frequencyWarnings = getRunFrequencyWarnings(approvedPreferredDays, profile?.avgRunsPerWeek);
+  const saveStarterWeek = useMutation({
+    mutationFn: () => apiRequest("/api/onboarding/starter-week", "PUT", {
+      goalType, raceDate: raceDate || null, preferredDays: approvedPreferredDays, includeSpeedwork, includeLongRuns,
+    }),
+    onSuccess: (data: { week: SavedStarterWeek }) => {
+      queryClient.setQueryData(["/api/onboarding/starter-week"], data);
+      trackStarterAction(user?.id, "week_saved");
+    },
+  });
   
   // Fetch existing plans
   const { data: plans, isLoading: plansLoading } = useQuery<TrainingPlan[]>({
@@ -201,7 +237,7 @@ export default function TrainingPlans() {
   });
   
   const handleGeneratePlan = () => {
-    if (preferredDays.length < 2) {
+    if (approvedPreferredDays.length < 2) {
       toast({
         title: "Choose at least two running days",
         description: "A useful plan needs at least two available days each week.",
@@ -225,10 +261,12 @@ export default function TrainingPlans() {
       goalType, goalTimeTarget, raceDate, raceName, experienceLevel,
       includeSpeedwork, includeLongRuns, constraints, preferredDays, terrainType,
     };
-    sessionStorage.setItem("pending_training_plan", JSON.stringify(draft));
+    try { sessionStorage.setItem("pending_training_plan", JSON.stringify(draft)); } catch { /* Planning works without storage. */ }
 
     if (!canAccessTrainingPlans) {
       setWizardStep("preview");
+      saveStarterWeek.reset();
+      trackStarterAction(user?.id, "week_previewed");
       return;
     }
     setWizardStep("generating");
@@ -272,30 +310,10 @@ export default function TrainingPlans() {
     return `${mins}:${secs.toString().padStart(2, "0")}/${useMiles ? "mi" : "km"}`;
   };
   
-  const goalTypeLabels: Record<string, string> = {
-    "5k": "5K",
-    "10k": "10K",
-    "half_marathon": "Half Marathon",
-    "marathon": "Marathon",
-    "50k": "50K Ultra",
-    "50_mile": "50 Mile Ultra",
-    "100k": "100K Ultra",
-    "100_mile": "100 Mile Ultra",
-    "general_fitness": "General Fitness",
-  };
+  const goalTypeLabels: Record<string, string> = STARTER_GOALS;
   
   const isUltraGoal = ["50k", "50_mile", "100k", "100_mile"].includes(goalType);
-  const previewWeeks = raceDate
-    ? Math.max(4, Math.min(24, Math.ceil((new Date(`${raceDate}T12:00:00`).getTime() - Date.now()) / (7 * 86_400_000))))
-    : 12;
-  const previewWorkouts = approvedPreferredDays.map((day, index, days) => ({
-    day: day.charAt(0).toUpperCase() + day.slice(1),
-    workout: index === days.length - 1 && includeLongRuns
-      ? "Long easy run"
-      : index === 1 && includeSpeedwork
-        ? "Controlled quality session"
-        : "Easy aerobic run",
-  }));
+  const previewWorkouts = starterWeekWorkouts(approvedPreferredDays, includeSpeedwork, includeLongRuns);
   const trainingPlanUpgradeUrl = buildUpgradeUrl({
     source: "training_plan_preview",
     capability: "training_plans",
@@ -419,7 +437,7 @@ export default function TrainingPlans() {
               {wizardStep === "goal" && !canAccessTrainingPlans && (
                 <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 p-4" data-testid="training-plan-trial-disclosure">
                   <p className="font-semibold text-gray-900">Preview your recommended first week before starting a trial.</p>
-                  <p className="mt-1 text-sm leading-6 text-gray-600">Your goal and schedule create a free Week 1 preview. A 7-day Premium trial is required only to build every week and adapt the plan over time.</p>
+                  <p className="mt-1 text-sm leading-6 text-gray-600">Choose a goal and running days. You can save your first week and come back to it any time.</p>
                 </div>
               )}
               {/* Step 1: Goal */}
@@ -744,10 +762,10 @@ export default function TrainingPlans() {
                       <Sparkles className="h-4 w-4" /> YOUR PLAN PREVIEW
                     </div>
                     <h3 className="mt-3 text-2xl font-bold text-gray-900">
-                      Your personalized {previewWeeks}-week {goalTypeLabels[goalType]} plan
+                      Your first week · {goalTypeLabels[goalType]}
                     </h3>
                     <p className="mt-2 text-sm text-gray-700">
-                      Built from your recent mileage, preferred running days, and race goal.
+                      A starting schedule based on the running days and workout preferences you chose.
                     </p>
                     <p className="mt-2 text-sm font-medium text-amber-900">
                       This plan uses all {approvedPreferredDays.length} days you selected.
@@ -769,22 +787,15 @@ export default function TrainingPlans() {
                       </div>
                     </div>
 
-                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-white/80 p-4">
-                      <Lock className="h-5 w-5 text-amber-600 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-gray-900">Your complete plan is ready to be built</p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Premium unlocks every week, workout details, pace guidance, and adjustments as your training changes.
-                        </p>
-                      </div>
-                    </div>
+                    {saveStarterWeek.isSuccess && <p role="status" className="mt-4 text-sm text-teal-800">Week 1 saved. <Link href="/dashboard" className="underline">Back to dashboard</Link></p>}
+                    {saveStarterWeek.isError && <p role="alert" className="mt-4 text-sm text-red-800">We couldn't save your week. Your preview is still here; please try again.</p>}
                   </div>
                 </div>
               )}
             </CardContent>
             
             {wizardStep !== "generating" && (
-              <CardFooter className="flex justify-between">
+              <CardFooter className="flex flex-wrap justify-between gap-3">
                 {wizardStep === "goal" && (
                   <>
                     <div />
@@ -815,13 +826,13 @@ export default function TrainingPlans() {
                     <Button variant="outline" onClick={() => setWizardStep("preferences")} data-testid="button-preview-back">
                       <ChevronLeft className="w-4 h-4 mr-1" /> Edit setup
                     </Button>
-                    <div className="text-right">
-                      <DirectCheckoutButton upgradeUrl={trainingPlanUpgradeUrl}>
-                        <Button className="bg-strava-orange hover:bg-orange-600" data-testid="button-unlock-training-plan">
-                          <Crown className="w-4 h-4 mr-2" /> Unlock my training plan
-                        </Button>
-                      </DirectCheckoutButton>
-                      <p className="text-xs text-gray-500 mt-2">7 days free · Card required · $0 today · Introductory or regular price confirmed in Checkout · Cancel anytime</p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button onClick={() => saveStarterWeek.mutate()} disabled={saveStarterWeek.isPending || saveStarterWeek.isSuccess} data-testid="save-starter-week">
+                        {saveStarterWeek.isPending ? "Saving…" : saveStarterWeek.isSuccess ? "Week saved" : "Save my first week"}
+                      </Button>
+                      <Link href={trainingPlanUpgradeUrl} className="text-sm font-semibold underline underline-offset-2" onClick={() => {
+                        try { sessionStorage.setItem("pending_training_plan", JSON.stringify({ goalType, goalTimeTarget, raceDate, raceName, experienceLevel, preferredDays, includeSpeedwork, includeLongRuns, constraints, terrainType })); } catch { /* Optional checkout resume. */ }
+                      }}>Build the rest of my plan</Link>
                     </div>
                   </>
                 )}
@@ -932,7 +943,7 @@ export default function TrainingPlans() {
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
                     {canAccessTrainingPlans
                       ? "Create your first personalized training plan from your recent running history."
-                      : "Set your goal and running days to preview Week 1 free. Start a trial only when you are ready to build the complete adaptive plan."}
+                      : "Set your goal and running days to preview and save Week 1 free."}
                   </p>
                   <Button 
                     onClick={() => setShowWizard(true)}

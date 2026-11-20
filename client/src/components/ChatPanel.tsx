@@ -18,6 +18,8 @@ import { TrialOfferDetails, useTrialOffer } from "@/components/TrialOfferDetails
 import { Link } from "wouter";
 import { DAY_ONE_COACH_QUESTION, DAY_ONE_COACH_SOURCE, DAY_ONE_COACH_TOOL } from "@shared/dayOneCoach";
 import { SignupResultTrialOffer } from "@/components/SignupResultTrialOffer";
+import { STARTER_COACH_PROMPT, STARTER_SOURCE } from "@shared/starterJourney";
+import { trackStarterAction } from "@/lib/starterJourney";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { FREE_COACH_CHAT_LIMIT_REACHED, FREE_COACH_CHAT_MESSAGES, type CoachChatAllowance } from "@shared/coachChatAllowance";
 
@@ -334,8 +336,9 @@ function MessageContent({ content, onPlanCreated }: { content: string; onPlanCre
 
 export function ChatPanel({ userId, onClose, initialConversationId, activityContext, pageContext }: ChatPanelProps) {
   const fromDayOne = pageContext?.entrySource === DAY_ONE_COACH_SOURCE;
+  const fromStarter = pageContext?.entrySource === STARTER_SOURCE;
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(initialConversationId || null);
-  const [inputMessage, setInputMessage] = useState("");
+  const [inputMessage, setInputMessage] = useState(fromStarter && !initialConversationId ? STARTER_COACH_PROMPT : "");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
@@ -465,6 +468,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let streamCompleted = false;
+      let gotReply = false;
       let buffer = "";
 
       while (true) {
@@ -482,6 +486,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
               const data = JSON.parse(jsonStr);
               
               if (data.type === "chunk") {
+                if (typeof data.content === "string" && data.content.trim()) gotReply = true;
                 setIsWaitingForResponse(false);
                 setStreamingMessage((prev) => prev + data.content);
               } else if (data.type === "complete") {
@@ -501,6 +506,7 @@ export function ChatPanel({ userId, onClose, initialConversationId, activityCont
       if (!streamCompleted) {
         setChatError(current => current || "The reply was interrupted. Please try again.");
       }
+      if (streamCompleted && gotReply && fromStarter) trackStarterAction(userId, "coach_replied");
     } catch (error) {
       setInputMessage(message);
       setChatError(error instanceof Error ? error.message : "The message could not be sent.");

@@ -26,7 +26,7 @@ interface CurrentWeek {
   days: PlanDay[];
 }
 
-export default function ThisWeekPlan() {
+export default function ThisWeekPlan({ hideEmpty = false }: { hideEmpty?: boolean } = {}) {
   const { data: plans = [] } = useQuery<PlanSummary[]>({
     queryKey: ["/api/training/plans"],
     queryFn: getQueryFn({ on401: "returnNull" }),
@@ -42,6 +42,7 @@ export default function ThisWeekPlan() {
   });
 
   if (!activePlan) {
+    if (hideEmpty) return null;
     return (
       <Card data-testid="card-this-week-plan-empty">
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">

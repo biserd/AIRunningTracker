@@ -16,9 +16,9 @@ function render(overrides:Partial<GarminOnboarding>={}, surface:'dashboard'|'set
  const setup:GarminOnboarding={connected:true,connectionStatus:'connected',activityCount:1,hasEmail:false,hasPremium:false,state:'ready',preview,...overrides};
  const html=renderToString(<Router ssrPath="/dashboard"><QueryClientProvider client={client}><GarminOnboardingContent setup={setup} surface={surface}/></QueryClientProvider></Router>);client.clear();return html;
 }
-test('Garmin free-run preview gives two facts, optional email, honest upsell and current trial disclosures',()=>{
+test('Garmin dashboard lets runners explore their data without a trial offer',()=>{
  const html=render().replaceAll('<!-- -->','');assert.match(html,/Rules-based preview/);assert.match(html,/No AI processing/);assert.match(html,/5.00 km/);assert.match(html,/150 bpm/);assert.match(html,/href="\/runs\/garmin\/fixture"/);
- assert.match(html,/Add and verify email/);assert.match(html,/optional/);assert.match(html,/\$0\.00 today/);assert.match(html,/7-day trial/);assert.doesNotMatch(html,/Estimated first charge|\$3\.99|\$7\.99|November 16/);assert.match(html,/Cancel anytime/);assert.match(html,/payment method/);
+ assert.match(html,/Add and verify email/);assert.match(html,/optional/);assert.doesNotMatch(html,/garmin-premium-offer|Start my 7-day|Estimated first charge|payment method/);
  assert.ok(html.includes(GARMIN_AI_NOTICE));assert.doesNotMatch(html,/Unlock my complete run analysis|Strava required/);
 });
 test('the Garmin offer outside the dashboard retains detailed terms',()=>{
