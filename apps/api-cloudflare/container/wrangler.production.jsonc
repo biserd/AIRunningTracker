@@ -43,7 +43,8 @@
   // Dashboard checkout reminder removed (source 7077cf6); no schema changes.
   // Day 1, 7 and 14 signup reminders open free coach and tool experiences (source 1d2fb4c). No schema changes.
   // Signup email completion and Stripe trial attribution in /admin (source 47b8717). No schema changes.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:761dca8193e6d4dbe6f649cd5fb4df9ccca07c9a8dc785421ba004dbf3702f55",
+  // Dashboard email verification and unfolded activity grid (source fb23a50). No schema changes.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:9ccde8c60d13793aaa0792ca8c0430f0ee5f436d80bdcf3056885aeee4c2e81f",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
