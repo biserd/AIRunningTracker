@@ -2,9 +2,10 @@ import { useState, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Bot, Star, Send, CloudSun } from "lucide-react";
+import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, Users, TrendingDown, Calculator, ArrowRight, MessageCircle, Activity, Map, Footprints, RotateCcw, Gift, Sparkles, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Bot, Star, Send, CloudSun, ExternalLink, Video } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { VERSION } from "@shared/version";
+import { strideReplay, strideReplayLink } from "@shared/strideReplay";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
 import RunningSources from "@/components/RunningSources";
@@ -659,18 +660,18 @@ export default function LandingPage() {
       </section>
 
       {/* Free Running Tools Section - Horizontal Carousel */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 via-white to-orange-50">
+      <section className="py-12 sm:py-16 px-4 sm:px-6 bg-gradient-to-br from-gray-50 via-white to-orange-50" aria-labelledby="free-running-tools">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <div className="inline-flex items-center space-x-2 bg-orange-700/10 text-orange-700 px-4 py-2 rounded-full mb-4">
               <Calculator size={20} />
               <span className="font-semibold text-sm">Free Tools for All Runners</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-charcoal mb-2 px-4">
+            <h2 id="free-running-tools" className="text-2xl sm:text-3xl font-bold text-charcoal mb-2 px-4">
               Professional Analysis Tools
             </h2>
             <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-              Access powerful calculators used by elite coaches. No account required.
+              Explore free running calculators and clearly marked external tools.
             </p>
           </div>
 
@@ -733,6 +734,29 @@ export default function LandingPage() {
                   </span>
                 </div>
               </Link>
+
+              <a
+                {...strideReplayLink}
+                className="flex-shrink-0 w-72 rounded-xl snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-700"
+                data-testid="link-home-stridereplay"
+                aria-label="Visit StrideReplay (external, opens in a new tab)"
+              >
+                <div className="bg-teal-50 p-5 rounded-xl shadow-md border border-teal-200 h-full hover:border-teal-500 hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 shrink-0 bg-teal-700 rounded-lg flex items-center justify-center">
+                      <Video className="h-5 w-5 text-white" aria-hidden="true" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-charcoal">{strideReplay.title}</h3>
+                      <Badge variant="outline" className="border-teal-300 bg-white text-teal-900">External</Badge>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 text-sm mb-3">{strideReplay.description}</p>
+                  <span className="text-teal-800 text-sm font-medium flex items-center">
+                    Visit StrideReplay <ExternalLink className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
+                  </span>
+                </div>
+              </a>
 
               {/* Tool Card - Aerobic Decoupling */}
               <Link href="/tools/aerobic-decoupling-calculator" className="flex-shrink-0 w-72 snap-start">

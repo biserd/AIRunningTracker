@@ -1,3 +1,5 @@
+import { strideReplay } from "../../shared/strideReplay";
+
 export interface HomepageContent {
   hero: {
     title: string;
@@ -31,6 +33,7 @@ export interface HomepageContent {
     description: string;
     href: string;
     badge?: string;
+    external?: boolean;
   }[];
   pricing: {
     title: string;
@@ -112,6 +115,7 @@ export const homepageContent: HomepageContent = {
   freeTools: [
     { title: "Training Pace Calculator", description: "Turn a recent race into broad training pace ranges", href: "/tools/training-pace-calculator", badge: "New" },
     { title: "Race Split Calculator", description: "Create exact mile or kilometer goal-time splits", href: "/tools/race-split-calculator", badge: "New" },
+    { title: strideReplay.title, description: strideReplay.description, href: strideReplay.url, badge: "External", external: true },
     { title: "Race Time Predictor", description: "Predict your 5K to marathon times using the Riegel formula", href: "/tools/race-predictor" },
     { title: "Marathon Fueling Calculator", description: "Turn practiced intake targets into a race schedule", href: "/tools/marathon-fueling" },
     { title: "Aerobic Decoupling", description: "Measure your endurance efficiency", href: "/tools/aerobic-decoupling-calculator" },

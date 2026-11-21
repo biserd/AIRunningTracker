@@ -1,6 +1,7 @@
-import { Activity } from "lucide-react";
+import { Activity, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { VERSION } from "@shared/version";
+import { strideReplay, strideReplayLink } from "@shared/strideReplay";
 import { StravaPoweredBy } from "@/components/StravaConnect";
 
 export default function Footer() {
@@ -51,7 +52,13 @@ export default function Footer() {
               <li><Link href="/tools/training-split-analyzer" className="hover:text-white transition-colors" data-testid="link-tool-training-split">Training Split Analyzer</Link></li>
               <li><Link href="/tools/marathon-fueling" className="hover:text-white transition-colors" data-testid="link-tool-fueling">Marathon Fueling</Link></li>
               <li><Link href="/tools/cadence-analyzer" className="hover:text-white transition-colors" data-testid="link-tool-cadence">Form Stability</Link></li>
-              <li><a href="https://stridereplay.com/" className="hover:text-white transition-colors">StrideReplay</a></li>
+              <li>
+                <a {...strideReplayLink} className="inline-flex items-center gap-1 text-teal-300 hover:text-white transition-colors" data-testid="link-footer-stridereplay">
+                  {strideReplay.title}
+                  <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </li>
               <li><Link href="/tools/training-pace-calculator" className="hover:text-white transition-colors">Training Paces</Link></li>
               <li><Link href="/tools/race-split-calculator" className="hover:text-white transition-colors">Race Splits</Link></li>
               <li><Link href="/tools/shoes" className="hover:text-white transition-colors" data-testid="link-tool-shoes">Running Shoe Hub</Link></li>

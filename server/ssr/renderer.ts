@@ -4,7 +4,7 @@ import { getToolBySlug, ToolContent } from './toolsContent';
 import { configuredWebIntroCoupon, webIntroOfferForPrice } from '../services/webIntroOffer';
 import { runningSources } from '../../shared/runningSources';
 import { blogIndexTitle } from '../../shared/searchPageCopy';
-import { strideReplay } from '../../shared/strideReplay';
+import { strideReplay, strideReplayLink } from '../../shared/strideReplay';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -892,6 +892,9 @@ export function renderHomepage(): string {
     .ssg-tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
     .ssg-tool { display: block; background: white; border-radius: 8px; padding: 16px; text-decoration: none; color: inherit; border: 1px solid #e5e7eb; transition: all 0.2s; }
     .ssg-tool:hover { border-color: #fc4c02; box-shadow: 0 4px 12px rgba(252, 76, 2, 0.1); }
+    .ssg-tool-external { background: #f0fdfa; border-color: #99f6e4; }
+    .ssg-tool-external:hover { border-color: #0f766e; }
+    .ssg-external-badge { background: #ccfbf1; color: #134e4a; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; }
     .ssg-tool h4 { margin: 0 0 4px; color: #1a1a2e; }
     .ssg-tool p { margin: 0; font-size: 0.9rem; color: #6b7280; }
     @media (max-width: 768px) {
@@ -976,11 +979,11 @@ export function renderHomepage(): string {
     
     <section class="ssg-section ssg-section-alt">
       <h2>Free Running Tools</h2>
-      <p class="ssg-section-subtitle">Powerful calculators and analyzers, no signup required</p>
+      <p class="ssg-section-subtitle">Explore free running calculators and clearly marked external tools.</p>
       <div class="ssg-tools">
         ${content.freeTools.map(t => `
-        <a href="${t.href}" class="ssg-tool">
-          <h4>${escapeHtml(t.title)}${t.badge ? ` <span style="background: #fc4c02; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;">${escapeHtml(t.badge)}</span>` : ''}</h4>
+        <a href="${t.href}" class="ssg-tool${t.external ? ' ssg-tool-external' : ''}"${t.external ? ` target="${strideReplayLink.target}" rel="${strideReplayLink.rel}" aria-label="${escapeHtml(t.title)} (external, opens in a new tab)"` : ''}>
+          <h4>${escapeHtml(t.title)}${t.badge ? ` <span ${t.external ? 'class="ssg-external-badge"' : 'style="background: #fc4c02; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;"'}>${escapeHtml(t.badge)}</span>` : ''}</h4>
           <p>${escapeHtml(t.description)}</p>
         </a>
         `).join('')}
@@ -1921,7 +1924,7 @@ ${listSchema}
           <ul>
             <li><a href="/tools/training-split-analyzer"><strong>Training Split Analyzer</strong></a>: analyze whether your recent intensity distribution is polarized, pyramidal, or threshold-heavy.</li>
             <li><a href="/tools/cadence-analyzer"><strong>Running Cadence Analyzer</strong></a>: review cadence stability and late-run change while keeping pace, terrain and device quality in context.</li>
-            <li><a href="${strideReplay.url}" rel="nofollow noopener noreferrer"><strong>${strideReplay.title}</strong></a>: ${strideReplay.description}</li>
+            <li><a href="${strideReplayLink.href}" target="${strideReplayLink.target}" rel="${strideReplayLink.rel}" aria-label="${strideReplay.title} (external, opens in a new tab)"><strong>${strideReplay.title}</strong></a> <span>(External)</span>: ${strideReplay.description}</li>
             <li><a href="/tools/heatmap"><strong>Running Heatmap</strong></a>: visualize your most-run routes on an interactive map. Discover training patterns and favourite paths from all your Strava activities.</li>
           </ul>
         </section>

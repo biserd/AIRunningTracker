@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import PublicHeader from "@/components/PublicHeader";
-import { strideReplay } from "@shared/strideReplay";
+import { strideReplay, strideReplayLink } from "@shared/strideReplay";
 
 const tools = [
   {
@@ -280,7 +280,9 @@ export default function ToolsPage() {
                 <Card 
                   key={tool.id} 
                   className={`relative overflow-hidden transition-all duration-200 ${
-                    isAvailable 
+                    tool.external
+                      ? 'border-teal-200 bg-teal-50 hover:border-teal-500 hover:shadow-lg'
+                      : isAvailable
                       ? 'hover:shadow-lg hover:border-strava-orange cursor-pointer' 
                       : 'opacity-75'
                   }`}
@@ -300,14 +302,19 @@ export default function ToolsPage() {
                   <CardHeader>
                     <div className="flex items-start space-x-4">
                       <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isAvailable 
+                        tool.external
+                          ? 'bg-teal-700 text-white'
+                          : isAvailable
                           ? 'bg-strava-orange text-white' 
                           : 'bg-gray-200 text-gray-400'
                       }`}>
-                        <Icon size={24} />
+                        <Icon size={24} aria-hidden="true" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-xl mb-2">{tool.title}</CardTitle>
+                        <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <CardTitle className="text-xl">{tool.title}</CardTitle>
+                          {tool.external && <Badge variant="outline" className="border-teal-300 bg-white text-teal-900">External</Badge>}
+                        </div>
                         <CardDescription className="text-sm leading-relaxed">
                           {tool.description}
                         </CardDescription>
@@ -329,12 +336,13 @@ export default function ToolsPage() {
                       {isAvailable && tool.external ? (
                         <Button
                           asChild
-                          className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 mt-2"
+                          className="w-full bg-teal-700 text-white hover:bg-teal-800 mt-2"
                           data-testid={`button-open-${tool.id}`}
                         >
-                          <a href={tool.url} rel="nofollow noopener noreferrer">
+                          <a {...strideReplayLink}>
                             {tool.ctaLabel}
                             <ExternalLink aria-hidden="true" className="ml-2 h-4 w-4" />
+                            <span className="sr-only"> (opens in a new tab)</span>
                           </a>
                         </Button>
                       ) : isAvailable ? (
