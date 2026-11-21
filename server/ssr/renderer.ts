@@ -4,6 +4,7 @@ import { getToolBySlug, ToolContent } from './toolsContent';
 import { configuredWebIntroCoupon, webIntroOfferForPrice } from '../services/webIntroOffer';
 import { runningSources } from '../../shared/runningSources';
 import { blogIndexTitle } from '../../shared/searchPageCopy';
+import { strideReplay } from '../../shared/strideReplay';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -1888,6 +1889,7 @@ export function renderToolsHubPage(): string {
       { "@type": "ListItem", "position": 9, "url": `${BASE_URL}/tools/shoes`, "name": "Running Shoe Database" },
       { "@type": "ListItem", "position": 10, "url": `${BASE_URL}/tools/shoe-finder`, "name": "Running Shoe Finder" },
       { "@type": "ListItem", "position": 11, "url": `${BASE_URL}/tools/rotation-planner`, "name": "Shoe Rotation Planner" },
+      { "@type": "ListItem", "position": 12, "url": strideReplay.url, "name": strideReplay.title },
     ]
   }, null, 2);
   const webPageSchema = generateStructuredData(meta, url, 'WebPage');
@@ -1919,6 +1921,7 @@ ${listSchema}
           <ul>
             <li><a href="/tools/training-split-analyzer"><strong>Training Split Analyzer</strong></a>: analyze whether your recent intensity distribution is polarized, pyramidal, or threshold-heavy.</li>
             <li><a href="/tools/cadence-analyzer"><strong>Running Cadence Analyzer</strong></a>: review cadence stability and late-run change while keeping pace, terrain and device quality in context.</li>
+            <li><a href="${strideReplay.url}" rel="nofollow noopener noreferrer"><strong>${strideReplay.title}</strong></a>: ${strideReplay.description}</li>
             <li><a href="/tools/heatmap"><strong>Running Heatmap</strong></a>: visualize your most-run routes on an interactive map. Discover training patterns and favourite paths from all your Strava activities.</li>
           </ul>
         </section>

@@ -2,12 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin, ShoppingBag, Target, RefreshCw, GitCompare } from "lucide-react";
+import { Activity, TrendingDown, Calculator, BarChart3, ArrowRight, Zap, MapPin, ShoppingBag, Target, RefreshCw, GitCompare, ExternalLink, Video } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
-import AppHeader from "@/components/AppHeader";
 import PublicHeader from "@/components/PublicHeader";
+import { strideReplay } from "@shared/strideReplay";
 
 const tools = [
   {
@@ -100,6 +100,15 @@ const tools = [
       "Stride analysis",
       "Weekly trends"
     ]
+  },
+  {
+    ...strideReplay,
+    id: "stridereplay",
+    icon: Video,
+    status: "available",
+    external: true,
+    ctaLabel: "Visit StrideReplay",
+    features: [],
   },
   {
     id: "training-pace-calculator",
@@ -200,7 +209,7 @@ export default function ToolsPage() {
           "@type": "ItemList",
           "name": "Free Running Tools & Calculators",
           "description": "Running calculators and analyzers. Manual tools work without an account; connected analysis requires Strava sign-in.",
-          "numberOfItems": 12,
+          "numberOfItems": tools.length,
           "itemListElement": [
             { "@type": "ListItem", "position": 1, "name": "Running Heatmap", "url": "https://aitracker.run/tools/heatmap" },
             { "@type": "ListItem", "position": 2, "name": "Aerobic Decoupling Calculator", "url": "https://aitracker.run/tools/aerobic-decoupling-calculator" },
@@ -208,12 +217,13 @@ export default function ToolsPage() {
             { "@type": "ListItem", "position": 4, "name": "Marathon Fueling Planner", "url": "https://aitracker.run/tools/marathon-fueling" },
             { "@type": "ListItem", "position": 5, "name": "Race Time Predictor", "url": "https://aitracker.run/tools/race-predictor" },
             { "@type": "ListItem", "position": 6, "name": "Cadence Analyzer", "url": "https://aitracker.run/tools/cadence-analyzer" },
-            { "@type": "ListItem", "position": 7, "name": "Training Pace Calculator", "url": "https://aitracker.run/tools/training-pace-calculator" },
-            { "@type": "ListItem", "position": 8, "name": "Race Split Calculator", "url": "https://aitracker.run/tools/race-split-calculator" },
-            { "@type": "ListItem", "position": 9, "name": "Running Shoe Database", "url": "https://aitracker.run/tools/shoes" },
-            { "@type": "ListItem", "position": 10, "name": "Shoe Finder", "url": "https://aitracker.run/tools/shoe-finder" },
-            { "@type": "ListItem", "position": 11, "name": "Rotation Planner", "url": "https://aitracker.run/tools/rotation-planner" },
-            { "@type": "ListItem", "position": 12, "name": "Shoe Comparisons", "url": "https://aitracker.run/tools/shoes/compare" }
+            { "@type": "ListItem", "position": 7, "name": strideReplay.title, "url": strideReplay.url },
+            { "@type": "ListItem", "position": 8, "name": "Training Pace Calculator", "url": "https://aitracker.run/tools/training-pace-calculator" },
+            { "@type": "ListItem", "position": 9, "name": "Race Split Calculator", "url": "https://aitracker.run/tools/race-split-calculator" },
+            { "@type": "ListItem", "position": 10, "name": "Running Shoe Database", "url": "https://aitracker.run/tools/shoes" },
+            { "@type": "ListItem", "position": 11, "name": "Shoe Finder", "url": "https://aitracker.run/tools/shoe-finder" },
+            { "@type": "ListItem", "position": 12, "name": "Rotation Planner", "url": "https://aitracker.run/tools/rotation-planner" },
+            { "@type": "ListItem", "position": 13, "name": "Shoe Comparisons", "url": "https://aitracker.run/tools/shoes/compare" }
           ]
         }}
       />
@@ -307,16 +317,27 @@ export default function ToolsPage() {
                   
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-2">
+                      {tool.features.length > 0 && <div className="grid grid-cols-2 gap-2">
                         {tool.features.map((feature, idx) => (
                           <div key={idx} className="flex items-center space-x-2 text-sm text-gray-600">
                             <div className="w-1.5 h-1.5 rounded-full bg-strava-orange flex-shrink-0" />
                             <span>{feature}</span>
                           </div>
                         ))}
-                      </div>
+                      </div>}
                       
-                      {isAvailable ? (
+                      {isAvailable && tool.external ? (
+                        <Button
+                          asChild
+                          className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 mt-2"
+                          data-testid={`button-open-${tool.id}`}
+                        >
+                          <a href={tool.url} rel="nofollow noopener noreferrer">
+                            {tool.ctaLabel}
+                            <ExternalLink aria-hidden="true" className="ml-2 h-4 w-4" />
+                          </a>
+                        </Button>
+                      ) : isAvailable ? (
                         <Link href={tool.url}>
                           <Button 
                             className="w-full bg-strava-orange text-white hover:bg-strava-orange/90 mt-2"

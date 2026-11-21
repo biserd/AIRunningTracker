@@ -53,3 +53,18 @@ test("public shoe and comparison entries provide their URL slug to the component
     assert.ok(html.includes(`<output>${slug}</output>`), path);
   }
 });
+
+test("the Tools hub exposes StrideReplay in the main content as an external video-analysis link", async () => {
+  (globalThis as typeof globalThis & { React: typeof React }).React = React;
+  const { renderReactToolPage } = await import("./reactToolRenderer");
+  const { renderToolsHubPage } = await import("./renderer");
+  const html = await renderReactToolPage("/tools");
+  assert.ok(html);
+  const card = html.match(/data-testid="card-tool-stridereplay"[\s\S]*?(?=data-testid="card-tool-training-pace-calculator")/)?.[0];
+  assert.ok(card, "StrideReplay belongs next to the cadence tool, not just in the footer");
+  assert.match(card, /Analyze your running form from a short video/);
+  assert.match(card, /<a [^>]*href="https:\/\/stridereplay\.com\/"[^>]*rel="nofollow noopener noreferrer"[^>]*>Visit StrideReplay/);
+  assert.doesNotMatch(card, /Login Required|<button/);
+  const fallback = renderToolsHubPage();
+  assert.match(fallback, /<a href="https:\/\/stridereplay\.com\/" rel="nofollow noopener noreferrer"><strong>StrideReplay<\/strong><\/a>: Analyze your running form from a short video/);
+});
