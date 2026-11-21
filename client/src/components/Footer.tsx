@@ -51,6 +51,7 @@ export default function Footer() {
               <li><Link href="/tools/training-split-analyzer" className="hover:text-white transition-colors" data-testid="link-tool-training-split">Training Split Analyzer</Link></li>
               <li><Link href="/tools/marathon-fueling" className="hover:text-white transition-colors" data-testid="link-tool-fueling">Marathon Fueling</Link></li>
               <li><Link href="/tools/cadence-analyzer" className="hover:text-white transition-colors" data-testid="link-tool-cadence">Form Stability</Link></li>
+              <li><a href="https://stridereplay.com/" className="hover:text-white transition-colors">StrideReplay</a></li>
               <li><Link href="/tools/training-pace-calculator" className="hover:text-white transition-colors">Training Paces</Link></li>
               <li><Link href="/tools/race-split-calculator" className="hover:text-white transition-colors">Race Splits</Link></li>
               <li><Link href="/tools/shoes" className="hover:text-white transition-colors" data-testid="link-tool-shoes">Running Shoe Hub</Link></li>
