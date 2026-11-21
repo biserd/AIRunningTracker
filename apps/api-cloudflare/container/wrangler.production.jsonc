@@ -47,8 +47,8 @@
   // Free dashboard starter actions and saved Week 1 (source e8d946d; migration 0045).
   // StrideReplay link in the Tools footer (source 01adcda). No schema changes.
   // StrideReplay video analysis card on the Tools page (source c25cdd0). No schema changes.
-  // GPT-6 Luna across the main app (source b31ffd7). No schema changes.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:d037095960598ded1a808fcc66234628bcb73e03f9edd8570a5bd3e10d502659",
+  // Last verified production image (d60b904); model rollout b31ffd7 awaits provider verification.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:cd9f0f7cf32a3b64665236e86f8a9f974ed91d76192526e035dde02f2de303b0",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
