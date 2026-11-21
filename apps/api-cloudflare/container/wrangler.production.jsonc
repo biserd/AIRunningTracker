@@ -46,7 +46,8 @@
   // Dashboard email verification and unfolded activity grid (source fb23a50). No schema changes.
   // Free dashboard starter actions and saved Week 1 (source e8d946d; migration 0045).
   // StrideReplay link in the Tools footer (source 01adcda). No schema changes.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:bd31165b33d5f08fa86f117c2cd855ae9f762f4c55607de9c932a403f1a88a9f",
+  // StrideReplay video analysis card on the Tools page (source c25cdd0). No schema changes.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:32832270860e595210964f0f002b1cb2c31ada5f4558b2431b656d326e7a0ff9",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
