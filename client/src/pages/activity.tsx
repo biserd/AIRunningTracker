@@ -226,8 +226,8 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
   );
 }
 
-function PremiumPreviewCard({ preview, createdAt, unitPreference, onOpenDeepDive, showExplore }: {
-  preview: PremiumPreviewData; createdAt?: string | null; unitPreference?: string; onOpenDeepDive: () => void; showExplore: boolean;
+function PremiumPreviewCard({ preview, createdAt, unitPreference, onOpenDeepDive }: {
+  preview: PremiumPreviewData; createdAt?: string | null; unitPreference?: string; onOpenDeepDive: () => void;
 }) {
   // Freshness: age (days) of the preview at the moment it's shown.
   const freshnessDays = createdAt
@@ -320,7 +320,7 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference, onOpenDeepDive
             {comparison.baselineCadence !== null && <div><p className="text-[10px] font-semibold uppercase text-yellow-700">Usual cadence</p><p className="text-sm font-bold text-gray-900">{comparison.baselineCadence} spm</p></div>}
           </div>
         )}
-        {showExplore && <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <p className="text-xs text-gray-500 flex items-center gap-1">
             <Sparkles className="h-3 w-3" aria-hidden="true" /> Deep Dive and Coach Insights are included for this run.
           </p>
@@ -335,7 +335,7 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference, onOpenDeepDive
           }}>
             Explore Deep Dive
           </Button>
-        </div>}
+        </div>
       </CardContent>
     </Card>
   );
@@ -985,7 +985,6 @@ export default function ActivityPage() {
             preview={premiumPreview}
             createdAt={premiumPreviewData?.createdAt}
             unitPreference={userData?.unitPreference}
-            showExplore={viewMode !== "deep_dive"}
             onOpenDeepDive={() => handleViewModeChange("deep_dive")}
           />
         )}
