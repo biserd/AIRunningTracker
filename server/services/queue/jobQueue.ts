@@ -10,7 +10,7 @@ import { processCoachRecapJob } from '../coachingService';
 import { aiService } from '../ai';
 import goalsService from '../goals';
 import { deleteCachedByPrefix, deleteCachedResponse } from '../../routes';
-import { canAccessCapability } from '@shared/entitlements';
+import { canGenerateRunCoachRecap } from '../runAnalysisAccess';
 import { isMigrationStaging, isCloudflareRuntime } from '../../config/runtime';
 import { createJobStore } from '../../runtimeServices';
 import { runRecapJobId } from '../runEnrichmentPolicy';
@@ -404,12 +404,11 @@ export class JobQueue {
     const newJobs: Omit<Job, 'id' | 'createdAt' | 'status' | 'attempts'>[] = [];
     
     const user = await storage.getUser(job.userId);
-    if (user && user.coachEnabled !== false && canAccessCapability(user, "ai_coach") &&
-        user?.coachOnboardingCompleted) {
+    if (user && canGenerateRunCoachRecap(user, ownedActivity)) {
       const activity = await storage.getActivityById(activityId);
       if (activity?.type?.toLowerCase().includes('run')) {
         newJobs.push(createCoachRecapJob(job.userId, activityId, stravaId));
-        console.log(`[JobQueue] Queued coach recap for Premium user ${job.userId}, activity ${activityId}`);
+        console.log(`[JobQueue] Queued coach recap for runner ${job.userId}, activity ${activityId}`);
       }
     }
 

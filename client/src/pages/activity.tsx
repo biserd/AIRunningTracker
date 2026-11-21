@@ -24,7 +24,7 @@ import { CoachRecapCard } from "@/components/CoachRecapCard";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ViewOnStravaLink, StravaPoweredBy } from "@/components/StravaConnect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useSubscription, useFeatureAccess } from "@/hooks/useSubscription";
+import { useSubscription } from "@/hooks/useSubscription";
 import type { CoachRecap } from "@shared/schema";
 import { normalizeZoneDurations, zonesFromFractions } from "@shared/zoneCalculations";
 import { buildUpgradeUrl } from "@shared/upgradeIntent";
@@ -176,6 +176,7 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
     { icon: BarChart3, label: "Detailed splits and effort distribution" },
     { icon: Heart, label: "Heart rate, cadence, and power charts" },
     { icon: Users, label: "Comparison with PRs and similar runs" },
+    { icon: MessageCircle, label: "Coach insights and a next-run recommendation" },
   ];
 
   return (
@@ -194,9 +195,9 @@ function PremiumAnalysisUpsell({ activityId }: { activityId: number }) {
                 Premium analysis
               </span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Your Deep Dive is ready to unlock</h2>
+            <h2 className="text-xl font-bold text-gray-900">Analyze another run</h2>
             <p className="text-sm text-gray-600 mt-2 max-w-2xl">
-              Continue from your preview into the evidence that explains where effort changed and what to try next.
+              Your free full analysis is for one run. Premium adds Deep Dive and Coach Insights to your other runs.
             </p>
             <div className="grid sm:grid-cols-2 gap-2 mt-5">
               {premiumFeatures.map(({ icon: Icon, label }) => (
@@ -321,7 +322,7 @@ function PremiumPreviewCard({ preview, createdAt, unitPreference, onOpenDeepDive
         )}
         {showExplore && <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <p className="text-xs text-gray-500 flex items-center gap-1">
-            <Lock className="h-3 w-3" /> Splits, decoupling, and race predictions stay locked
+            <Sparkles className="h-3 w-3" aria-hidden="true" /> Deep Dive and Coach Insights are included for this run.
           </p>
           <Button variant="outline" size="sm" data-testid="premium-preview-deep-dive" onClick={() => {
               trackFunnelEvent("preview_cta_clicked", {
@@ -344,22 +345,19 @@ export default function ActivityPage() {
   const [match, params] = useRoute("/activity/:id");
   const activityId = params?.id;
   const fromStarter = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("from") === STARTER_SOURCE;
-  const [viewMode, setViewMode] = useState<ViewMode>("story");
+  const [requestedView, setRequestedView] = useState<{ id: string | undefined; mode: ViewMode } | null>(null);
   const [activeChip, setActiveChip] = useState<"drift" | "pacing" | "quality" | "benchmark" | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  const { isFree, isPro, isPremium, isLoading: subscriptionLoading } = useSubscription();
-  const featureAccess = useFeatureAccess();
+  const { isFree, isPremium, isLoading: subscriptionLoading } = useSubscription();
 
   const { data: userData } = useQuery<{ id?: number; activityViewMode?: string; unitPreference?: string }>({
     queryKey: ['/api/user'],
   });
 
-  useEffect(() => {
-    if (userData?.activityViewMode && !fromStarter) {
-      setViewMode(userData.activityViewMode as ViewMode);
-    }
-  }, [userData?.activityViewMode, fromStarter]);
+  const viewMode = requestedView && requestedView.id === activityId
+    ? requestedView.mode
+    : isPremium && !fromStarter && userData?.activityViewMode === 'deep_dive' ? 'deep_dive' : 'story';
 
   const updatePreferenceMutation = useMutation({
     mutationFn: async (newMode: ViewMode) => {
@@ -379,8 +377,8 @@ export default function ActivityPage() {
 
   const handleViewModeChange = (newMode: string) => {
     if (newMode && ['story', 'deep_dive'].includes(newMode)) {
-      setViewMode(newMode as ViewMode);
-      updatePreferenceMutation.mutate(newMode as ViewMode);
+      setRequestedView({ id: activityId, mode: newMode as ViewMode });
+      if (isPremium) updatePreferenceMutation.mutate(newMode as ViewMode);
     }
   };
 
@@ -393,11 +391,11 @@ export default function ActivityPage() {
   });
 
   const isLocked = !!(activityData as any)?.locked || !!(activityData?.activity as any)?.locked;
+  const freeRunAnalysis = activityData?.freeRunAnalysis === true && !isLocked;
+  const canViewRunAnalysis = !isLocked && (isPremium || freeRunAnalysis);
 
   const needsPerformanceData =
-    featureAccess.activity.performanceMetrics &&
-    (viewMode === 'story' || viewMode === 'deep_dive') &&
-    !isLocked;
+    canViewRunAnalysis;
   
   const { data: performanceData, isLoading: performanceLoading } = useQuery({
     queryKey: ['/api/activities', activityId, 'performance'],
@@ -418,7 +416,7 @@ export default function ActivityPage() {
       if (!res.ok) throw new Error('Failed to fetch verdict');
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady && featureAccess.activity.performanceMetrics && !isLocked,
+    enabled: !!activityId && subscriptionReady && canViewRunAnalysis,
     retry: false
   });
 
@@ -431,7 +429,7 @@ export default function ActivityPage() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady && featureAccess.activity.performanceMetrics && !isLocked,
+    enabled: !!activityId && subscriptionReady && canViewRunAnalysis,
     retry: false
   });
 
@@ -444,11 +442,11 @@ export default function ActivityPage() {
       if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady && !isLocked,
+    enabled: !!activityId && subscriptionReady && canViewRunAnalysis,
     retry: false
   });
 
-  const { data: coachRecapData } = useQuery<{ recap: CoachRecap | null }>({
+  const { data: coachRecapData, isLoading: coachRecapLoading, isFetching: coachRecapFetching } = useQuery<{ recap: CoachRecap | null }>({
     queryKey: ['/api/activities', activityId, 'coach-recap'],
     queryFn: async () => {
       const res = await fetch(`/api/activities/${activityId}/coach-recap`, {
@@ -457,7 +455,8 @@ export default function ActivityPage() {
       if (!res.ok) return { recap: null };
       return res.json();
     },
-    enabled: !!activityId && subscriptionReady && isPremium && !isLocked,
+    enabled: !!activityId && subscriptionReady && canViewRunAnalysis,
+    refetchInterval: query => freeRunAnalysis && !query.state.data?.recap && query.state.dataUpdateCount < 20 ? 3000 : false,
     retry: false
   });
 
@@ -473,7 +472,7 @@ export default function ActivityPage() {
       if (!res.ok) return { preview: null };
       return res.json();
     },
-    enabled: subscriptionReady && isFree && !isLocked,
+    enabled: subscriptionReady && isFree && freeRunAnalysis,
     retry: false
   });
 
@@ -484,15 +483,15 @@ export default function ActivityPage() {
       : null;
 
   const [isHydrating, setIsHydrating] = useState(false);
-  const hydrationTriggered = useRef(false);
+  const hydrationTriggered = useRef<number | null>(null);
 
   const activity = activityData?.activity;
   useEffect(() => {
     if (fromStarter && activity?.id && !isLocked) trackStarterAction(userData?.id, "run_opened");
   }, [activity?.id, fromStarter, isLocked, userData?.id]);
-  const needsHydration = featureAccess.activity.performanceMetrics && activity && (
-    activity.hydrationStatus === 'pending' || 
-    (!activity.streamsData || activity.streamsData === 'null')
+  const needsHydration = canViewRunAnalysis && activity && (
+    activity.hydrationStatus === 'pending' ||
+    !activity.streamsData || activity.streamsData === 'null' || !activity.lapsData || activity.lapsData === 'null'
   );
 
   const hydrateMutation = useMutation({
@@ -505,13 +504,14 @@ export default function ActivityPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.message === "Activity already hydrated") {
+      setIsHydrating(Boolean(data.hydrationQueued));
+      if (!data.hydrationQueued) {
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'verdict'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'efficiency'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'quality'] });
-        setIsHydrating(false);
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'coach-recap'] });
       }
     },
     onError: () => {
@@ -527,13 +527,13 @@ export default function ActivityPage() {
       });
       const data = await res.json();
       
-      if (data.activity?.hydrationStatus === 'complete' || 
-          (data.activity?.streamsData && data.activity.streamsData !== 'null')) {
+      if (['complete', 'partial', 'not_available'].includes(data.activity?.hydrationStatus)) {
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'performance'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'verdict'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'efficiency'] });
         queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'quality'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/activities', activityId, 'coach-recap'] });
         setIsHydrating(false);
       }
       return data;
@@ -544,12 +544,11 @@ export default function ActivityPage() {
   });
 
   useEffect(() => {
-    if (!activity || hydrationTriggered.current || !needsHydration) return;
+    if (!activity || !canViewRunAnalysis || hydrationTriggered.current === activity.id || (!needsHydration && !freeRunAnalysis)) return;
     
-    hydrationTriggered.current = true;
-    setIsHydrating(true);
+    hydrationTriggered.current = activity.id;
     hydrateMutation.mutate();
-  }, [activity, needsHydration]);
+  }, [activity, needsHydration, freeRunAnalysis, canViewRunAnalysis]);
 
   // Generate key moments from performance data (laps/splits)
   const keyMoments = useMemo((): KeyMoment[] => {
@@ -729,6 +728,18 @@ export default function ActivityPage() {
             {a.startDate ? new Date(a.startDate).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) : ""}
           </p>
 
+          {viewMode === "story" ? (
+            <Card className="mt-4">
+              <CardContent className="space-y-4 pt-6">
+                <dl className="grid grid-cols-3 gap-2 text-sm">
+                  <div><dt className="text-gray-600">Distance</dt><dd className="font-semibold">{distanceDisplay || "Not available"} {a.distanceUnit}</dd></div>
+                  <div><dt className="text-gray-600">Time</dt><dd className="font-semibold">{a.formattedDuration || "Not available"}</dd></div>
+                  <div><dt className="text-gray-600">Pace</dt><dd className="font-semibold">{paceDisplay || "Not available"} {a.paceUnit}</dd></div>
+                </dl>
+                <Button variant="outline" onClick={() => handleViewModeChange('deep_dive')} data-testid="toggle-deep-dive">Explore Deep Dive and Coach Insights</Button>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="relative">
             {/* Blurred preview of the actual run stats */}
             <div className="select-none pointer-events-none filter blur-md grayscale opacity-80">
@@ -787,18 +798,13 @@ export default function ActivityPage() {
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </div>)}
         </div>
       </div>
     );
   }
 
-  const hasLockedDeepDive =
-    !featureAccess.activity.performanceMetrics ||
-    featureAccess.activity.timeline !== 'full' ||
-    featureAccess.activity.splits !== 'full' ||
-    !featureAccess.activity.hrCadencePower ||
-    !featureAccess.activity.activityComparison;
+  const hasLockedDeepDive = !canViewRunAnalysis;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -816,6 +822,7 @@ export default function ActivityPage() {
                 </Link>
               </Button>
               <h1 className="text-2xl font-bold text-gray-900">{activity.name}</h1>
+              {freeRunAnalysis && <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-900" data-testid="free-run-analysis-badge">Free full run analysis</span>}
               {verdictData && (
                 <TrainingConsistency
                   consistencyLabel={verdictData.consistencyLabel}
@@ -973,7 +980,7 @@ export default function ActivityPage() {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
 
         {/* One-time Premium Preview (free users, first-synced run only) */}
-        {premiumPreview && (
+        {premiumPreview && viewMode === "story" && (
           <PremiumPreviewCard
             preview={premiumPreview}
             createdAt={premiumPreviewData?.createdAt}
@@ -986,6 +993,11 @@ export default function ActivityPage() {
         {/* Story Mode: Simplified Layout */}
         {viewMode === 'story' && (
           <>
+            {subscriptionReady && !canViewRunAnalysis && (
+              <Button variant="outline" className="mb-4" onClick={() => handleViewModeChange("deep_dive")} data-testid="request-other-run-coach">
+                Show Coach Insights for this run
+              </Button>
+            )}
             {/* 1. Unified Coach Card - Combines Verdict, Next 48 Hours, and Goal Alignment */}
             {(verdictData || verdictLoading) && !verdictError && (
               <div className="mb-6">
@@ -994,16 +1006,22 @@ export default function ActivityPage() {
                   verdictData={verdictData}
                   isLoading={verdictLoading && !verdictData}
                   onAskCoach={() => setIsChatOpen(true)}
-                  mode={featureAccess.activity.coachVerdict as 'full' | 'basic'}
+                  mode="full"
                 />
               </div>
             )}
 
-            {/* AI Agent Coach Recap (Premium only) */}
-            {isPremium && coachRecapData?.recap && (
+            {canViewRunAnalysis && coachRecapData?.recap && (
               <div className="mb-6" data-testid="coach-recap-section">
                 <CoachRecapCard recap={coachRecapData.recap} />
               </div>
+            )}
+            {freeRunAnalysis && !coachRecapData?.recap && (
+              <p className="mb-6 rounded-xl border bg-white p-4 text-sm text-gray-600" role="status">
+                {coachRecapLoading || coachRecapFetching || isHydrating || hydrateMutation.isPending
+                  ? "Preparing Coach Insights for this run."
+                  : "Coach Insights are not ready yet. Check back shortly."}
+              </p>
             )}
             
             {/* 2. Route Map - Always visible with better sizing and key moments */}
@@ -1047,7 +1065,7 @@ export default function ActivityPage() {
             {hasLockedDeepDive && <PremiumAnalysisUpsell activityId={Number(activityId)} />}
 
             {/* Section 1: Performance Metrics - Drift, Pacing, Baseline */}
-            {featureAccess.activity.performanceMetrics && efficiencyData ? (
+            {canViewRunAnalysis && efficiencyData ? (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-teal-50">
                   <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -1171,7 +1189,7 @@ export default function ActivityPage() {
             ) : null}
 
             {/* Section 2: Run Timeline */}
-            {featureAccess.activity.timeline === 'full' && (
+            {canViewRunAnalysis && (
               <RunTimeline 
                 streams={performanceData?.streams}
                 unitPreference={activity.unitPreference}
@@ -1181,7 +1199,7 @@ export default function ActivityPage() {
             )}
 
             {/* Section 3: Splits Analysis */}
-            {featureAccess.activity.splits === 'full' && (
+            {canViewRunAnalysis && (
               <DetailedSplitsAnalysis
                 activity={activity}
                 streams={performanceData?.streams}
@@ -1191,7 +1209,7 @@ export default function ActivityPage() {
             )}
 
             {/* Section 4: Heart Rate, Cadence, Power - Side by Side Grid */}
-            {featureAccess.activity.hrCadencePower && (
+            {canViewRunAnalysis && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Heart Rate */}
               <Card className="overflow-hidden">
@@ -1259,7 +1277,7 @@ export default function ActivityPage() {
             )}
 
             {/* Section 5: Activity Comparison (Premium only) */}
-            {featureAccess.activity.activityComparison && (
+            {isPremium && (
               <Card className="overflow-hidden">
                 <CardHeader className="pb-3 bg-gradient-to-r from-yellow-50 to-amber-50">
                   <CardTitle className="flex items-center gap-2 text-lg font-bold">

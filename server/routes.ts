@@ -44,6 +44,7 @@ import { createMarketingToken, verifyMarketingToken, isRecentCampaignClick, lega
 import { sendWeeklySummaries, weeklySummaryWorker } from "./services/weeklySummaryWorker";
 import { accountDormancyWorker, reactivateDormantAccount } from "./services/accountDormancy";
 import { stravaWebhookService } from "./services/stravaWebhook";
+import { canViewRunAnalysis, isFreeAnalysisRun } from "./services/runAnalysisAccess";
 import { proactiveCoachWorker, ensureProactiveCoachSchema, isValidTimezone } from "./services/proactiveCoach";
 import { notificationDeliveryWorker } from "./services/notificationProcessor";
 import { insertUserSchema, loginSchema, registerSchema, insertFeedbackSchema, insertGoalSchema, emailWaitlist, users, funnelEvents, stravaWebhookLogs, type Activity, type RunningShoe } from "@shared/schema";
@@ -144,6 +145,23 @@ async function requireCapability(
     return null;
   }
 
+  return user;
+}
+
+async function requireRunAnalysis(req: any, res: Response, activity: Pick<Activity, "id" | "userId" | "stravaId" | "type">) {
+  if (activity.userId !== req.user.id) {
+    res.status(404).json({ message: "Activity not found" });
+    return null;
+  }
+  const user = await storage.getUser(req.user.id);
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return null;
+  }
+  if (!canViewRunAnalysis(user, activity)) {
+    res.status(403).json({ code: "PREMIUM_REQUIRED", capability: "activity_deep_dive", message: "Premium is required to analyze another run." });
+    return null;
+  }
   return user;
 }
 
@@ -4741,7 +4759,7 @@ ${allPages.map(page => `  <url>
     }
   });
 
-  // Get coach recap for specific activity (Premium feature)
+  // Full coach recap for Premium and the account's one complimentary run.
   app.get("/api/activities/:activityId/coach-recap", authenticateJWT, async (req: any, res) => {
     try {
       const activityId = parseInt(req.params.activityId);
@@ -4755,23 +4773,7 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Activity not found" });
       }
       
-      // Authorization check: user can only fetch recaps for their own activities
-      if (req.user?.id !== activity.userId && !req.user?.isAdmin) {
-        return res.status(403).json({ message: "Not authorized to view this activity's recap" });
-      }
-      
-      const user = await storage.getUser(activity.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (!canAccessCapability(user, "ai_coach")) {
-        return res.status(403).json({ message: "Premium subscription required for coach recaps" });
-      }
-
-      if (activity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
+      if (!await requireRunAnalysis(req, res, activity)) return;
 
       const recap = await storage.getCoachRecapByActivityId(activityId);
       res.json({ recap: recap || null });
@@ -6015,18 +6017,22 @@ ${allPages.map(page => `  <url>
         return res.status(404).json({ message: "Activity not found" });
       }
 
-      const user = await storage.getUser(activity.userId);
+      let user = await storage.getUser(activity.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Locked-for-free gate: webhook-ingested activities stay invisible in
-      // the list views and render behind a blur + upgrade CTA on the detail
-      // page. Owner's *current* plan wins: if they've upgraded since the
-      // email was sent, the stale lockedForFree flag is ignored.
-      const { isPaidPlan: detailIsPaid } = await import("./rateLimits");
-      const ownerIsPaid = detailIsPaid(user.subscriptionPlan ?? null, user.subscriptionStatus ?? null);
-      const isLocked = !!activity.lockedForFree && !ownerIsPaid;
+      // A direct link can be the first page opened following an import.
+      // Only the existing server-side selection can assign the free run.
+      if (!user.premiumPreview && user.stravaConnected && user.subscriptionPlan === "free" && !hasPremiumAccess(user)) {
+        const { createPremiumPreviewForUser } = await import("./services/premiumPreview");
+        await createPremiumPreviewForUser(user.id).catch(() => {});
+        user = await storage.getUser(user.id) ?? user;
+      }
+      res.set('Cache-Control', 'private, no-store');
+      const freeRunAnalysis = isFreeAnalysisRun(user, activity);
+      const mayViewDeepDive = canViewRunAnalysis(user, activity);
+      const isLocked = !!activity.lockedForFree && !mayViewDeepDive;
 
       // When locked, return ONLY preview-safe fields (name, date, totals).
       // No streams, laps, HR, splits, GPS: those are paid-only.
@@ -6046,6 +6052,7 @@ ${allPages.map(page => `  <url>
             paceUnit: units.paceUnit,
             unitPreference: user.unitPreference,
             locked: true,
+            deepDiveLocked: true,
           },
         });
       }
@@ -6066,7 +6073,6 @@ ${allPages.map(page => `  <url>
         sufferScore,
         ...activitySummary
       } = activity;
-      const mayViewDeepDive = canAccessCapability(user, "activity_deep_dive");
       const formattedActivity = {
         ...activitySummary,
         ...(mayViewDeepDive ? {
@@ -6103,7 +6109,7 @@ ${allPages.map(page => `  <url>
         deepDiveLocked: !mayViewDeepDive,
       };
 
-      res.json({ activity: formattedActivity, locked: isLocked });
+      res.json({ activity: formattedActivity, locked: isLocked, freeRunAnalysis });
     } catch (error: any) {
       console.error('Activity fetch error:', error);
       res.status(500).json({ message: error.message || "Failed to fetch activity" });
@@ -6115,18 +6121,19 @@ ${allPages.map(page => `  <url>
   app.get("/api/activities/:activityId/hydrate", authenticateJWT, async (req: any, res) => {
     const activityId = Number(req.params.activityId);
     if (!Number.isSafeInteger(activityId) || activityId <= 0) return res.status(400).json({ message: "Invalid activity ID" });
-    if (!await requireCapability(req, res, "activity_deep_dive")) return;
     try {
       if (isCloudflareRuntime()) {
         const { applicationSqlDatabase } = await import("./d1/runtimeDatabase");
         const row = await applicationSqlDatabase.prepare(
-          "SELECT laps_data,hydration_status FROM activities WHERE id=? AND user_id=?"
-        ).bind(activityId, req.user.id).first<{ laps_data: string | null; hydration_status: string | null }>();
+          "SELECT id,user_id,strava_id,type,laps_data,hydration_status FROM activities WHERE id=? AND user_id=?"
+        ).bind(activityId, req.user.id).first<{ id: number; user_id: number; strava_id: string | null; type: string | null; laps_data: string | null; hydration_status: string | null }>();
         if (!row) return res.status(404).json({ message: "Activity not found" });
+        if (!await requireRunAnalysis(req, res, { id: row.id, userId: row.user_id, stravaId: row.strava_id, type: row.type })) return;
         return res.json({ lapsData: row.laps_data, hydrationStatus: row.hydration_status });
       }
       const activity = await storage.getActivityByIdForUser(activityId, req.user.id);
       if (!activity) return res.status(404).json({ message: "Activity not found" });
+      if (!await requireRunAnalysis(req, res, activity)) return;
       res.json({ lapsData: activity.lapsData, hydrationStatus: activity.hydrationStatus });
     } catch {
       res.status(500).json({ message: "Could not read run preparation" });
@@ -6141,25 +6148,13 @@ ${allPages.map(page => `  <url>
       if (isNaN(activityId)) {
         return res.status(400).json({ message: "Invalid activity ID" });
       }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      const activity = await storage.getActivityById(activityId);
+      const activity = await storage.getActivityByIdForUser(activityId, req.user.id);
       if (!activity) {
         return res.status(404).json({ message: "Activity not found" });
       }
 
-      // Verify ownership
-      if (activity.userId !== req.user.id) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
-      // Lock-gate: never hydrate streams/laps for locked free activities.
-      const hydrateOwner = await storage.getUser(activity.userId);
-      if (!hydrateOwner) return res.status(404).json({ message: "User not found" });
-      const { isPaidPlan: hydrateIsPaid } = await import("./rateLimits");
-      if (activity.lockedForFree && !hydrateIsPaid(hydrateOwner?.subscriptionPlan ?? null, hydrateOwner?.subscriptionStatus ?? null)) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
+      const hydrateOwner = await requireRunAnalysis(req, res, activity);
+      if (!hydrateOwner) return;
 
       const { queueRunEnrichment } = await import("./services/runEnrichment");
       const result = await queueRunEnrichment(hydrateOwner, activity);
@@ -6687,15 +6682,7 @@ ${allPages.map(page => `  <url>
       if (activity.userId !== req.user.id) {
         return res.status(404).json({ message: "Activity not found" });
       }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      // Lock-gate: free users can't pull streams/laps for webhook-ingested
-      // activities: the detail page renders a blur + upgrade CTA instead.
-      const ownerForLock = await storage.getUser(activity.userId);
-      const { isPaidPlan: perfIsPaid } = await import("./rateLimits");
-      if (activity.lockedForFree && !perfIsPaid(ownerForLock?.subscriptionPlan ?? null, ownerForLock?.subscriptionStatus ?? null)) {
-        return res.status(402).json({ locked: true, message: "Upgrade required to view full activity analysis." });
-      }
+      if (!await requireRunAnalysis(req, res, activity)) return;
 
       // Parse stored streams and laps data
       let streams = null;
@@ -6817,20 +6804,13 @@ ${allPages.map(page => `  <url>
         return res.status(400).json({ message: "Invalid activity ID" });
       }
 
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
       // Lock-gate before any compute: locked free activities show no verdict.
       const verdictActivity = await storage.getActivityById(activityId);
       if (!verdictActivity || verdictActivity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
       }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-      if (verdictActivity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
+      const user = await requireRunAnalysis(req, res, verdictActivity);
+      if (!user) return;
 
       // The verdict is part of the Premium Activity Deep Dive capability.
       const unitPreference = user.unitPreference || 'km';
@@ -6871,11 +6851,7 @@ ${allPages.map(page => `  <url>
       if (!activity || activity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
       }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      if (activity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
+      if (!await requireRunAnalysis(req, res, activity)) return;
 
       const cacheKey = `quality:${activityId}`;
       const cached = getCachedResponse(cacheKey);
@@ -6920,11 +6896,7 @@ ${allPages.map(page => `  <url>
       if (!activity || activity.userId !== userId) {
         return res.status(404).json({ message: "Activity not found" });
       }
-      if (!await requireCapability(req, res, "activity_deep_dive")) return;
-
-      if (activity.lockedForFree) {
-        return res.status(402).json({ locked: true, message: "Upgrade required." });
-      }
+      if (!await requireRunAnalysis(req, res, activity)) return;
 
       const cacheKey = `efficiency:${activityId}`;
       const cached = getCachedResponse(cacheKey);

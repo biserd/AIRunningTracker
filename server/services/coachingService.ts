@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { storage } from "../storage";
 import type { Activity, User, CoachRecap } from "@shared/schema";
 import { getRecoveryState, type RecoveryState } from "./recoveryService";
-import { canAccessCapability } from "@shared/entitlements";
+import { canGenerateRunCoachRecap, isFreeAnalysisRun } from "./runAnalysisAccess";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -25,16 +25,6 @@ export async function generateCoachRecap(
     return null;
   }
 
-  if (!canAccessCapability(user, "ai_coach")) {
-    console.log(`[Coach] User ${userId} is not a Premium subscriber`);
-    return null;
-  }
-
-  if (!user.coachOnboardingCompleted) {
-    console.log(`[Coach] User ${userId} has not completed coach onboarding`);
-    return null;
-  }
-
   const activity = await storage.getActivityByIdForUser(activityId, userId);
   if (!activity) {
     // Deliberately do not distinguish a missing activity from one owned by a
@@ -47,6 +37,9 @@ export async function generateCoachRecap(
     console.log(`[Coach] Activity ${activityId} is not a running activity`);
     return null;
   }
+
+  if (!canGenerateRunCoachRecap(user, activity) || activity.stravaId !== stravaId) return null;
+  const complimentary = isFreeAnalysisRun(user, activity);
 
   const existingRecap = await storage.getCoachRecapByActivityId(activityId);
   if (existingRecap) {
@@ -62,6 +55,7 @@ export async function generateCoachRecap(
   
   if (!recapContent) {
     console.log(`[Coach] Failed to generate recap content for activity ${activityId}`);
+    if (complimentary) throw new Error("Free run coach recap unavailable");
     return null;
   }
 
@@ -105,7 +99,7 @@ export async function generateCoachRecap(
     completedAt: new Date(),
   });
 
-  if (user.coachNotifyRecap && user.email) {
+  if (!complimentary && user.coachNotifyRecap && user.email) {
     const notifyDedupeKey = `notification:recap:${userId}:${activityId}`;
     await storage.createNotification({
       userId,
@@ -124,7 +118,7 @@ export async function generateCoachRecap(
   }
 
   // Also queue a push notification (delivered to any device the user has subscribed)
-  if (user.coachNotifyRecap) {
+  if (!complimentary && user.coachNotifyRecap) {
     const pushDedupeKey = `notification:push:recap:${userId}:${activityId}`;
     const existing = await storage.getNotificationByDedupeKey(pushDedupeKey);
     if (!existing) {

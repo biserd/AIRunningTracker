@@ -12,6 +12,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { storage } from "../storage";
 import { hasPremiumAccess } from "@shared/entitlements";
 import { normalizeCadenceToSpm } from "@shared/cadenceNormalization";
+import { savedPreviewRunId } from "./runAnalysisAccess";
 
 // Safe payload limits: the preview is stored on the users row and returned
 // verbatim to the client, so it must stay small and free of bulky fields
@@ -326,6 +327,7 @@ export interface CreatePreviewDeps {
     subscriptionStatus?: string | null;
   } | undefined>;
   loadActivities: () => Promise<Activity[]>;
+  loadPinnedActivity?: (id: number) => Promise<Activity | undefined>;
   /** Atomic compare-and-set: persist only if no preview exists. Returns true when written. */
   persistIfAbsent: (payload: PremiumPreviewPayload) => Promise<boolean>;
   replaceIfStale?: (payload: PremiumPreviewPayload) => Promise<boolean>;
@@ -355,7 +357,13 @@ export async function createPremiumPreviewCore(deps: CreatePreviewDeps): Promise
   }
 
   const activities = await deps.loadActivities();
-  const run = selectLatestEligibleRun(activities);
+  const pinnedActivityId = savedPreviewRunId(existingPreview);
+  const run = existingPreview
+    ? pinnedActivityId && (activities.find(a => a.id === pinnedActivityId) || await deps.loadPinnedActivity?.(pinnedActivityId))
+    : selectLatestEligibleRun(activities);
+  // A format/unit refresh is not a new grant, even if the original activity
+  // has left the recent window or disappeared after a source disconnect.
+  if (existingPreview && (!run || !isEligiblePreviewRun(run))) return { created: false, reason: "already_exists" };
   if (!run) {
     console.info("[PremiumPreview] No eligible run found", summarizePreviewEligibility(activities));
     return { created: false, reason: "no_eligible_run" };
@@ -394,7 +402,9 @@ export async function createPremiumPreviewForUser(userId: number): Promise<Creat
         subscriptionStatus: u.subscriptionStatus,
       } : undefined;
     },
-    loadActivities: () => storage.getActivitiesByUserId(userId, 100),
+    loadActivities: async () => (await storage.getActivitiesByUserId(userId, 100, undefined, { summaryOnly: true }))
+      .filter(a => Boolean(a.stravaId)),
+    loadPinnedActivity: id => storage.getActivityByIdForUser(id, userId),
     persistIfAbsent: async (payload) => {
       const result = await db
         .update(users)
@@ -409,6 +419,7 @@ export async function createPremiumPreviewForUser(userId: number): Promise<Creat
         .set({ premiumPreview: payload as any, premiumPreviewCreatedAt: new Date() })
         .where(and(
           eq(users.id, userId),
+          sql`CAST(COALESCE(${users.premiumPreview}->'sourceData'->>'activityId',${users.premiumPreview}->>'activityId') AS INTEGER) = ${payload.activityId}`,
           sql`(
             ${users.premiumPreview} IS NULL OR
             (${users.premiumPreview}->>'version') IS NULL OR

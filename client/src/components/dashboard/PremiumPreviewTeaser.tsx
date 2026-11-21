@@ -200,7 +200,7 @@ export default function PremiumPreviewTeaser() {
       <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-amber-700">
         <Sparkles className="h-4 w-4" aria-hidden="true" /> YOUR FIRST RUN INSIGHT
       </div>
-      <h2 className="mt-3 text-2xl font-bold text-gray-900">A finding from your own running data</h2>
+      <h2 className="mt-3 text-2xl font-bold text-gray-900">Your free full run analysis</h2>
       <p className="mt-1 text-sm text-gray-600">
         From {preview.sourceData.name}{activityDate ? ` · ${activityDate}` : ""}
       </p>
@@ -210,7 +210,7 @@ export default function PremiumPreviewTeaser() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-xs font-bold uppercase tracking-wide text-amber-800">Your run snapshot</h3>
               <Link href={`/activity/${activityId}?from=${STARTER_SOURCE}`} className="inline-flex items-center gap-1 text-sm font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-950">
-                View this run <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                Open Deep Dive and Coach Insights <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </div>
             {metrics.length > 0 && (

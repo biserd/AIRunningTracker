@@ -170,6 +170,24 @@ assert.equal(second.created, false, "second call does not create a duplicate");
 assert.equal((second as any).reason, "already_exists");
 assert.ok(store.stored, "preview persisted exactly once");
 
+// Changing units or importing newer runs must not change the only unlocked run.
+const original = makeRun({ id: 101 });
+const newer = makeRun({ id: 102, startDate: new Date("2026-08-05T07:00:00Z") });
+const refreshDeps = {
+  loadUser: async () => ({ premiumPreview: store.stored, unitPreference: "km", stravaConnected: true }),
+  loadActivities: async () => [newer],
+  loadPinnedActivity: async (id: number) => id === original.id ? original : undefined,
+  persistIfAbsent: async () => { throw new Error("should not allocate another preview"); },
+  replaceIfStale: async (p: PremiumPreviewPayload) => {
+    assert.equal(p.sourceData.activityId, original.id);
+    assert.equal(p.unitPreference, "km");
+    return true;
+  },
+};
+assert.equal((await createPremiumPreviewCore(refreshDeps)).created, true);
+assert.deepEqual(await createPremiumPreviewCore({ ...refreshDeps, loadPinnedActivity: async () => undefined }),
+  { created: false, reason: "already_exists" });
+
 // Concurrent calls: the CAS lets exactly one writer through.
 const raceStore = makeFakeStore([makeRun()]);
 const results = await Promise.all([

@@ -1,5 +1,5 @@
 import type { Activity, User } from "@shared/schema";
-import { canAccessCapability } from "@shared/entitlements";
+import { canGenerateRunCoachRecap, canViewRunAnalysis } from "./runAnalysisAccess";
 import { storage } from "../storage";
 import { jobQueue } from "./queue/jobQueue";
 import { createCoachRecapJob, createHydrateActivityJob } from "./queue/jobTypes";
@@ -11,7 +11,7 @@ export async function queueRunEnrichment(user: User, activity: Activity) {
   const { needsStreams, needsLaps } = runEnrichmentNeeds(activity);
   const eligible = activity.userId === user.id && !!activity.stravaId &&
     !!activity.type?.toLowerCase().includes("run") &&
-    canAccessCapability(user, "activity_deep_dive");
+    canViewRunAnalysis(user, activity);
   if (!eligible) return { needsStreams, needsLaps, hydrationQueued: false, recapQueued: false };
 
   if (needsStreams || needsLaps) {
@@ -21,8 +21,7 @@ export async function queueRunEnrichment(user: User, activity: Activity) {
     return { needsStreams, needsLaps, hydrationQueued: true, recapQueued: false };
   }
 
-  if (user.coachEnabled !== false && user.coachOnboardingCompleted &&
-      canAccessCapability(user, "ai_coach") &&
+  if (canGenerateRunCoachRecap(user, activity) &&
       !await storage.getCoachRecapByActivityId(activity.id)) {
     await jobQueue.addJob(createCoachRecapJob(user.id, activity.id, activity.stravaId),
       runRecapJobId(user.id, activity.id));
