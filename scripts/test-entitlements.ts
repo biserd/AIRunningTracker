@@ -49,10 +49,6 @@ const routesSource = readFileSync(
 const requiredRouteGuards = [
   ['"/api/ml/predictions/:userId"', '"race_predictions"'],
   ['"/api/ml/injury-risk/:userId"', '"injury_risk"'],
-  ['"/api/activities/:activityId/performance"', '"activity_deep_dive"'],
-  ['"/api/activities/:activityId/verdict"', '"activity_deep_dive"'],
-  ['"/api/activities/:activityId/efficiency"', '"activity_deep_dive"'],
-  ['"/api/activities/:activityId/quality"', '"activity_deep_dive"'],
   ['"/api/activities/:activityId/comparison"', '"activity_comparison"'],
 ] as const;
 
@@ -70,6 +66,20 @@ for (const [route, capability] of requiredRouteGuards) {
     `${route} must require ${capability}`,
   );
 }
+
+// The one-run grant is scoped to the owned run, not a Premium entitlement.
+for (const action of ["performance", "verdict", "efficiency", "quality", "coach-recap"]) {
+  const start = routesSource.indexOf(`app.get("/api/activities/:activityId/${action}",`);
+  assert.notEqual(start, -1, `Missing run-analysis route: ${action}`);
+  const end = routesSource.indexOf("\n  app.", start + 1);
+  const body = routesSource.slice(start, end === -1 ? undefined : end);
+  assert.match(body, /authenticateJWT/);
+  assert.match(body, /requireRunAnalysis\(req, res, /);
+}
+assert.match(routesSource.slice(
+  routesSource.indexOf("async function requireRunAnalysis"),
+  routesSource.indexOf("async function requireRunAnalysis") + 900,
+), /canViewRunAnalysis\(user, activity\)/);
 
 const detailRouteStart = routesSource.indexOf(
   'app.get("/api/activities/:activityId",',

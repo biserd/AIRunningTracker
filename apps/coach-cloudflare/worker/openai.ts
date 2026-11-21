@@ -11,7 +11,7 @@ export type ReminderTools = {
   validate: (intent: unknown) => Promise<ReminderIntent>;
 };
 
-export const coachTextModel = "gpt-5.6-luna";
+import { TEXT_MODEL } from "../../../shared/aiModels";
 
 export class AIError extends Error {
   constructor(
@@ -260,7 +260,7 @@ export async function coach(
   let researched = false;
   for (let round = 0; round < 4; round++) {
     const requestBody = (includeKnowledge: boolean) => ({
-        model: coachTextModel,
+        model: TEXT_MODEL,
         store: false,
         instructions: (state.source==='production_account'?realCoachInstructions(state):instructions) + (knowledge && includeKnowledge ? '\n'+knowledgeInstructions : knowledge ? '\nWeather and public research tools are temporarily unavailable for this reply. Say so if asked; do not invent forecasts, sources or current product information.' : '') +
           (reminders

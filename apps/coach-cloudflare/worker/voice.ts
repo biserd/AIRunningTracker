@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { AIError, instructions, openai } from "./openai";
+import { VOICE_MODEL } from "../../../shared/aiModels";
 import {voiceInstructions} from './coach-instructions';
 import type {State} from '../shared/coach';
 import {voiceDiagnostic, type VoiceStage} from './voice-diagnostics';
@@ -49,7 +50,7 @@ export class VoiceLease extends DurableObject<Env> {
       stage = 'provider_session';
       const body = {
           session: {
-            model: "gpt-live-1",
+            model: VOICE_MODEL,
             store: false,
             instructions: state.source==='production_account'?voiceInstructions(state):
               instructions.replace("This is a fictional sample runner, NOT the user's real training history. All supplied activity and plan data is SAMPLE DATA. Never imply Strava, weather, heart rate, recovery measurements or real accounts are connected.", "The client coach retrieves the authenticated runner's data. Use its returned source and freshness information. Never invent missing measurements.") +

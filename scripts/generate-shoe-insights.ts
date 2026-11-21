@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { db } from '../server/db';
 import { runningShoes } from '../shared/schema';
 import { eq, isNull, or } from 'drizzle-orm';
+import { lunaCompletionOptions } from '../server/services/lunaCompletion';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -149,10 +150,8 @@ Specs reference:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      ...lunaCompletionOptions(320),
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 320,
-      temperature: 0.7,
     });
 
     return (
@@ -219,10 +218,8 @@ Shoe data:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      ...lunaCompletionOptions(400),
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 400,
-      temperature: 0.6,
       response_format: { type: 'json_object' },
     });
 

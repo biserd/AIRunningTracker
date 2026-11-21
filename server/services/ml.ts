@@ -3,6 +3,8 @@ import { Activity } from "@shared/schema";
 import OpenAI from "openai";
 import { PerformanceAnalyticsService } from "./performance";
 import { RunnerScoreService } from "./runnerScore";
+import { TEXT_MODEL } from "../../shared/aiModels";
+import { NO_REASONING } from "./lunaCompletion";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -649,10 +651,12 @@ Remember:
 3. Include exactly ONE long run per week (the longest workout)
 4. Be concise and realistic with pace targets.`;
       
-      console.log(`[Training Plan] Attempt ${attempt} - calling gpt-4.1-mini...`);
+      console.log(`[Training Plan] Attempt ${attempt} - calling ${TEXT_MODEL}...`);
       
       const response = await openai.responses.create({
-        model: "gpt-4.1-mini",
+        model: TEXT_MODEL,
+        store: false,
+        reasoning: { effort: NO_REASONING },
         input: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt }
@@ -766,7 +770,9 @@ CRITICAL REQUIREMENTS:
         console.log(`[Training Plan] Retrying with simplified prompt...`);
         
         const simpleResponse = await openai.responses.create({
-          model: "gpt-4.1-mini",
+          model: TEXT_MODEL,
+          store: false,
+          reasoning: { effort: NO_REASONING },
           input: [
             { role: "system", content: `You are a running coach. CRITICAL: Use ${unit} (${isMetric ? 'kilometers' : 'miles'}) for ALL distances. Include 1 Long Run per week.` },
             { role: "user", content: simplePrompt }

@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import { getUnsubscribeTokenSecret } from "../config/security";
 import { analyzeRunStreams, type StreamAnalysis } from "./stravaStreamAnalysis";
+import { lunaCompletionOptions } from "./lunaCompletion";
 
 interface StravaWebhookEvent {
   object_type: "activity" | "athlete";
@@ -641,13 +642,11 @@ Generate a JSON response with exactly these 3 fields:
 Respond with ONLY valid JSON, no markdown, no commentary.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5.4-mini",
+        ...lunaCompletionOptions(1200),
         messages: [
            { role: "system", content: "You are an expert running coach who reads the data carefully and surfaces specific, non-obvious insights. Respond with valid JSON only. Never restate raw stats the athlete can already see in their table. Never use em dashes, 'Grey Zone', or 'Junk Mileage'. When terrain data says the second half was materially more uphill, do not describe the slower pace as a fade or fueling failure without separate supporting evidence." },
           { role: "user", content: prompt }
         ],
-        max_completion_tokens: 1200,
-        temperature: 0.7
       });
 
       const content = response.choices[0]?.message?.content?.trim();

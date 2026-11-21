@@ -2,8 +2,9 @@ import OpenAI from "openai";
 import { storage } from "../storage";
 import type { Activity } from "@shared/schema";
 import { fitnessService } from "./fitness";
+import { TEXT_MODEL } from "../../shared/aiModels";
+import { NO_REASONING } from "./lunaCompletion";
 
-// Using GPT-5 (released August 2025) for enhanced AI insights generation
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
 });
@@ -287,7 +288,8 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
     try {
       // Use Responses API with streaming and explicit reasoning: none for maximum speed (fast path)
       const stream = await openai.responses.create({
-        model: "gpt-5.5",
+        model: TEXT_MODEL,
+        store: false,
         input: [
           {
             role: "system",
@@ -329,7 +331,7 @@ IMPORTANT: Use ${isMetric ? 'kilometers and meters' : 'miles and feet'} in all d
           }
         },
         max_output_tokens: 1000,
-        reasoning: { effort: "none" as any }, // TypeScript types not updated yet, but "none" is valid per API docs
+        reasoning: { effort: NO_REASONING },
         stream: true
       });
 

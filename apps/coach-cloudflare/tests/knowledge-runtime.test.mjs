@@ -20,7 +20,7 @@ test('Workers runtime caches public forecasts without caching consent or mixing 
   {name:'provider',compatibilityDate:'2026-09-12',modules:true,d1Databases:{DB:'calls'},script:`export default {async fetch(request,env){
    if(new URL(request.url).hostname!=='api.openai.com')return new Response('',{status:403});
    const body=await request.json();
-   if(typeof body.input!=='string'||JSON.stringify(body).includes('Private training target'))return new Response('',{status:403});
+   if(body.model!=='gpt-6-luna'||body.reasoning?.effort!=='none'||body.tool_choice?.type!=='web_search'||typeof body.input!=='string'||JSON.stringify(body).includes('Private training target'))return new Response('',{status:403});
    await env.DB.prepare('INSERT INTO calls(query) VALUES (?)').bind(body.input).run();
    return Response.json({status:'completed',output:[{type:'web_search_call'}, {type:'message',content:[{type:'output_text',text:body.input+' is the checked area.',annotations:[{type:'url_citation',url:'https://weather.gov/',title:'Weather'}]}]}]});
   }}`},

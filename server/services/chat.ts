@@ -6,6 +6,7 @@ import { RunnerScoreService } from "./runnerScore";
 import { MLService } from "./ml";
 import { planGeneratorService } from "./planGenerator";
 import { DAY_ONE_COACH_SOURCE } from "@shared/dayOneCoach";
+import { TEXT_MODEL } from "../../shared/aiModels";
 
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "default_key" 
@@ -273,7 +274,8 @@ When the user asks about "this run", "this activity", "my run", or similar, answ
     try {
       // Use Responses API with streaming and low reasoning effort for chat
       const stream = await openai.responses.create({
-        model: "gpt-5.5",
+        model: TEXT_MODEL,
+        store: false,
         input: [
           {
             role: "system",
@@ -327,7 +329,7 @@ Place the block AFTER your conversational summary of the plan. Only include fiel
         }
       }
 
-      console.log('[Chat Service] Successfully generated chat response from GPT-5.5');
+      console.log(`[Chat Service] Successfully generated chat response from ${TEXT_MODEL}`);
       
       return fullResponse;
     } catch (error: any) {

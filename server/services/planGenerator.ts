@@ -6,6 +6,7 @@ import { generateSkeleton, type PlanSkeleton, type SkeletonWeek, type SkeletonDa
 import type { AthleteProfile, TrainingPlan, InsertTrainingPlan, InsertPlanWeek, InsertPlanDay, GoalType, TerrainType } from "@shared/schema";
 import { getRunFrequencyWarnings, normalizePreferredRunDays } from "@shared/trainingPlanSafety";
 import { instantDateKey, planDateKey } from "@shared/trainingPlanProgress";
+import { lunaCompletionOptions } from "./lunaCompletion";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -632,13 +633,11 @@ Ensure each week has 7 days. Use "rest" type for rest days.`;
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        ...lunaCompletionOptions(16000),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
-        max_tokens: 16000,
         response_format: { type: "json_object" },
       });
       
@@ -1219,13 +1218,11 @@ Output:
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        ...lunaCompletionOptions(800),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.6,
-        max_tokens: 800,
         response_format: { type: "json_object" },
       });
 

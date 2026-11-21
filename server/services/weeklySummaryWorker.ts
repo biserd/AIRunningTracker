@@ -5,6 +5,7 @@ import { authService } from "./auth";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
 import OpenAI from "openai";
+import { lunaCompletionOptions } from "./lunaCompletion";
 
 const BASE_URL = process.env.APP_URL || "https://aitracker.run";
 const WORKER_INTERVAL_MS = 60 * 60 * 1000; // Check every hour
@@ -66,13 +67,11 @@ async function generateNarrative(params: {
 
   try {
     const resp = await openai.chat.completions.create({
-      model: "gpt-5.4-mini",
+      ...lunaCompletionOptions(60),
       messages: [
         { role: "system", content: "You are a supportive running coach writing motivational weekly recap emails. Be concise and personal." },
         { role: "user", content: prompt },
       ],
-      max_completion_tokens: 60,
-      temperature: 0.7,
     });
     return resp.choices[0]?.message?.content?.trim() ?? null;
   } catch (err) {

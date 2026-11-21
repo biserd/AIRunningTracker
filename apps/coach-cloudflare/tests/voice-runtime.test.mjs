@@ -12,7 +12,10 @@ test('real voice Durable Object RPC starts with a synthetic provider and runner 
       let transientAttempts=0;
       globalThis.fetch=async (url,options)=>{
         if(String(url).endsWith('/attach'))throw new Error('startup must not attach a control socket');
-        const offer=JSON.parse(options.body).transport.sdp;
+        const body=JSON.parse(options.body);
+        if(body.session?.model!=='gpt-live-1.1'||body.session?.delegation?.type!=='client'||body.transport?.type!=='webrtc')
+          throw new Error('unexpected voice provider request');
+        const offer=body.transport.sdp;
         if(offer.includes('reject'))return new Response('synthetic private provider error',{status:403});
         if(offer.includes('retry') && transientAttempts++===0)return Response.json({error:{code:'rate_limit_exceeded'}},{status:429,headers:{'Retry-After':'0.01'}});
         return Response.json({session:{id:'synthetic'},transport:{sdp:'v=0 synthetic answer'}});

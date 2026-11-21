@@ -6484,10 +6484,10 @@ ${allPages.map(page => `  <url>
         fitnessLevel
       };
 
-      console.log(`[Training Plan] Calling GPT-5 to generate plan...`);
+      console.log("[Training Plan] Generating plan with the configured coach model...");
       const trainingPlan = await mlService.generateTrainingPlan(userId, params);
       const generationTime = Date.now() - startTime;
-      console.log(`[Training Plan] GPT-5 generation completed in ${generationTime}ms`);
+      console.log(`[Training Plan] Model generation completed in ${generationTime}ms`);
       
       // Save the training plan to database with metadata
       console.log(`[Training Plan] Saving plan to database...`);

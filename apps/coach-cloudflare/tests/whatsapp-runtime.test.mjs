@@ -34,7 +34,7 @@ for(const direct of [false,true])test('Workers runtime signed webhook uses '+(di
    }
    if(url.hostname==='api.openai.com'){
     const body=await request.json();
-    if(body.model!=='gpt-5.6-luna' || body.reasoning.effort!=='low' || body.tools.length || body.tool_choice!=='none' || !body.input[0].content.includes('activityEvidence'))return new Response('',{status:400});
+    if(body.model!=='gpt-6-luna' || body.reasoning.effort!=='low' || body.tools.length || body.tool_choice!=='none' || !body.input[0].content.includes('activityEvidence'))return new Response('',{status:400});
     await env.DB.prepare("INSERT INTO test_calls(kind) VALUES ('ai')").run();
     return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:'Keep your next run easy.'}]}]});
    }

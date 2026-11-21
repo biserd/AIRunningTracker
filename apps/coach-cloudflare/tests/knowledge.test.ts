@@ -45,7 +45,7 @@ test('named-city weather is sourced, does not save location or send private cont
   t.mock.method(globalThis,'fetch',async(url:unknown,init:RequestInit)=>{
     calls++; assert.equal(String(url),'https://api.openai.com/v1/responses');
     const body=JSON.parse(String(init.body));
-    assert.equal(body.model,'gpt-4.1');assert.equal(body.store,false);
+    assert.equal(body.model,'gpt-6-luna');assert.equal(body.store,false);assert.equal(body.reasoning.effort,'none');
     assert.equal(body.tools[0].type,'web_search');
     assert.ok(body.tools[0].filters.allowed_domains.includes('weather.gov'));
     assert.ok(!body.tools[0].filters.allowed_domains.includes('reddit.com'));

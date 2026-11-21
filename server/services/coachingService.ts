@@ -3,6 +3,8 @@ import { storage } from "../storage";
 import type { Activity, User, CoachRecap } from "@shared/schema";
 import { getRecoveryState, type RecoveryState } from "./recoveryService";
 import { canGenerateRunCoachRecap, isFreeAnalysisRun } from "./runAnalysisAccess";
+import { TEXT_MODEL } from "../../shared/aiModels";
+import { lunaCompletionOptions } from "./lunaCompletion";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -79,7 +81,7 @@ export async function generateCoachRecap(
     durationMins,
     coachTone: user.coachTone || "direct",
     promptVersion: "v1.0",
-    modelVersion: "gpt-4o",
+    modelVersion: TEXT_MODEL,
   });
 
   console.log(`[Coach] Created recap for activity ${activityId}`);
@@ -230,10 +232,8 @@ Generate a coaching recap in JSON format:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      ...lunaCompletionOptions(600),
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 600,
       response_format: { type: "json_object" },
     });
 
