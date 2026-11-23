@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { SIGNUP_VALUE_LINKS } from "../../shared/dayOneCoach";
+import { DAY_SEVEN_RACE_REVIEW } from "../../shared/daySevenRace";
 
 export type SignupEmailStep = keyof typeof SIGNUP_VALUE_LINKS;
 export const SIGNUP_EMAIL_TTL_SECONDS = 14 * 86400;
@@ -49,6 +50,7 @@ export function signupEmailResultMatches(step: SignupEmailStep, capability: unkn
     : step === "DAY7" ? capability === "race_prediction" : capability === "fueling_plan";
 }
 
-export function signupEmailCtaPath(jobId: number, step: SignupEmailStep, now = Date.now()): string {
-  return `${SIGNUP_VALUE_LINKS[step]}#signup_ref=${createSignupEmailReference(jobId, step, now)}`;
+export function signupEmailCtaPath(jobId: number, step: SignupEmailStep, now = Date.now(), hasRaceEstimate = false): string {
+  const path = step === "DAY7" && hasRaceEstimate ? DAY_SEVEN_RACE_REVIEW : SIGNUP_VALUE_LINKS[step];
+  return `${path}#signup_ref=${createSignupEmailReference(jobId, step, now)}`;
 }

@@ -2,14 +2,15 @@ import { storage } from "../storage";
 import { beginEmailDelivery } from "../storageAtomic";
 import { emailService } from "./email";
 import { buildMarketingUrl, createMarketingToken } from "./campaignSecurity";
-import { SIGNUP_REMINDER_CAMPAIGN as CAMPAIGN, SIGNUP_REMINDER_STEPS as STEPS, SIGNUP_REMINDER_VERSION as VERSION, SIGNUP_FINAL_HOLDS_SETTING, nextSignupSendTime, signupDeliveryWindow, signupReminderExclusion, signupRemindersEnabled } from "../../shared/signupReminders";
+import { DAY_SEVEN_RACE_FOLLOW_UP, SIGNUP_REMINDER_CAMPAIGN as CAMPAIGN, SIGNUP_REMINDER_STEPS as STEPS, SIGNUP_REMINDER_VERSION as VERSION, SIGNUP_FINAL_HOLDS_SETTING, nextSignupSendTime, signupDeliveryWindow, signupReminderExclusion, signupRemindersEnabled } from "../../shared/signupReminders";
 import type { EmailJob, User } from "@shared/schema";
 import { stableLifecycleBucket } from "../../shared/lifecycleCampaigns";
 import { signupEmailCtaPath } from "./signupEmailReference";
+import { hasCompletedRaceEstimate } from "./raceEstimateHistory";
 
 type Store = Pick<typeof storage, "getSystemSetting" | "getUser" | "getAllUsers" | "getUserCampaign" | "getActiveCampaigns" | "exitUserCampaign" | "cancelEmailJobsForUser" | "createUserCampaign" | "updateUserCampaign" | "getEmailJobByDedupeKey" | "getEmailJob" | "createEmailJob" | "updateEmailJob" | "getLastSentEmailForUser" | "updateUser">;
 export class SignupReminderService {
-  constructor(private store: Store = storage, private sender: Pick<typeof emailService, "sendDripEmail"> = emailService, private beginDelivery = beginEmailDelivery, private now = Date.now, private enabled = signupRemindersEnabled) {}
+  constructor(private store: Store = storage, private sender: Pick<typeof emailService, "sendDripEmail"> = emailService, private beginDelivery = beginEmailDelivery, private now = Date.now, private enabled = signupRemindersEnabled, private completedRaceEstimate = hasCompletedRaceEstimate) {}
   private async included(userId: number) {
     const rollout = Number(await this.store.getSystemSetting("drip_campaigns_rollout_percent") || "5");
     const holdout = Number(await this.store.getSystemSetting("drip_campaigns_holdout_percent") || "10");
@@ -111,12 +112,16 @@ export class SignupReminderService {
       await this.store.updateEmailJob(job.id, { status: "pending", scheduledAt: new Date(notBefore ?? this.now() + 86400000), errorMessage: notBefore === null ? "no_daytime_window" : null, claimedAt: null, claimedBy: null, leaseExpiresAt: null });
       return false;
     }
+    const base = STEPS[index];
+    // Choose at send time, not when the reminder was first queued.
+    const returning = base.step === "DAY7" && await this.completedRaceEstimate(user.id).catch(() => false);
+    const step = returning ? DAY_SEVEN_RACE_FOLLOW_UP : base;
     // Conditional database claim prevents a slow or expired worker from sending
     // after a different worker owns the lease. Unknown outcomes remain terminal.
     if (!await this.beginDelivery(job.id, job.claimedBy)) return false;
-    const step = STEPS[index], issued = Math.floor(this.now() / 1000);
+    const issued = Math.floor(this.now() / 1000);
     const result = await this.sender.sendDripEmail({ to: user.email!, userName: user.firstName || user.username || "Runner", ...step, bodyText: step.body, campaign: CAMPAIGN,
-      ctaUrl: "https://aitracker.run" + signupEmailCtaPath(job.id, step.step, this.now()),
+      ctaUrl: "https://aitracker.run" + signupEmailCtaPath(job.id, step.step, this.now(), returning),
       unsubscribeUrl: buildMarketingUrl("/api/marketing/unsubscribe", createMarketingToken({ kind: "unsubscribe", userId: user.id }, 2 * 365 * 86400, issued)),
       beforeSend: async () => {
         const latest = await this.store.getUser(user.id), at = this.now();
@@ -132,8 +137,9 @@ export class SignupReminderService {
       await this.store.updateEmailJob(job.id, { status: reason === "recipient_no_longer_eligible" ? "cancelled" : retry && retryCount <= 5 ? "retry_scheduled" : "failed", retryCount, nextAttemptAt: retry && retryCount <= 5 ? new Date(this.now() + (softBounce ? 25 : Math.min(24, 2 ** retryCount)) * 3600000) : null, errorMessage: reason, claimedAt: null, claimedBy: null, leaseExpiresAt: null });
       return false;
     }
-    await this.store.updateEmailJob(job.id, { status: "sent", sentAt: new Date(this.now()), providerMessageId: result.providerMessageId || null, errorMessage: null,
-      metadata: { ...(current.metadata as Record<string, unknown> | null), signupEmailTracking: "1" } });
+    const metadata = { ...current.metadata, ctaUrl: step.ctaPath, subject: step.subject,
+      previewText: step.previewText, signupEmailTracking: "1", ...(step.step === "DAY7" && { day7Variant: returning ? "next_step" : "predict" }) };
+    await this.store.updateEmailJob(job.id, { status: "sent", sentAt: new Date(this.now()), providerMessageId: result.providerMessageId || null, errorMessage: null, metadata });
     if (index === STEPS.length - 1 && job.enrollmentId) await this.store.updateUserCampaign(job.enrollmentId, { state: "completed", exitedAt: new Date(this.now()), exitReason: "completed" });
     else await this.schedule(user);
     return true;

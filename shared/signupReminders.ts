@@ -1,14 +1,24 @@
 import type { LifecycleUserState } from "./lifecycleCampaigns";
 import { SIGNUP_VALUE_LINKS, DAY_ONE_COACH_SOURCE, DAY_SEVEN_RACE_SOURCE, DAY_FOURTEEN_FUELING_SOURCE } from "./dayOneCoach";
+import { DAY_SEVEN_RACE_REVIEW } from "./daySevenRace";
 
 export const SIGNUP_REMINDER_CAMPAIGN = "signup_unpaid" as const;
 export const SIGNUP_REMINDER_VERSION = 3;
 const DAY = 86400000;
 export const SIGNUP_REMINDER_STEPS = [
   { step: "DAY1", offsetHours: 24, subject: "Only three days to run next week?", previewText: "Ask what to run, or estimate a race time without signing in.", body: "When you only have three days to run, it helps to know what each run is for. Ask your Run Analytics coach what a three-run week could look like. You can start with a free message. Not signed in? Use a recent race time or hard effort to estimate your finish time with the free race predictor, no login needed.", ctaText: "Ask your running coach", ctaPath: SIGNUP_VALUE_LINKS.DAY1, ctaKey: DAY_ONE_COACH_SOURCE },
-  { step: "DAY7", offsetHours: 168, subject: "What race pace could you aim for?", previewText: "Turn one recent effort into a finish-time estimate and pace range.", body: "Picking a goal pace can feel like guesswork. Enter the distance and time from a recent race or hard effort, then choose your next race distance. You’ll get a finish-time estimate and a pace range to start from. It’s free, with no login or connected watch needed.", ctaText: "Predict my race time", ctaPath: SIGNUP_VALUE_LINKS.DAY7, ctaKey: DAY_SEVEN_RACE_SOURCE },
+  { step: "DAY7", offsetHours: 168, subject: "What’s a realistic pace for your next race?", previewText: "Use a recent hard effort to choose a pace you can plan around.", body: "Have a recent race or hard effort? Use it to see a pace range for your next race, rather than betting on one exact finish time. If you’re stepping up in distance, start your race plan near the conservative end. The predictor is free and works without signing in or connecting Strava.", ctaText: "Find my race pace", ctaPath: SIGNUP_VALUE_LINKS.DAY7, ctaKey: DAY_SEVEN_RACE_SOURCE },
   { step: "DAY14", offsetHours: 336, subject: "Know when to take your next gel", previewText: "Build a marathon fueling schedule you can practice on a long run.", body: "Race day isn’t the time to guess when to fuel. Enter your expected marathon finish time and the intake you’ve practiced. You’ll get a timed fueling schedule you can copy or print for your next long run. It’s free and doesn’t require a login. This is the last email in this signup series.", ctaText: "Build my fueling plan", ctaPath: SIGNUP_VALUE_LINKS.DAY14, ctaKey: DAY_FOURTEEN_FUELING_SOURCE },
 ] as const;
+
+export const DAY_SEVEN_RACE_FOLLOW_UP = {
+  ...SIGNUP_REMINDER_STEPS[1],
+  subject: "You have a target pace. What should you run this week?",
+  previewText: "Turn your race estimate into one useful training decision.",
+  body: "Your predicted pace is a race-day reference, not a pace to hit on every run. This week, pick one easy run and keep it conversational. Come back for your next step. If you’re signed in and your estimate was saved, we’ll show it alongside the tip.",
+  ctaText: "See my next step",
+  ctaPath: DAY_SEVEN_RACE_REVIEW,
+} as const;
 
 export type SignupReminderUser = LifecycleUserState & { subscriptionEndsAt?: Date | string | null; isAdmin?: boolean | null };
 export const SIGNUP_FINAL_HOLDS_SETTING = "drip_campaigns_preserved_final_users";

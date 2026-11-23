@@ -7,6 +7,7 @@
  * from being reflected into a trusted purchase screen.
  */
 import type { Capability } from "./entitlements";
+import { DAY_SEVEN_RACE_REVIEW } from "./daySevenRace";
 
 export const BENEFIT_COPY = {
   garmin_planning: "Goal-based training-plan tools and coach conversations that do not use your Garmin data. Garmin run analysis and Runner Score are not unlocked by subscribing.",
@@ -94,7 +95,7 @@ export function sanitizeReturnTo(value: unknown): string | null {
   if (!value.startsWith("/") || value.startsWith("//")) return null;
   if (value.includes("\\") || value.includes("\n") || value.includes("\r")) return null;
   if (/^\/[^/?#]*:/.test(value)) return null;
-  return ALLOWED_RETURN_PATHS.some((pattern) => pattern.test(value)) ? value : null;
+  return value === DAY_SEVEN_RACE_REVIEW || ALLOWED_RETURN_PATHS.some((pattern) => pattern.test(value)) ? value : null;
 }
 
 /** Build a pricing URL carrying only bounded, non-sensitive intent fields. */

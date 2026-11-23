@@ -5,7 +5,7 @@ process.env.DATABASE_URL ||= "postgresql://fixture:fixture@127.0.0.1:1/fixture";
 process.env.MARKETING_LINK_SIGNING_SECRET = "fixture-only-signup-link-secret-more-than-thirty-two-characters";
 const { SignupReminderService } = await import("./signupReminders");
 function fixture() {
-  let now = Date.parse("2026-11-07T15:00:00Z"), enabled = true, claims = 0, preserved = "[]";
+  let now = Date.parse("2026-11-07T15:00:00Z"), enabled = true, claims = 0, preserved = "[]", completedRace = false;
   const user: any = { id: 1007, email: "fixture@example.test", subscriptionPlan: "free", subscriptionStatus: "active", marketingConsentStatus: "consented", marketingOptOut: false, createdAt: new Date(now - 86400000), coachTimezone: "UTC" };
   const jobs: any[] = [], campaigns: any[] = [], sent: any[] = [];
   const store: any = {
@@ -25,9 +25,9 @@ function fixture() {
   };
   let failure: string | undefined, beforeSend: (() => void) | undefined;
   const sender = { sendDripEmail: async (value: any) => { beforeSend?.(); if (!await value.beforeSend()) return { success: false, error: "recipient_no_longer_eligible" }; if (failure) return { success: false, error: failure }; sent.push(value); return { success: true, providerMessageId: "fixture-message" }; } };
-  const service = new SignupReminderService(store, sender, async (id, owner) => { const j = jobs.find(j => j.id === id); if (j.status !== "processing" || j.claimedBy !== owner) return false; j.status = "failed"; claims++; return true; }, () => now, () => enabled);
+  const service = new SignupReminderService(store, sender, async (id, owner) => { const j = jobs.find(j => j.id === id); if (j.status !== "processing" || j.claimedBy !== owner) return false; j.status = "failed"; claims++; return true; }, () => now, () => enabled, async id => { assert.equal(id, user.id); return completedRace; });
   const claim = (index = 0) => { const j = jobs[index]; j.status = "processing"; j.claimedBy = "fixture-worker"; return { ...j }; };
-  return { user, jobs, campaigns, sent, service, claim, advance: (days: number) => { now += days * 86400000; }, setNow: (value: string) => { now = Date.parse(value); }, preserve: () => { preserved = "[1007]"; }, fail: (reason: string) => { failure = reason; }, beforeSend: (fn: () => void) => { beforeSend = fn; }, disable: () => { enabled = false; }, claims: () => claims };
+  return { user, jobs, campaigns, sent, service, claim, completeRace: () => { completedRace = true; }, advance: (days: number) => { now += days * 86400000; }, setNow: (value: string) => { now = Date.parse(value); }, preserve: () => { preserved = "[1007]"; }, fail: (reason: string) => { failure = reason; }, beforeSend: (fn: () => void) => { beforeSend = fn; }, disable: () => { enabled = false; }, claims: () => claims };
 }
 test("sequence is deduplicated and schedules days 1/7/14 from original signup, then completes", async () => {
   const f = fixture();
@@ -44,12 +44,27 @@ test("sequence is deduplicated and schedules days 1/7/14 from original signup, t
     assert.equal(url.search, `?source=signup_day${[1,7,14][index]}`);
     assert.deepEqual(parseSignupEmailReference(url.hash.slice("#signup_ref=".length), f.jobs[index].sentAt.getTime()), { jobId: claimed.id, step: claimed.step });
     assert.equal(f.jobs[index].metadata.signupEmailTracking, "1");
-    assert.equal(f.sent[index].ctaText, ["Ask your running coach","Predict my race time","Build my fueling plan"][index]);
+    assert.equal(f.sent[index].ctaText, ["Ask your running coach","Find my race pace","Build my fueling plan"][index]);
     if (index < 2) f.advance(index === 0 ? 6 : 7);
   }
   assert.equal(f.sent.length, 3); assert.equal(f.jobs.length, 3);
   assert.equal(f.campaigns[0].state, "completed");
   assert.equal(await f.service.schedule(f.user), "complete");
+});
+test("Day 7 chooses the follow-up when a runner gets a result after queuing", async () => {
+  const f = fixture();
+  await f.service.schedule(f.user);
+  assert.equal(await f.service.process(f.claim()), true);
+  f.completeRace();
+  f.advance(6);
+  assert.equal(await f.service.process(f.claim(1)), true);
+  const message = f.sent[1], url = new URL(message.ctaUrl);
+  assert.equal(message.ctaText, "See my next step");
+  assert.match(message.bodyText, /keep it conversational/);
+  assert.equal(url.pathname + url.search, "/tools/race-predictor?source=signup_day7&mode=review");
+  assert.deepEqual(parseSignupEmailReference(url.hash.slice("#signup_ref=".length), f.jobs[1].sentAt.getTime()), { jobId: f.jobs[1].id, step: "DAY7" });
+  assert.equal(f.jobs[1].metadata.day7Variant, "next_step");
+  assert.equal(f.jobs[1].metadata.subject, message.subject);
 });
 test("unknown-consent signup can enroll and send without manufacturing opt-in", async () => {
   const f = fixture(); f.user.marketingConsentStatus = "unknown";

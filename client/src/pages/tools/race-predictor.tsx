@@ -19,7 +19,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 // Recharts is heavy (~150KB+ gzipped) and the chart only renders AFTER
@@ -46,6 +46,7 @@ import { SignupResultTrialOffer } from "@/components/SignupResultTrialOffer";
 import { STARTER_SOURCE } from "@shared/starterJourney";
 import { trackStarterAction } from "@/lib/starterJourney";
 import { afterSignupEmailClick } from "@/lib/signupEmailAttribution";
+import { DAY_SEVEN_RACE_REVIEW, LATEST_RACE_ESTIMATE, RACE_GOALS, raceEstimate, raceWeekTip, type RaceEstimate } from "@shared/daySevenRace";
 
 const manualInputSchema = z.object({
   baseDistance: z.coerce.number().min(0.5, "Minimum 0.5").max(50, "Maximum 50"),
@@ -98,6 +99,7 @@ const RACE_PREDICTOR_FAQS = [
 
 export default function RacePredictor() {
   const { isAuthenticated, user } = useAuth();
+  const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const search = new URLSearchParams(useSearch());
   // The public tool is server-rendered without query-specific markup.
@@ -105,6 +107,7 @@ export default function RacePredictor() {
   useEffect(() => setClientReady(true), []);
   const fromDayOne = clientReady && search.get("source") === DAY_ONE_COACH_SOURCE;
   const fromDaySeven = clientReady && search.get("source") === DAY_SEVEN_RACE_SOURCE;
+  const reviewDaySeven = fromDaySeven && search.get("mode") === "review";
   const stayOnTool = search.get("mode") === "tool";
   useEffect(() => {
     let alive = true;
@@ -113,9 +116,17 @@ export default function RacePredictor() {
   }, [fromDayOne, isAuthenticated, navigate, stayOnTool]);
   const { toast } = useToast();
   const [result, setResult] = useState<RacePredictionResult | null>(null);
+  const [resultDistance, setResultDistance] = useState<number>(42195);
   const [activeTab, setActiveTab] = useState<string>("manual");
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
   const [selectedPaceTier, setSelectedPaceTier] = useState<number>(2);
+  const estimateKey = [LATEST_RACE_ESTIMATE, user?.id];
+  const savedEstimate = useQuery<{ estimate: RaceEstimate | null }>({
+    queryKey: estimateKey, queryFn: () => apiRequest(LATEST_RACE_ESTIMATE),
+    enabled: reviewDaySeven && Boolean(isAuthenticated && user), retry: false,
+  });
+  const currentEstimate = result && raceEstimate(resultDistance, result);
+  const priorEstimate = savedEstimate.data?.estimate;
 
   const { data: activitiesData, isLoading: isLoadingActivities, isError: activitiesError, refetch: retryActivities } = useQuery({
     queryKey: ['/api/race-predictor/suitable-activities'],
@@ -142,8 +153,15 @@ export default function RacePredictor() {
     mutationFn: async (input: RacePredictionInput) => {
       return apiRequest('/api/race-predictor/calculate', 'POST', input);
     },
-    onSuccess: (data) => {
+    onSuccess: (data, input) => {
       setResult(data as RacePredictionResult);
+      setResultDistance(input.targetDistance);
+      const estimate = raceEstimate(input.targetDistance, data as RacePredictionResult);
+      if (estimate && isAuthenticated && user) {
+        void apiRequest(LATEST_RACE_ESTIMATE, "PUT", estimate).then(() => {
+          queryClient.setQueryData(estimateKey, { estimate });
+        }).catch(() => { /* The free prediction remains usable without a saved copy. */ });
+      }
       if (search.get("source") === STARTER_SOURCE && Number.isFinite(data?.predictedTime)) trackStarterAction(user?.id, "prediction_completed");
     },
     onError: (error: any) => {
@@ -221,7 +239,7 @@ export default function RacePredictor() {
   const getConfidenceChartData = () => {
     if (!result) return [];
     
-    const targetDistanceKm = form.getValues("targetDistance") / 1000;
+    const targetDistanceKm = resultDistance / 1000;
     const splits = Math.ceil(targetDistanceKm);
     const data = [];
     
@@ -271,6 +289,16 @@ export default function RacePredictor() {
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <div className="mb-8"><h1 className="text-3xl font-bold text-charcoal sm:text-5xl">{racePredictorCopy.heading}</h1><p className="mt-3 max-w-3xl text-lg text-gray-600">Estimate your 5K, 10K, half marathon or marathon time from one recent race or hard effort. Enter the result free without signing in, or choose a run you already synced from Strava.</p><p className="mt-3 text-sm text-slate-700">For Strava: sign in, connect and sync from Dashboard, then return here and choose From Strava. The predictor uses the saved effort you select, not an automatic prediction from your entire history.</p></div>
+          {reviewDaySeven && !result && (
+            <section className="mb-6 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950" data-testid="day-seven-race-review">
+              <h2 className="text-lg font-semibold">Your next training step</h2>
+              {priorEstimate && <p className="mt-2"><strong>Last {RACE_GOALS[priorEstimate.goal].label} estimate: {formatTime(priorEstimate.seconds)}</strong> ({formatTime(priorEstimate.lower)} to {formatTime(priorEstimate.upper)}). Use the range for planning, not as a finish-time guarantee.</p>}
+              <p className="mt-2">{raceWeekTip(priorEstimate?.goal)}</p>
+              {priorEstimate ? <SignupResultTrialOffer after="prediction" source={DAY_SEVEN_RACE_SOURCE} raceGoal={priorEstimate.goal} recordResult={false} />
+                : isAuthenticated ? <p className="mt-2">{savedEstimate.isPending && user ? "Checking for a saved estimate…" : "You can run a fresh estimate below."}</p>
+                  : <p className="mt-2"><Link className="font-semibold underline" href={"/auth?redirect=" + encodeURIComponent(DAY_SEVEN_RACE_REVIEW)}>Sign in to see a saved estimate</Link> or run a fresh one below without an account.</p>}
+            </section>
+          )}
           {fromDayOne && <p className="mb-6 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-950" data-testid="day-one-tool-entry">
             Try the calculator below without an account, or <Link className="font-semibold underline" href={isAuthenticated ? DAY_ONE_COACH_DASHBOARD : DAY_ONE_COACH_SIGN_IN}>{isAuthenticated ? "open your free running coach" : "sign in to ask your free running coach"}</Link>.
           </p>}
@@ -712,6 +740,13 @@ export default function RacePredictor() {
                       </CardContent>
                     </Card>
                   </div>
+                  {fromDaySeven && (
+                    <section className="mb-6 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950" data-testid="day-seven-result-next-step">
+                      <h4 className="font-semibold">One step for this week</h4>
+                      <p className="mt-1">{raceWeekTip(currentEstimate?.goal)}</p>
+                      <SignupResultTrialOffer after="prediction" source={DAY_SEVEN_RACE_SOURCE} raceGoal={currentEstimate?.goal} />
+                    </section>
+                  )}
 
                   <Card className="mb-6">
                     <CardHeader>
@@ -810,7 +845,7 @@ export default function RacePredictor() {
                       </CardContent>
                     </Card>
                   )}
-                  {fromDayOne || fromDaySeven ? <SignupResultTrialOffer after="prediction" source={fromDaySeven ? DAY_SEVEN_RACE_SOURCE : DAY_ONE_COACH_SOURCE} /> : <ToolResultActions source="race_predictor_result" capability="race_prediction" title="My race prediction" summary={`${getDistanceLabel(form.getValues("targetDistance"))}: ${formatTime(result.predictedTime)} at ${formatPace(result.predictedPace)}/km. Scenario range ${formatTime(result.confidenceLower)}–${formatTime(result.confidenceUpper)}. Modeled estimate, not a guaranteed finish time.`} />}
+                  {fromDayOne ? <SignupResultTrialOffer after="prediction" source={DAY_ONE_COACH_SOURCE} /> : !fromDaySeven && <ToolResultActions source="race_predictor_result" capability="race_prediction" title="My race prediction" summary={`${getDistanceLabel(resultDistance)}: ${formatTime(result.predictedTime)} at ${formatPace(result.predictedPace)}/km. Scenario range ${formatTime(result.confidenceLower)}–${formatTime(result.confidenceUpper)}. Modeled estimate, not a guaranteed finish time.`} />}
                 </div>
               )}
             </CardContent>

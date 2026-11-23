@@ -86,6 +86,8 @@ import { resolveSignupEmailReference, signupEmailFromCookie, signupEmailStripeMe
 import { signupEmailCookie, signupEmailResultMatches, signupEmailStep, SIGNUP_EMAIL_TTL_SECONDS } from "./services/signupEmailReference";
 import { signupEmailFunnelQuery } from "./services/signupEmailFunnelQuery";
 import { registerStarterJourneyRoutes } from "./services/starterJourneyRoutes";
+import { daySevenPlanGoal, LATEST_RACE_ESTIMATE, raceEstimateSchema } from "@shared/daySevenRace";
+import { readRaceEstimate, saveRaceEstimate } from "./services/raceEstimateStore";
 import { validToolOfferSource } from "@shared/funnelEvents";
 import { isClientFunnelEvent, buildFunnelDedupeKey, billingPeriodFromInterval } from "@shared/funnelEvents";
 import { getDashboardCalendarPeriods, getLastMonthComparisonEnd, partitionDashboardActivities } from "./services/dashboardPeriods";
@@ -1318,7 +1320,8 @@ ${allPages.map(page => `  <url>
           console.warn('[checkout] post-claim lifecycle update unavailable', campaignError);
         }
       }
-      return res.json({ connected: true, returnTo: user.stravaConnected ? sanitizeReturnTo(session.metadata?.returnTo) : null });
+      const returnTo = sanitizeReturnTo(session.metadata?.returnTo);
+      return res.json({ connected: true, returnTo: user.stravaConnected || daySevenPlanGoal(returnTo) ? returnTo : null });
     } catch (error) {
       console.error('[checkout] guest claim failed', error);
       return res.status(400).json({ message: 'We could not connect this checkout. Please try again or contact support.' });
@@ -5397,6 +5400,27 @@ ${allPages.map(page => `  <url>
   });
 
   // Race Predictor - Calculate race time prediction
+  app.get(LATEST_RACE_ESTIMATE, authenticateJWT, async (req: any, res) => {
+    res.set("Cache-Control", "private, no-store");
+    try {
+      const { applicationSqlDatabase } = await import("./d1/runtimeDatabase");
+      return res.json({ estimate: await readRaceEstimate(applicationSqlDatabase, req.user.id) });
+    } catch {
+      return res.status(503).json({ message: "Saved race estimate is temporarily unavailable." });
+    }
+  });
+  app.put(LATEST_RACE_ESTIMATE, authenticateJWT, async (req: any, res) => {
+    res.set("Cache-Control", "private, no-store");
+    const parsed = raceEstimateSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid race estimate." });
+    try {
+      const { applicationSqlDatabase } = await import("./d1/runtimeDatabase");
+      await saveRaceEstimate(applicationSqlDatabase, req.user.id, parsed.data);
+      return res.json({ estimate: parsed.data });
+    } catch {
+      return res.status(503).json({ message: "Could not save your race estimate." });
+    }
+  });
   app.post("/api/race-predictor/calculate", async (req, res) => {
     try {
       const { predictRaceTime } = await import("@shared/racePrediction");

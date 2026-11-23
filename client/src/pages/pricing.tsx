@@ -13,6 +13,8 @@ import { useQuery } from "@tanstack/react-query";
 import { SEO } from "@/components/SEO";
 import { AddEmailModal } from "@/components/AddEmailModal";
 import { TrialOfferDetails, formatTrialAmount, useTrialOffer } from "@/components/TrialOfferDetails";
+import { DAY_SEVEN_RACE_SOURCE } from "@shared/dayOneCoach";
+import { DAY_SEVEN_RACE_REVIEW, daySevenPlanGoal, RACE_GOALS } from "@shared/daySevenRace";
 
 
 interface PublicWebIntroOffer {
@@ -110,6 +112,10 @@ export default function PricingPage() {
   // return destination) carried by Premium gates. Preserved through
   // checkout so trial activation returns to the requested feature.
   const upgradeIntent = parseUpgradeIntent(searchString);
+  const racePlanOffer = upgradeIntent?.source === DAY_SEVEN_RACE_SOURCE && upgradeIntent.capability === "training_plans";
+  const raceGoal = racePlanOffer ? daySevenPlanGoal(upgradeIntent.returnTo) : null;
+  const raceLabel = raceGoal ? RACE_GOALS[raceGoal].label : null;
+  const trialBenefit = raceLabel ? `Build a training plan for your ${raceLabel}, based on your mileage and the days you can run.` : upgradeIntent?.benefit;
   const searchParams = new URLSearchParams(searchString.startsWith("?") ? searchString.slice(1) : searchString);
   const checkoutCanceled = searchParams.get("canceled") === "true";
 
@@ -206,15 +212,17 @@ export default function PricingPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-900" data-testid="upgrade-intent-capability">
-                    Unlock {capabilityLabel(String(upgradeIntent.capability))}
+                    {raceLabel ? `Build your ${raceLabel} training plan` : `Unlock ${capabilityLabel(String(upgradeIntent.capability))}`}
                   </p>
-                  {upgradeIntent.benefit && (
+                  {trialBenefit && (
                     <p className="text-sm text-gray-700 mt-1" data-testid="upgrade-intent-benefit">
-                      {upgradeIntent.benefit}
+                      {trialBenefit}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-2">
-                    Start the trial and we'll bring you back to this feature after email confirmation and Strava connection.
+                    {racePlanOffer
+                      ? raceLabel ? "After checkout, confirm your email if needed and review your plan goal. Strava is optional." : "After checkout, confirm your email if needed. You can build a race plan without connecting Strava."
+                      : "Start the trial and we’ll bring you back to this feature after email confirmation and Strava connection."}
                   </p>
                   {!isPremium && (
                     <div className="mt-4">
@@ -227,13 +235,13 @@ export default function PricingPage() {
                         <Sparkles className="h-4 w-4 mr-2" />
                         {checkout.isPending ? 'Processing...' : trialButtonLabel}
                       </Button>
-                      <TrialOfferDetails className="mt-3" billingPeriod={billingCycle} benefit={upgradeIntent.benefit || capabilityLabel(String(upgradeIntent.capability)).toLowerCase() + "."} />
+                      <TrialOfferDetails className="mt-3" billingPeriod={billingCycle} benefit={trialBenefit || capabilityLabel(String(upgradeIntent.capability)).toLowerCase() + "."} />
                       {checkout.isError && <p role="alert" className="mt-3 text-sm font-medium text-red-700">{checkout.error instanceof Error ? checkout.error.message : 'Checkout could not start. Please try again.'}</p>}
                     </div>
                   )}
                 </div>
                 <Button asChild variant="ghost" size="sm" className="self-start text-gray-600 sm:flex-shrink-0" data-testid="upgrade-intent-back">
-                  <Link href={upgradeIntent.returnTo}>
+                  <Link href={racePlanOffer ? DAY_SEVEN_RACE_REVIEW : upgradeIntent.returnTo}>
                     <ArrowLeft className="h-4 w-4 mr-1" /> Back
                   </Link>
                 </Button>

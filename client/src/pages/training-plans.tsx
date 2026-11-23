@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { 
   Plus, Calendar, Target, Clock, ChevronRight, ChevronLeft,
   Loader2, CheckCircle, AlertTriangle, TrendingUp, Footprints,
@@ -25,6 +25,8 @@ import { buildUpgradeUrl } from "@shared/upgradeIntent";
 import { getRunFrequencyWarnings, normalizePreferredRunDays } from "@shared/trainingPlanSafety";
 import { STARTER_GOALS, starterWeekWorkouts, type SavedStarterWeek } from "@shared/starterJourney";
 import { trackStarterAction } from "@/lib/starterJourney";
+import { daySevenPlanGoal, LATEST_RACE_ESTIMATE, type RaceEstimate } from "@shared/daySevenRace";
+import { formatTime } from "@shared/racePrediction";
 
 const KM_TO_MILES = 0.621371;
 
@@ -68,6 +70,7 @@ export default function TrainingPlans() {
   const { canAccessAICoachChat, canAccessTrainingPlans } = useFeatureAccess();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const raceGoal = daySevenPlanGoal("/training-plans?" + useSearch());
   const [showWizard, setShowWizard] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [wizardStep, setWizardStep] = useState<WizardStep>("goal");
@@ -92,6 +95,23 @@ export default function TrainingPlans() {
   const [recommendedMode, setRecommendedMode] = useState<string>("single");
   const [starterEntry] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("starter") === "1");
   const openedStarter = useRef(false);
+  const openedRaceGoal = useRef(false);
+  const savedRace = useQuery<{ estimate: RaceEstimate | null }>({
+    queryKey: [LATEST_RACE_ESTIMATE, user?.id], queryFn: () => apiRequest(LATEST_RACE_ESTIMATE),
+    enabled: Boolean(raceGoal && user), retry: false,
+  });
+  useEffect(() => {
+    if (!user || !raceGoal || openedRaceGoal.current || savedRace.isPending) return;
+    openedRaceGoal.current = true;
+    setGoalType(raceGoal);
+    const estimate = savedRace.data?.estimate;
+    if (estimate?.goal === raceGoal) {
+      const time = formatTime(estimate.seconds);
+      setGoalTimeTarget(time.split(":").length === 2 ? `0:${time}` : time);
+    }
+    setWizardStep("goal");
+    setShowWizard(true);
+  }, [user, raceGoal, savedRace.data, savedRace.isPending]);
   const savedWeek = useQuery<{ week: SavedStarterWeek | null }>({
     queryKey: ["/api/onboarding/starter-week"],
     queryFn: () => apiRequest("/api/onboarding/starter-week"),
