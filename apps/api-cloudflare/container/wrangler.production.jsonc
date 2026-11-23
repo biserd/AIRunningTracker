@@ -48,7 +48,8 @@
   // StrideReplay link in the Tools footer (source 01adcda). No schema changes.
   // StrideReplay video analysis card on the Tools page (source c25cdd0). No schema changes.
   // GPT-6 Luna backend (b31ffd7), verified against the production OpenAI binding.
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:d037095960598ded1a808fcc66234628bcb73e03f9edd8570a5bd3e10d502659",
+  // Day 7 race predictor reminders and saved estimates (cc5fc2d; migration 0046).
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:1306b9455fed5af13b8793f8d77496690a2cd587bbaf199b160d99dcc0888c88",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
