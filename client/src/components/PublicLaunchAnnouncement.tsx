@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { hasLaunchBanner, launchOpen, launchCutoff, LaunchStrip } from '@shared/blackFridayLaunch';
-import { WEB_INTRO_OFFER_ENDS_AT } from '@shared/webIntroDeadline';
 
 export function useLaunchWindow() {
   const [open, setOpen] = useState(() => launchOpen());
@@ -33,7 +32,7 @@ export function PublicLaunchAnnouncement() {
   if (!visible || isError) return null;
   const price = data === undefined ? initial?.dataset.launchFirstYear :
     data.active && data.currency === 'usd' && data.billingPeriod === 'annual' && data.introductoryPayments === 1 &&
-      data.offerEndsAt === WEB_INTRO_OFFER_ENDS_AT && Number.isSafeInteger(data.introductoryUnitAmount) && data.introductoryUnitAmount > 0
+      Date.parse(data.offerEndsAt) === launchCutoff && Number.isSafeInteger(data.introductoryUnitAmount) && data.introductoryUnitAmount > 0
       ? '$' + (data.introductoryUnitAmount / 100).toFixed(2) : null;
   return price ? <LaunchStrip firstYear={price}/> : null;
 }
