@@ -62,6 +62,7 @@ import { sql, eq, isNull, and, desc, gt } from "drizzle-orm";
 import { checkInsightRateLimit, incrementInsightCount, getUserUsageStats, getActivityHistoryLimit, getFreeActivityLimit, RATE_LIMITS, canSyncFromStrava, getInitialSyncCap, isPaidPlan } from "./rateLimits";
 import { renderBlogPost, renderShoePage, renderComparisonPage, renderHomepage, renderToolPage, getAllToolSlugs, renderFaqPage, renderBlogIndex, renderPricingPage, renderFeaturesPage, renderAboutPage, renderEbookLandingPage, renderDevelopersPage, renderDevelopersApiPage, renderToolsHubPage, renderProactiveRunningCoachPage, renderMcpLandingPage, renderMcpDocsPage } from "./ssr/renderer";
 import {renderIosAppPage} from './ssr/iosApp';
+import { launchAnnouncement } from './ssr/launchAnnouncement';
 import { getAllBlogPosts } from "./ssr/blogContent";
 import { buildRobotsTxt, isCrawler, isPrivateCrawlerPath } from "./ssr/crawlerPolicy";
 import { registerShoePages } from './ssr/shoePages';
@@ -339,6 +340,7 @@ async function isStripeTrialEligible(
 }
 
 export async function registerRoutes(app: Express, runtime?: { schedulerDatabase: SqlDatabase }): Promise<Server> {
+  app.use(launchAnnouncement(iosPageOffer));
   registerStarterJourneyRoutes(app, { authenticate: authenticateJWT, admin: authenticateAdmin,
     database: async () => (await import("./d1/runtimeDatabase")).applicationSqlDatabase });
   const garminStore = async () => {

@@ -23,8 +23,8 @@ function Shot({name,alt,tablet=false,eager=false}:{name:string;alt:string;tablet
 }
 export function IosAppContent({webOffer=null}:{webOffer?:IosWebOffer|null}){return <Shell><main id="ios-main">
  <section className="ios-hero"><div className="ios-container ios-hero-grid"><div className="ios-hero-copy">
-  <p className="ios-eyebrow"><Smartphone size={16} aria-hidden="true"/> Made for iPhone &amp; iPad</p>
-  <h1>Your running.<br/>Your coach.<br/><em>Right here.</em></h1>
+  <p className="ios-eyebrow"><Smartphone size={16} aria-hidden="true"/> Now on iPhone &amp; iPad</p>
+  <h1>No running watch?<br/><em>Your iPhone is enough.</em></h1>
   <p className="ios-lede">Record GPS runs on your iPhone, see your progress on iPhone and iPad, and get optional voice or chat coaching when you want guidance.</p>
   <div className="ios-actions"><AppStoreButton/><a className="ios-button ios-button-outline" href="#features">Explore the app</a></div>
   <p className="ios-launch"><span/>Available now on iPhone and iPad</p>

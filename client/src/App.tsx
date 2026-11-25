@@ -10,6 +10,7 @@ import { ToolJourneyTracker } from "@/components/ToolJourneyTracker";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { MigrationNotice } from '@/components/MigrationNotice';
+import { PublicLaunchAnnouncement } from '@/components/PublicLaunchAnnouncement';
 
 // Code-split every route into its own chunk so visiting any single page
 // no longer downloads/parses code for every other page. Huge LCP win on
@@ -352,6 +353,7 @@ function App() {
         <ToolJourneyTracker />
         <MigrationNotice />
         <Toaster />
+        <PublicLaunchAnnouncement />
         <Router />
         <PWAInstallPrompt />
       </TooltipProvider>

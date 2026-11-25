@@ -114,10 +114,10 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4 mb-3">
-            Garmin and Strava connections. A clearer view of your running.
+            No watch? Record your next run for free on iPhone.
           </p>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Record GPS runs on iPhone, or connect Garmin or Strava to sync your running. Explore your progress and get optional coaching on the web or in the app.
+            Run Analytics is live on iPhone and iPad. Review your running week on a bigger screen. Garmin and Strava connections are optional.
           </p>
           <div className="mb-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 px-4">
             <a href={APP_STORE_URL} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800" data-testid="home-app-store-download">

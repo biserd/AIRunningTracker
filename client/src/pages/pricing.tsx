@@ -16,6 +16,7 @@ import { TrialOfferDetails, formatTrialAmount, useTrialOffer } from "@/component
 import { DAY_SEVEN_RACE_SOURCE } from "@shared/dayOneCoach";
 import { DAY_SEVEN_RACE_REVIEW, daySevenPlanGoal, RACE_GOALS } from "@shared/daySevenRace";
 import { APP_STORE_URL } from "@shared/iosAppContent";
+import { useLaunchWindow } from '@/components/PublicLaunchAnnouncement';
 
 
 interface PublicWebIntroOffer {
@@ -80,6 +81,7 @@ const premiumFeatures: FeatureSection[] = [
 ];
 
 export default function PricingPage() {
+  const launchWindow = useLaunchWindow();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { isPremium } = useSubscription();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -96,6 +98,11 @@ export default function PricingPage() {
     },
     staleTime: 60_000,
   });
+  useEffect(() => {
+    if (launchWindow && publicIntroOffer?.active && window.location.hash === '#web-offer') {
+      document.getElementById('web-offer')?.scrollIntoView({ block: 'center' });
+    }
+  }, [launchWindow, publicIntroOffer?.active]);
   const introductoryUnitAmount = isAuthenticated
     ? trialOffer?.introductoryUnitAmount
     : publicIntroOffer?.active ? publicIntroOffer.introductoryUnitAmount : undefined;
@@ -258,7 +265,7 @@ export default function PricingPage() {
             </div>
           )}
           <h1 className="text-5xl font-bold text-charcoal mb-4 text-center">
-            Simple, <span className="text-strava-orange">Transparent</span> Pricing
+            {launchWindow && publicIntroOffer?.active ? 'Black Friday pricing for new web subscribers' : 'RunAnalytics Premium pricing'}
           </h1>
 
           <p className="text-xl text-gray-600 mb-8 text-center max-w-2xl mx-auto">
@@ -266,9 +273,9 @@ export default function PricingPage() {
           </p>
           {!upgradeIntent?.source.startsWith('garmin_')&&<p className="mx-auto mb-8 max-w-2xl rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-600">Using Garmin? Your run feed and optional Recovery remain available without paying. Premium adds goal-based planning and coaching tools, but direct Garmin runs and health readings are not used by AI coaching or Runner Score. History-based AI analysis currently uses a separate Strava connection.</p>}
 
-          {publicIntroOffer?.active && (
-            <p className="mx-auto mb-8 max-w-2xl rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-center text-sm text-gray-800" data-testid="web-intro-offer-banner">
-              <strong className="text-orange-800">Limited-time web offer for new subscribers:</strong> 7 days free, then $3.99 for your first month or $39.99 for your first year. Regular renewal prices are $7.99/month or $79.99/year. Sign up by November 30. Cancel anytime.
+          {launchWindow && publicIntroOffer?.active && (
+            <p id="web-offer" className="mx-auto mb-8 max-w-2xl scroll-mt-24 rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-center text-sm text-gray-800" data-testid="web-intro-offer-banner">
+              <strong className="text-orange-800">Web checkout only.</strong> Eligible new subscribers get 7 days free, then $3.99 for the first month or $39.99 for the first year. Renews at $7.99/month or $79.99/year. Sign up by Nov. 30 at 11:59 p.m. ET. Card required; cancel anytime. App Store purchases are not discounted.
             </p>
           )}
 

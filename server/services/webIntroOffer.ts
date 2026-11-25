@@ -1,6 +1,7 @@
 export type WebBillingPeriod = 'monthly' | 'annual';
 
-export const WEB_INTRO_OFFER_ENDS_AT = '2026-12-01T05:00:00.000Z';
+import { WEB_INTRO_OFFER_ENDS_AT } from '../../shared/webIntroDeadline';
+export { WEB_INTRO_OFFER_ENDS_AT };
 
 const WEB_INTRO_PRICES = {
   monthly: { regular: 799, introductory: 399, payments: 1 },

@@ -6,6 +6,7 @@ import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 import { renderPublicDocument } from "./ssr/reactToolRenderer";
+import { hasLaunchBanner } from '../shared/blackFridayLaunch';
 
 const viteLogger = createLogger();
 
@@ -99,6 +100,10 @@ export function serveStatic(app: Express, distPath = path.resolve(import.meta.di
       const template = await fs.promises.readFile(indexPath, "utf-8");
       const page = await renderPublicDocument(requestPath, template);
       if (!page) {
+        if (hasLaunchBanner(requestPath)) {
+          res.type('html').send(template);
+          return;
+        }
         res.sendFile(indexPath);
         return;
       }
