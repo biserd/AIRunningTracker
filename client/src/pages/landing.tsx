@@ -6,6 +6,7 @@ import { CheckCircle, Brain, BarChart, Target, Shield, Zap, TrendingUp, Trophy, 
 import { SiStrava } from "react-icons/si";
 import { VERSION } from "@shared/version";
 import { strideReplay, strideReplayLink } from "@shared/strideReplay";
+import { APP_STORE_CTA, APP_STORE_URL } from "@shared/iosAppContent";
 import Footer from "@/components/Footer";
 import PublicHeader from "@/components/PublicHeader";
 import RunningSources from "@/components/RunningSources";
@@ -90,7 +91,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <SEO
         title="RunAnalytics - AI Running Coach & Performance Analytics"
-        description="Connect Garmin for new run summaries or Strava for analytics and AI coaching. Explore voice, chat and WhatsApp coaching. iOS app coming soon."
+        description="Track GPS runs on iPhone, sync Garmin or Strava, and get optional coaching. RunAnalytics is available on the web, iPhone and iPad."
         keywords="AI running coach, Garmin Connect sync, Strava analytics, WhatsApp running coach, running analytics, runner score, voice coach"
         structuredData={structuredData}
       />
@@ -104,7 +105,7 @@ export default function LandingPage() {
           <div className="flex justify-center mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
               <Star className="h-3 w-3 fill-orange-500 text-orange-500" />
-              WhatsApp coach available now · iOS coming soon
+              Now on iPhone &amp; iPad
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4 sm:mb-6 leading-tight">
@@ -116,8 +117,14 @@ export default function LandingPage() {
             Garmin and Strava connections. A clearer view of your running.
           </p>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-4">
-            Connect Strava for training insights and voice, chat or WhatsApp coaching. Or connect Garmin directly for new run summaries and optional sleep and recovery trends. The RunAnalytics iOS app is coming soon.
+            Record GPS runs on iPhone, or connect Garmin or Strava to sync your running. Explore your progress and get optional coaching on the web or in the app.
           </p>
+          <div className="mb-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 px-4">
+            <a href={APP_STORE_URL} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800" data-testid="home-app-store-download">
+              {APP_STORE_CTA} <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            </a>
+            <Link href="/ios-app" className="text-sm font-semibold text-orange-800 underline-offset-4 hover:underline">Explore the app</Link>
+          </div>
             <Link href="/pricing" className="mx-4 mb-7 block min-h-[184px] sm:min-h-[140px] rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-left shadow-sm transition hover:border-orange-400 hover:shadow-md" data-testid="home-web-intro-offer">
               <span className="block text-sm font-bold text-orange-800">{webIntroOffer?.active ? 'Limited-time web offer · sign up by November 30' : 'Try your personal running coach · $0 today'}</span>
               <span className="mt-1 block text-base font-semibold text-gray-900">{webIntroOffer?.active ? '7 days free, then $3.99 for your first month or $39.99 for your first year.' : '7 days free, then $7.99 per month or $79.99 per year.'}</span>
@@ -343,7 +350,7 @@ export default function LandingPage() {
                 <Send className="h-3.5 w-3.5" /> WhatsApp available now
               </span>
               <span className="rounded-full border border-orange-400/30 bg-orange-400/10 px-3 py-1.5 text-xs font-semibold text-orange-200">
-                iOS app coming soon
+                iPhone &amp; iPad app available
               </span>
               <span className="rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1.5 text-xs font-semibold text-sky-200">
                 Telegram also supported

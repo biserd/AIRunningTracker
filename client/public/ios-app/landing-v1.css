@@ -20,6 +20,7 @@
 .ios-eyebrow,.ios-privacy-page a:not(.ios-button),.ios-hero-pricing a,.ios-coming-large{color:var(--orange-ink)}
 .ios-button{background:var(--orange-ink);border-color:var(--orange-ink)}
 .ios-button-outline{background:transparent;color:var(--orange-ink)!important}
+.ios-actions{flex-wrap:wrap}.ios-download-final{margin-top:30px}
 .ios-footer{background:#333333;color:#fff}
 .ios-footer p,.ios-footer small{color:#cbd5e1}
 .ios-footer nav{border-color:#52525b}

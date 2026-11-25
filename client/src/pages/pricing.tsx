@@ -15,6 +15,7 @@ import { AddEmailModal } from "@/components/AddEmailModal";
 import { TrialOfferDetails, formatTrialAmount, useTrialOffer } from "@/components/TrialOfferDetails";
 import { DAY_SEVEN_RACE_SOURCE } from "@shared/dayOneCoach";
 import { DAY_SEVEN_RACE_REVIEW, daySevenPlanGoal, RACE_GOALS } from "@shared/daySevenRace";
+import { APP_STORE_URL } from "@shared/iosAppContent";
 
 
 interface PublicWebIntroOffer {
@@ -64,7 +65,7 @@ const premiumFeatures: FeatureSection[] = [
       "AI Coach Chat (across your training)",
       "AI Agent Coach: proactive post-run recaps",
       "Voice coaching and private WhatsApp chat",
-      "RunAnalytics iOS app access when released",
+      "Premium coaching on iPhone and iPad with the same account",
     ],
   },
   {
@@ -397,7 +398,7 @@ export default function PricingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-slate-900">Want the coach to come to you?</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">Chat privately with your coach on WhatsApp today. The iOS app is coming soon; Telegram remains supported.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">Chat privately with your coach on WhatsApp, or <a href={APP_STORE_URL} className="font-semibold text-orange-800 underline">download Run Analytics for iPhone and iPad</a>. Telegram remains supported.</p>
                 </div>
               </div>
               <span className="inline-flex shrink-0 items-center gap-2 font-bold text-[#C63B00]">

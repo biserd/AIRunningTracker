@@ -2,6 +2,7 @@ import { Activity, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { VERSION } from "@shared/version";
 import { strideReplay, strideReplayLink } from "@shared/strideReplay";
+import { APP_STORE_CTA, APP_STORE_URL } from "@shared/iosAppContent";
 import { StravaPoweredBy } from "@/components/StravaConnect";
 
 export default function Footer() {
@@ -29,7 +30,8 @@ export default function Footer() {
               <li><Link href="/garmin/recovery" className="hover:text-white transition-colors">Garmin sleep &amp; HRV dashboard</Link></li>
               <li><Link href="/garmin/setup" className="hover:text-white transition-colors">Garmin setup &amp; sync guide</Link></li>
               <li><Link href="/strava" className="hover:text-white transition-colors">Strava analytics</Link></li>
-              <li><Link href="/ios-app" className="hover:text-white transition-colors" data-testid="link-ios-app">iPhone &amp; iPad App · Coming Soon</Link></li>
+              <li><Link href="/ios-app" className="hover:text-white transition-colors" data-testid="link-ios-app">iPhone &amp; iPad App</Link></li>
+              <li><a href={APP_STORE_URL} className="hover:text-white transition-colors">{APP_STORE_CTA}</a></li>
               <li><Link href="/features" className="hover:text-white transition-colors" data-testid="link-features">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-white transition-colors" data-testid="link-pricing">Pricing</Link></li>
               <li><Link href="/tools" className="hover:text-white transition-colors" data-testid="link-tools">Tools</Link></li>

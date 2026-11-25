@@ -5,6 +5,7 @@ import { configuredWebIntroCoupon, webIntroOfferForPrice } from '../services/web
 import { runningSources } from '../../shared/runningSources';
 import { blogIndexTitle } from '../../shared/searchPageCopy';
 import { strideReplay, strideReplayLink } from '../../shared/strideReplay';
+import { APP_STORE_CTA, APP_STORE_URL } from '../../shared/iosAppContent';
 
 const BASE_URL = "https://aitracker.run";
 
@@ -792,7 +793,7 @@ export function renderHomepage(): string {
   } : homepageContent;
   const meta: PageMeta = {
     title: "RunAnalytics - AI Running Coach & Performance Analytics",
-    description: "Connect Garmin for new run summaries or Strava for analytics and AI coaching. Explore voice, chat and WhatsApp coaching. iOS app coming soon.",
+    description: "Track GPS runs on iPhone, sync Garmin or Strava, and get optional coaching. RunAnalytics is available on the web, iPhone and iPad.",
     keywords: "AI running coach, running analytics, Strava analytics, runner score, race predictions, VO2 max, running performance, training insights, running app, marathon training, AI coach chat",
     type: 'website'
   };
@@ -909,6 +910,8 @@ export function renderHomepage(): string {
       <h1>${escapeHtml(content.hero.title)}</h1>
       <p><strong>${escapeHtml(content.hero.subtitle)}</strong></p>
       <p>${escapeHtml(content.hero.description)}</p>
+      <p>Now on iPhone and iPad. Record GPS runs on iPhone and see your progress on both devices.</p>
+      <p><a href="${APP_STORE_URL}">${APP_STORE_CTA}</a> &bull; <a href="/ios-app">Explore the app</a></p>
       <a href="${content.hero.cta.href}" class="ssg-cta">${escapeHtml(content.hero.cta.text)}</a>
       <div class="ssg-trust">
         ${content.hero.trustIndicators.map(t => `<span>✓ ${escapeHtml(t)}</span>`).join('')}
@@ -1334,6 +1337,7 @@ export function renderPricingPage(): string {
             <li>Form stability analysis (cadence and power stability over time)</li>
           </ul>
           <p><a href="/proactive-running-coach"><strong>See how private Telegram coaching works</strong></a>: available to Premium and trial runners; WhatsApp is coming next.</p>
+          <p><a href="${APP_STORE_URL}">Download Run Analytics for iPhone and iPad</a>. Basic run recording and history are free; Premium coaching is optional.</p>
         </section>
         <section>
           <h2>Frequently Asked Questions about Pricing</h2>
@@ -1473,7 +1477,7 @@ export function renderProactiveRunningCoachPage(): string {
           <a href="/pricing?source=proactive_coach_landing&amp;capability=ai_coach&amp;benefitKey=coach_chat">Start 7 days free &rarr;</a>
         </div>
         <p style="margin-top:24px;text-align:center;"><a href="/blog/ai-agent-coach-proactive-coaching">Read how proactive AI coaching works</a> &bull; <a href="/ai-agent-coach">Explore AI Agent Coach</a></p>
-        <p style="margin-top:16px;text-align:center;"><a href="/ios-app">Explore Run Analytics for iPhone and iPad. Coming Soon</a></p>
+        <p style="margin-top:16px;text-align:center;"><a href="/ios-app">Explore Run Analytics for iPhone and iPad</a> &bull; <a href="${APP_STORE_URL}">${APP_STORE_CTA}</a></p>
       </article>
     </main>
   </div>

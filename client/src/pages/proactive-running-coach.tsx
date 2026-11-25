@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
+import { APP_STORE_CTA, APP_STORE_URL } from "@shared/iosAppContent";
 import { SiTelegram, SiWhatsapp, SiStrava } from "react-icons/si";
 import {
   ArrowRight,
@@ -38,7 +39,7 @@ const structuredData = {
       name: "RunAnalytics Proactive Running Coach",
       applicationCategory: "HealthApplication",
       operatingSystem: "Web",
-      description: "An AI running coach that uses authorized RunAnalytics data to deliver concise post-run guidance on WhatsApp, with an iOS app coming soon.",
+      description: "An AI running coach that uses authorized RunAnalytics data to deliver concise post-run guidance on WhatsApp. A companion app is available for iPhone and iPad.",
       offers: {
         "@type": "Offer",
         price: "7.99",
@@ -62,7 +63,7 @@ const structuredData = {
           name: "Is the RunAnalytics iOS app available?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "The iOS app is currently in limited testing and is coming soon. WhatsApp and the web coach are available now.",
+            text: "Run Analytics is available on the App Store for iPhone and iPad. WhatsApp and the web coach are available too.",
           },
         },
         {
@@ -109,7 +110,7 @@ const faqs = [
   },
   {
     question: "What about the iOS app?",
-    answer: "The native RunAnalytics app for iPhone and iPad is coming soon. Explore the dedicated app page for voice, chat, training plans, progress and screenshots.",
+    answer: "Run Analytics is available on the App Store for iPhone and iPad. Explore the app page for GPS recording, voice and chat, training plans, progress and screenshots.",
   },
   {
     question: "Is Telegram still supported?",
@@ -210,11 +211,11 @@ export default function ProactiveRunningCoachLanding() {
     <div className="min-h-screen bg-[#f7f8f6] text-slate-950">
       <SEO
         title="AI Running Coach on WhatsApp | RunAnalytics"
-        description="Get concise, runner-specific post-run coaching on WhatsApp through a private RunAnalytics connection. Voice and web chat are available now; the iOS app is coming soon."
+        description="Get post-run coaching on WhatsApp through a private RunAnalytics connection. Also available on the web, iPhone and iPad."
         keywords="WhatsApp running coach, proactive running coach, iOS running coach, Telegram running coach, AI running coach messages, Strava coach, post-run coaching"
         url="https://aitracker.run/proactive-running-coach"
         ogTitle="Your running coach, already in your messages"
-        ogDescription="Run, sync, and receive one useful next step on WhatsApp. Voice and web chat are available now; the iOS app is coming soon."
+        ogDescription="Sync your runs for practical guidance on WhatsApp. Run Analytics is also available on the web, iPhone and iPad."
         structuredData={structuredData}
       />
       <PublicHeader />
@@ -236,11 +237,11 @@ export default function ProactiveRunningCoachLanding() {
 
               <div className="mt-7 flex flex-wrap gap-3">
                 <ChannelPill channel="whatsapp" status="Available now" />
-                <ChannelPill channel="ios" status="Coming soon" />
+                <ChannelPill channel="ios" status="Available now" />
                 <ChannelPill channel="telegram" status="Also supported" />
               </div>
 
-              <p className="mt-4"><Link href="/ios-app" className="font-semibold text-[#c43c00] underline underline-offset-4">Explore the iPhone &amp; iPad app →</Link></p>
+              <p className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[#c43c00]"><Link href="/ios-app" className="font-semibold underline underline-offset-4">Explore the iPhone &amp; iPad app</Link><a href={APP_STORE_URL} className="font-semibold underline underline-offset-4">{APP_STORE_CTA}</a></p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <a href={primaryHref} onClick={trackPrimaryClick}>
                   <Button size="lg" className="h-14 w-full bg-slate-950 px-7 text-base text-white hover:bg-slate-800 sm:w-auto" data-testid="proactive-coach-primary-cta">
@@ -380,7 +381,7 @@ export default function ProactiveRunningCoachLanding() {
           <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-[#FC4C02] px-7 py-12 text-center text-white shadow-2xl sm:px-12 sm:py-16">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15"><Sparkles className="h-7 w-7" /></div>
             <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">Your next useful coaching moment should find you.</h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 7-day Premium trial, connect Strava, then opt in to WhatsApp from coach Settings. Standard renewal pricing is $7.99/month; see Pricing for the current introductory web offer. The iOS app is coming soon.</p>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-orange-50">Start the 7-day Premium trial, connect Strava, then opt in to WhatsApp from coach Settings. Standard renewal pricing is $7.99/month; see Pricing for the current introductory web offer.</p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <a href={primaryHref} onClick={trackPrimaryClick}>
                 <Button size="lg" className="h-14 w-full bg-white px-7 text-base font-bold text-[#C63B00] hover:bg-orange-50 sm:w-auto" data-testid="proactive-coach-bottom-cta">

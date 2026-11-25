@@ -3,12 +3,13 @@ import { toolsContent } from './toolsContent';
 import { authMarkdown } from '../mcp/discovery';
 import { runningSources } from '../../shared/runningSources';
 import { garminPublicPages } from '../../shared/garminPublicContent';
+import { APP_STORE_URL } from '../../shared/iosAppContent';
 
 // An allowlist, not a generic response converter: authenticated pages and APIs
 // must never become public via content negotiation or a shared cache.
 export function publicMarkdown(path: string): string | null {
   if (path === '/') return `# RunAnalytics
-Your AI running coach, wherever you run. Connect Strava for analytics and eligible voice, chat and WhatsApp coaching. Connect Garmin directly for new run summaries and optional health and sleep trends with separate consent. Garmin and eligible Strava runs appear together on the dashboard and in Activities; clear matches count once. Garmin summaries remain outside AI coaching and Runner Score. The iOS/iPad app is coming soon.
+Your AI running coach, wherever you run. Connect Strava for analytics and eligible voice, chat and WhatsApp coaching. Connect Garmin directly for new run summaries and optional health and sleep trends with separate consent. Garmin and eligible Strava runs appear together on the dashboard and in Activities; clear matches count once. Garmin summaries remain outside AI coaching and Runner Score. Run Analytics is available on iPhone and iPad, with free GPS run recording on iPhone.
 
 ## Explore
 - [Garmin and Strava connections](https://aitracker.run/integrations)
@@ -18,7 +19,8 @@ Your AI running coach, wherever you run. Connect Strava for analytics and eligib
 - [Strava analytics](https://aitracker.run/strava)
 - [Features](https://aitracker.run/features)
 - [Current trial and subscription terms](https://aitracker.run/pricing)
-- [iOS and iPad app](https://aitracker.run/ios-app)
+- [iPhone and iPad app](https://aitracker.run/ios-app)
+- [Download on the App Store](${APP_STORE_URL})
 - [Running tools](https://aitracker.run/tools)
 - [Shoe comparisons](https://aitracker.run/tools/shoes/compare)
 - [MCP documentation](https://aitracker.run/developers/mcp)

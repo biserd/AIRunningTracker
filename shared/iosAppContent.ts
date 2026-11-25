@@ -1,9 +1,12 @@
-// Shared by the browser and server-rendered pages; no account data or launch claims.
+// Shared by the browser and server-rendered pages.
+export const APP_STORE_URL = 'https://apps.apple.com/us/app/run-analytics-running-coach/id6813680941';
+export const APP_STORE_CTA = 'Download on the App Store';
+
 export const iosAppMeta = {
   title: 'Running Coach for iPhone & iPad | Run Analytics',
-  description: 'Meet Run Analytics for iPhone and iPad: voice coaching, training plans, Strava run insights and progress in one native app. Coming soon.',
+  description: 'Download Run Analytics for iPhone and iPad. Record GPS runs on iPhone, track your progress, and get optional coaching and training plans.',
   path: '/ios-app',
-  image: 'https://aitracker.run/ios-app/social-v1.jpg',
+  image: 'https://aitracker.run/ios-app/social-v2.jpg',
 };
 export const iosPrivacyMeta = {
   title: 'iPhone & iPad App Privacy | Run Analytics',
@@ -12,9 +15,9 @@ export const iosPrivacyMeta = {
   image: iosAppMeta.image,
 };
 export const iosAppFaqs = [
-  {question:'When can I download the app?',answer:'Run Analytics for iPhone and iPad is coming soon. There is no public App Store download available from this page yet.'},
+  {question:'Where can I download the app?',answer:'Run Analytics is available free on the App Store for iPhone and iPad. iPhone GPS recording and basic run history do not require a subscription. Premium coaching is optional.'},
   {question:'Do I need a new RunAnalytics account?',answer:'No. Sign in with the email you already use for RunAnalytics. Your account, synced runs and saved training plans come from the same backend as the website. New runners can create an account with an email sign-in link in the app.'},
-  {question:'How do my runs get into the app?',answer:'Connect your Strava account from the app and authorize access. Run Analytics uses your synced activities for history, insights and coaching. It is not a replacement for the app or watch you use to record runs.'},
+  {question:'How do my runs get into the app?',answer:'Record runs with GPS on your iPhone, connect Strava to import authorized running history, or connect Garmin for newly synced runs. Strava and Garmin are optional. Coaching based on synced activity history uses eligible Strava runs, not direct Garmin data.'},
   {question:'How much does Premium cost?',answer:'Premium is $7.99/month or $79.99/year in the US, with a 7-day free trial for eligible new subscribers. After the trial, your selected subscription renews automatically unless cancelled. Local App Store prices, taxes and trial eligibility are shown before confirmation. Existing paid RunAnalytics accounts can sign in without buying a second subscription.'},
   {question:'Can I cancel during the free trial?',answer:'Yes. Cancel anytime through the service where you subscribed. For an Apple trial, cancel at least 24 hours before the 7-day trial ends to avoid a charge, in Apple Settings → Subscriptions. Website subscriptions are managed in web billing. Cancelling stops future renewal; deleting the app or your account does not cancel an Apple subscription.'},
   {question:'Can the coach change my training plan?',answer:'The app’s plan workflow prepares a proposed plan or adjustment for your review. Changes are not saved until you explicitly confirm. Plan-writing access requires eligible coaching access; availability may be limited during rollout.'},
@@ -23,7 +26,7 @@ export const iosAppFaqs = [
 export const iosAppSchema = {
   '@context':'https://schema.org',
   '@graph':[
-    {'@type':'SoftwareApplication',name:'Run Analytics',applicationCategory:'HealthApplication',operatingSystem:'iOS, iPadOS',url:'https://aitracker.run/ios-app',description:iosAppMeta.description,screenshot:['https://aitracker.run/ios-app/coach-v1.webp','https://aitracker.run/ios-app/plan-v1.webp','https://aitracker.run/ios-app/ipad-v1.webp']},
+    {'@type':'SoftwareApplication',name:'Run Analytics',applicationCategory:'HealthApplication',operatingSystem:'iOS, iPadOS',url:'https://aitracker.run/ios-app',installUrl:APP_STORE_URL,description:iosAppMeta.description,screenshot:['https://aitracker.run/ios-app/coach-v1.webp','https://aitracker.run/ios-app/plan-v1.webp','https://aitracker.run/ios-app/ipad-v1.webp']},
     {'@type':'FAQPage',mainEntity:iosAppFaqs.map(({question,answer})=>({'@type':'Question',name:question,acceptedAnswer:{'@type':'Answer',text:answer}}))},
   ],
 };
