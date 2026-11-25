@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,statSync} from 'node:fs';
 import {renderIosAppPage} from './iosApp';
-import {APP_STORE_URL,iosAppFaqs,iosAppMeta,iosPrivacyMeta} from '../../shared/iosAppContent';
+import {APP_STORE_URL,iosAppFaqs,iosAppMeta,iosPrivacyMeta,iosWebOfferFromQuotes} from '../../shared/iosAppContent';
 import {renderHomepage,renderProactiveRunningCoachPage} from './renderer';
 import {publicMarkdown} from './publicMarkdown';
 import {isPrivateCrawlerPath} from './crawlerPolicy';
@@ -59,6 +59,27 @@ test('pricing is visible without JavaScript, with trial eligibility and renewal 
  const css=readFileSync('client/public/ios-app/landing-v1.css','utf8');
  assert.match(css,/--orange:#FC4C02/);assert.match(css,/--ink:#333333/);
  assert.doesNotMatch(css,/#faf7f0|#252e28|#263c33/);
+});
+test('website promotion has its own checkout and is absent when expired or unavailable',()=>{
+ const offerEndsAt='2026-12-01T05:00:00.000Z', cutoff=Date.parse(offerEndsAt);
+ const terms={active:true,currency:'usd',introductoryPayments:1,offerEndsAt};
+ const monthly={...terms,billingPeriod:'monthly',introductoryUnitAmount:399,regularUnitAmount:799};
+ const annual={...terms,billingPeriod:'annual',introductoryUnitAmount:3999,regularUnitAmount:7999};
+ const offer=iosWebOfferFromQuotes(monthly,annual,cutoff-1);
+ assert.ok(offer);
+ const html=renderIosAppPage(false,offer);
+ assert.match(html,/Limited-time offer: web checkout only/);
+ assert.match(html,/\$3\.99 for the first month or \$39\.99 for the first year/);
+ assert.match(html,/Renews at \$7\.99\/month or \$79\.99\/year\. Sign up by November 30/);
+ assert.match(html,/href="\/pricing">See web offer/);
+ assert.match(html,/does not apply to App Store purchases/);
+ assert.match(html,/Subscribe in the app through Apple/);
+ const schema=JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)![1]);
+ assert.match(schema['@graph'].find((s:any)=>s['@type']==='FAQPage').mainEntity.find((q:any)=>q.name==='How much does Premium cost?').acceptedAnswer.text,/Web checkout only:.*\$3\.99/);
+ for(const skipped of [iosWebOfferFromQuotes(monthly,annual,cutoff),iosWebOfferFromQuotes({...monthly,active:false},annual,cutoff-1),iosWebOfferFromQuotes(monthly,{...annual,currency:'eur'},cutoff-1),iosWebOfferFromQuotes(monthly,null,cutoff-1)]){
+  assert.equal(skipped,null);
+  assert.doesNotMatch(renderIosAppPage(false,skipped),/\$3\.99|\$39\.99|Limited-time offer/);
+ }
 });
 test('privacy describes providers, cloud voice, deletion and Apple cancellation without zero-retention claims',()=>{
  const html=renderIosAppPage(true);

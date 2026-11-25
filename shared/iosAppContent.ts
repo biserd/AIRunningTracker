@@ -2,6 +2,33 @@
 export const APP_STORE_URL = 'https://apps.apple.com/us/app/run-analytics-running-coach/id6813680941';
 export const APP_STORE_CTA = 'Download on the App Store';
 
+export type IosWebOffer = { firstMonth: string; firstYear: string; renewalMonth: string; renewalYear: string; deadline: string };
+
+// Consume the same public Stripe-backed quotes as the main pricing page.
+export function iosWebOfferFromQuotes(monthly: unknown, annual: unknown, now = Date.now()): IosWebOffer | null {
+  function quote(value: unknown, period: 'monthly' | 'annual') {
+    if (!value || typeof value !== 'object') return null;
+    const q = value as Record<string, unknown>;
+    const { introductoryUnitAmount: first, regularUnitAmount: regular, offerEndsAt } = q;
+    if (q.active !== true || q.billingPeriod !== period || q.currency !== 'usd' || q.introductoryPayments !== 1 ||
+        typeof first !== 'number' || !Number.isSafeInteger(first) || first < 1 ||
+        typeof regular !== 'number' || !Number.isSafeInteger(regular) || regular <= first ||
+        typeof offerEndsAt !== 'string' || !(Date.parse(offerEndsAt) > now)) return null;
+    return { first, regular, expires: Date.parse(offerEndsAt) };
+  }
+  const month = quote(monthly, 'monthly'), year = quote(annual, 'annual');
+  if (!month || !year || month.expires !== year.expires) return null;
+  const usd = (cents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+  return {
+    firstMonth: usd(month.first), firstYear: usd(year.first), renewalMonth: usd(month.regular), renewalYear: usd(year.regular),
+    deadline: new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' }).format(month.expires - 1),
+  };
+}
+
+export function iosWebOfferTerms(offer: IosWebOffer) {
+  return `7 days free for eligible new web subscribers, then ${offer.firstMonth} for the first month or ${offer.firstYear} for the first year. Renews at ${offer.renewalMonth}/month or ${offer.renewalYear}/year. Sign up by ${offer.deadline}. Card required; cancel anytime.`;
+}
+
 export const iosAppMeta = {
   title: 'Running Coach for iPhone & iPad | Run Analytics',
   description: 'Download Run Analytics for iPhone and iPad. Record GPS runs on iPhone, track your progress, and get optional coaching and training plans.',
@@ -18,18 +45,22 @@ export const iosAppFaqs = [
   {question:'Where can I download the app?',answer:'Run Analytics is available free on the App Store for iPhone and iPad. iPhone GPS recording and basic run history do not require a subscription. Premium coaching is optional.'},
   {question:'Do I need a new RunAnalytics account?',answer:'No. Sign in with the email you already use for RunAnalytics. Your account, synced runs and saved training plans come from the same backend as the website. New runners can create an account with an email sign-in link in the app.'},
   {question:'How do my runs get into the app?',answer:'Record runs with GPS on your iPhone, connect Strava to import authorized running history, or connect Garmin for newly synced runs. Strava and Garmin are optional. Coaching based on synced activity history uses eligible Strava runs, not direct Garmin data.'},
-  {question:'How much does Premium cost?',answer:'Premium is $7.99/month or $79.99/year in the US, with a 7-day free trial for eligible new subscribers. After the trial, your selected subscription renews automatically unless cancelled. Local App Store prices, taxes and trial eligibility are shown before confirmation. Existing paid RunAnalytics accounts can sign in without buying a second subscription.'},
+  {question:'How much does Premium cost?',answer:'Through the U.S. App Store, Premium is $7.99/month or $79.99/year, with a 7-day free trial for eligible new subscribers. Web checkout may offer different introductory pricing. Existing paid RunAnalytics accounts can sign in without buying a second subscription.'},
   {question:'Can I cancel during the free trial?',answer:'Yes. Cancel anytime through the service where you subscribed. For an Apple trial, cancel at least 24 hours before the 7-day trial ends to avoid a charge, in Apple Settings → Subscriptions. Website subscriptions are managed in web billing. Cancelling stops future renewal; deleting the app or your account does not cancel an Apple subscription.'},
   {question:'Can the coach change my training plan?',answer:'The app’s plan workflow prepares a proposed plan or adjustment for your review. Changes are not saved until you explicitly confirm. Plan-writing access requires eligible coaching access; availability may be limited during rollout.'},
   {question:'Does it work without an internet connection?',answer:'You need an internet connection for sign-in, syncing, AI chat and voice, and saving plan changes. The iPad app has a larger native layout, not a stretched mobile webpage.'},
 ];
-export const iosAppSchema = {
+export function getIosAppFaqs(offer: IosWebOffer | null = null) {
+  return offer ? iosAppFaqs.map(faq => faq.question === 'How much does Premium cost?' ?
+    { ...faq, answer: `Web checkout only: ${iosWebOfferTerms(offer)} ${faq.answer}` } : faq) : iosAppFaqs;
+}
+export const getIosAppSchema = (offer: IosWebOffer | null = null) => ({
   '@context':'https://schema.org',
   '@graph':[
     {'@type':'SoftwareApplication',name:'Run Analytics',applicationCategory:'HealthApplication',operatingSystem:'iOS, iPadOS',url:'https://aitracker.run/ios-app',installUrl:APP_STORE_URL,description:iosAppMeta.description,screenshot:['https://aitracker.run/ios-app/coach-v1.webp','https://aitracker.run/ios-app/plan-v1.webp','https://aitracker.run/ios-app/ipad-v1.webp']},
-    {'@type':'FAQPage',mainEntity:iosAppFaqs.map(({question,answer})=>({'@type':'Question',name:question,acceptedAnswer:{'@type':'Answer',text:answer}}))},
+    {'@type':'FAQPage',mainEntity:getIosAppFaqs(offer).map(({question,answer})=>({'@type':'Question',name:question,acceptedAnswer:{'@type':'Answer',text:answer}}))},
   ],
-};
+});
 export const iosPrivacySections = [
   {id:'account',title:'Your account and running data',paragraphs:[
     'Run Analytics for iPhone and iPad uses your existing RunAnalytics account and backend. We process your email, profile preferences and authentication information to sign you in. The native app uses email links rather than asking you to create a password.',

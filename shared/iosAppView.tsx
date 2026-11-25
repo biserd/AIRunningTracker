@@ -1,6 +1,6 @@
 import React from 'react';
 import {Activity,ArrowRight,AudioLines,BarChart3,Bell,CalendarDays,Check,ChevronDown,Mic,ShieldCheck,Smartphone,Tablet} from 'lucide-react';
-import {APP_STORE_CTA,APP_STORE_URL,iosAppFaqs,iosPrivacySections} from './iosAppContent';
+import {APP_STORE_CTA,APP_STORE_URL,getIosAppFaqs,iosPrivacySections,iosWebOfferTerms,type IosWebOffer} from './iosAppContent';
 
 function AppStoreButton(){
  return <a className="ios-button" href={APP_STORE_URL}>{APP_STORE_CTA} <ArrowRight size={18} aria-hidden="true"/></a>;
@@ -21,14 +21,14 @@ function Shell({children}:{children:React.ReactNode}){
 function Shot({name,alt,tablet=false,eager=false}:{name:string;alt:string;tablet?:boolean;eager?:boolean}){
  return <img className={tablet?'ios-tablet-shot':'ios-phone-shot'} src={`/ios-app/${name}-v1.webp`} alt={alt} width={tablet?1440:600} height={tablet?993:1304} loading={eager?'eager':'lazy'} decoding="async" {...(eager?{fetchpriority:'high'}:{})}/>;
 }
-export function IosAppContent(){return <Shell><main id="ios-main">
+export function IosAppContent({webOffer=null}:{webOffer?:IosWebOffer|null}){return <Shell><main id="ios-main">
  <section className="ios-hero"><div className="ios-container ios-hero-grid"><div className="ios-hero-copy">
   <p className="ios-eyebrow"><Smartphone size={16} aria-hidden="true"/> Made for iPhone &amp; iPad</p>
   <h1>Your running.<br/>Your coach.<br/><em>Right here.</em></h1>
   <p className="ios-lede">Record GPS runs on your iPhone, see your progress on iPhone and iPad, and get optional voice or chat coaching when you want guidance.</p>
   <div className="ios-actions"><AppStoreButton/><a className="ios-button ios-button-outline" href="#features">Explore the app</a></div>
   <p className="ios-launch"><span/>Available now on iPhone and iPad</p>
-  <p className="ios-hero-pricing"><a href="#pricing">Optional Premium · From $7.99/month</a><span>7-day free trial for eligible new subscribers. Cancel anytime.</span></p>
+  <p className="ios-hero-pricing"><a href="#pricing">{webOffer ? `Web offer: ${webOffer.firstMonth} first month or ${webOffer.firstYear} first year` : 'Compare web and App Store Premium plans'}</a><span>7-day free trial for eligible new subscribers. Cancel anytime.</span></p>
   <div className="ios-hero-details"><span><Check size={15} aria-hidden="true"/>Free GPS recording on iPhone</span><span><Check size={15} aria-hidden="true"/>No Strava or Garmin required</span></div>
  </div><div className="ios-hero-art"><div className="ios-orbit"/><div className="ios-device"><Shot name="coach" eager alt="Actual Run Analytics iPhone coach screen with voice controls and a conversation about adapting an easy run"/></div><div className="ios-art-note"><AudioLines size={25} aria-hidden="true"/><div><strong>A conversation. Not another chart.</strong><span>Voice + chat, with your training in context.</span></div></div></div></div></section>
  <div className="ios-feature-rail ios-container" aria-label="App highlights">{[[Mic,'Talk naturally'],[CalendarDays,'Know what’s next'],[BarChart3,'See your progress'],[Bell,'Stay in the loop']].map(([Icon,label])=>{const I=Icon as typeof Mic;return <div key={String(label)}><I size={21} aria-hidden="true"/><span>{String(label)}</span></div>;})}</div>
@@ -45,16 +45,22 @@ export function IosAppContent(){return <Shell><main id="ios-main">
  <section className="ios-section ios-container"><div className="ios-section-heading"><p className="ios-eyebrow">One account. A more connected routine.</p><h2>From your first sign-in<br/>to your next run.</h2></div><ol className="ios-steps"><li><span>1</span><h3>Sign in with an email link</h3><p>Use your existing account, or create one in the app. No new password to remember.</p></li><li><span>2</span><h3>Record or sync your runs</h3><p>Track a run with your iPhone’s GPS, optionally import Strava history, or connect Garmin for new runs.</p></li><li><span>3</span><h3>Make it your routine</h3><p>Review your basic run history for free. Add Premium when you want voice, chat or plan assistance.</p></li></ol></section>
  <section id="pricing" className="ios-pricing-section"><div className="ios-container">
   <div className="ios-section-heading ios-centered"><p className="ios-eyebrow">Simple pricing. One Premium membership.</p><h2>Try it free.<br/><em>Make every run count.</em></h2><p>Get to know your coach with a 7-day free trial. Your running history, training plans and progress, together on iPhone, iPad and the web.</p></div>
+  <div className="ios-price-terms ios-web-offer" data-testid="ios-web-pricing">
+   <h3>{webOffer ? 'Limited-time offer: web checkout only' : 'Subscribe on the website'}</h3>
+   <p>{webOffer ? iosWebOfferTerms(webOffer) : 'See current web pricing and trial terms.'} Subscribe on the web, then sign in to the app with the same account. The web offer does not apply to App Store purchases.</p>
+   <a className="ios-button" href="/pricing">{webOffer ? 'See web offer' : 'See web pricing'} <ArrowRight size={17} aria-hidden="true"/></a>
+  </div>
+  <h3 className="ios-billing-heading">Subscribe in the app through Apple</h3>
   <div className="ios-trial-highlights"><span><Check size={18} aria-hidden="true"/>7 days free</span><span><Check size={18} aria-hidden="true"/>$0 during your trial</span><span><Check size={18} aria-hidden="true"/>Cancel anytime</span></div>
   <div className="ios-price-grid">
    <article className="ios-price-card"><p className="ios-price-label">Monthly</p><h3><strong>$7.99</strong><span>/ month</span></h3><p>After your eligible 7-day free trial.</p><div className="ios-price-divider"/><p>Keep it flexible. Billed monthly, with no annual commitment.</p><span className="ios-price-availability">Available in the app</span></article>
    <article className="ios-price-card ios-price-card-featured"><span className="ios-price-badge">Save $15.89 a year</span><p className="ios-price-label">Annual</p><h3><strong>$79.99</strong><span>/ year</span></h3><p>After your eligible 7-day free trial.</p><div className="ios-price-divider"/><p>A year of Premium, billed annually. Less than 12 monthly payments.</p><span className="ios-price-availability">Available in the app</span></article>
   </div>
   <div className="ios-price-included"><h3>Both plans include</h3><ul><li><Check/>AI voice and chat coaching</li><li><Check/>Training plans and run insights</li><li><Check/>Runner Score and progress charts</li><li><Check/>Strava sync and optional reminders</li></ul><p>Already a paid RunAnalytics member? Sign in with the same account, no second subscription needed.</p></div>
-  <div className="ios-price-terms"><h3>No upfront charge. No surprises.</h3><p>Trials are for eligible new subscribers. After 7 days, your subscription automatically renews at the selected monthly or annual price unless cancelled. For Apple subscriptions, cancel at least 24 hours before the trial or current billing period ends in Apple Settings → Subscriptions. Cancelling stops the next renewal; it does not automatically refund a paid period.</p><p>Prices shown are in USD for the US. Your App Store price, eligibility and applicable taxes are shown before you confirm. Apple purchases use your Apple account; website checkout requires a payment card and website subscriptions are managed in web billing. Deleting the app does not cancel your subscription.</p></div>
+  <div className="ios-price-terms"><h3>App Store subscription terms</h3><p>Trials are for eligible new subscribers. After 7 days, your subscription automatically renews at the selected monthly or annual price unless cancelled. For Apple subscriptions, cancel at least 24 hours before the trial or current billing period ends in Apple Settings → Subscriptions. Cancelling stops the next renewal; it does not automatically refund a paid period.</p><p>Prices shown are in USD for the US. Your App Store price, eligibility and applicable taxes are shown before you confirm. Apple purchases use your Apple account; website checkout requires a payment card and website subscriptions are managed in web billing. Deleting the app does not cancel your subscription.</p></div>
  </div></section>
  <section className="ios-privacy-strip ios-container"><ShieldCheck size={34} aria-hidden="true"/><div><h2>Your data. Clear choices.</h2><p>Microphone and notifications are optional. AI coaching uses cloud processing, not just your device. Read what’s shared and how to manage your account.</p></div><a className="ios-button ios-button-outline" href="/ios-app/privacy">App privacy, explained <ArrowRight size={17} aria-hidden="true"/></a></section>
- <section className="ios-section ios-container ios-faq"><div className="ios-section-heading"><p className="ios-eyebrow">Before you lace up</p><h2>A few good questions.</h2></div><div>{iosAppFaqs.map(f=><details key={f.question}><summary>{f.question}<ChevronDown size={19} aria-hidden="true"/></summary><p>{f.answer}</p></details>)}</div></section>
+ <section className="ios-section ios-container ios-faq"><div className="ios-section-heading"><p className="ios-eyebrow">Before you lace up</p><h2>A few good questions.</h2></div><div>{getIosAppFaqs(webOffer).map(f=><details key={f.question}><summary>{f.question}<ChevronDown size={19} aria-hidden="true"/></summary><p>{f.answer}</p></details>)}</div></section>
  <section className="ios-closing"><div className="ios-container"><p className="ios-eyebrow">Run Analytics for iPhone &amp; iPad</p><h2>Your next run.<br/>A clearer perspective.</h2><div className="ios-download-final"><AppStoreButton/></div><p>Coaching and training insights, not medical advice.<br/>An internet connection is required for AI and syncing.</p></div></section>
  </main></Shell>;}
 

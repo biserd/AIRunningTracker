@@ -53,7 +53,8 @@ import { validateAllShoes, getPipelineStats, findDuplicates, getShoeDataWithMeta
 import { z } from "zod";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { BillingCatalog } from './services/billingCatalog';
-import { checkoutDiscountOptions, configuredWebIntroCoupon, webIntroOfferForPrice } from './services/webIntroOffer';
+import { checkoutDiscountOptions, configuredWebIntroCoupon, webIntroOfferForPrice, WEB_INTRO_OFFER_ENDS_AT } from './services/webIntroOffer';
+import { iosWebOfferFromQuotes, type IosWebOffer } from '@shared/iosAppContent';
 import { completedGuestCheckout, emailGuestCheckoutClaim } from './services/guestCheckout';
 import { resolvePlan } from "./webhookHandlers";
 import { db } from "./db";
@@ -280,6 +281,32 @@ async function resolvePremiumPriceId(billing: 'monthly' | 'annual'): Promise<str
     console.warn('[BillingCatalog] Price resolution unavailable');
     return null;
   }
+}
+
+async function publicWebIntroQuote(billingPeriod: 'monthly' | 'annual') {
+  if (Date.now() >= Date.parse(WEB_INTRO_OFFER_ENDS_AT) ||
+      !configuredWebIntroCoupon('monthly') || !configuredWebIntroCoupon('annual')) return { active: false, billingPeriod };
+  const [priceId, products] = await Promise.all([resolvePremiumPriceId(billingPeriod), billingCatalog.publicProducts()]);
+  const price = products.flatMap(product => product.prices).find(candidate => candidate.id === priceId);
+  const offer = price?.unit_amount != null
+    ? webIntroOfferForPrice({ billingPeriod, regularUnitAmount: price.unit_amount, currency: price.currency,
+      firstTimeSubscriber: true, couponId: configuredWebIntroCoupon(billingPeriod) })
+    : null;
+  return { active: Boolean(offer), billingPeriod,
+    ...(offer ? { introductoryUnitAmount: offer.introductoryUnitAmount, regularUnitAmount: offer.regularUnitAmount,
+      currency: price!.currency, introductoryPayments: offer.introductoryPayments, offerEndsAt: offer.offerEndsAt } : {}) };
+}
+
+async function iosPageOffer(): Promise<IosWebOffer | null> {
+  // An unavailable catalog must not delay the download page or advertise stale terms.
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.all([publicWebIntroQuote('monthly'), publicWebIntroQuote('annual')])
+        .then(([month, year]) => iosWebOfferFromQuotes(month, year)),
+      new Promise<null>(resolve => { timeout = setTimeout(() => resolve(null), 1800); }),
+    ]);
+  } catch { return null; } finally { clearTimeout(timeout); }
 }
 
 // Server-side allow-list for /api/stripe/create-checkout-session. We never
@@ -587,10 +614,11 @@ export async function registerRoutes(app: Express, runtime?: { schedulerDatabase
 
   // SEO: Sitemap (dynamic with shoe pages and lastmod timestamps)
   // These public app pages render for every visitor, not just user-agent bots.
-  app.get(['/ios-app', '/ios-app/privacy'], (req, res) => {
+  app.get(['/ios-app', '/ios-app/privacy'], async (req, res) => {
+    const privacy = req.path.replace(/\/$/, '') === '/ios-app/privacy';
     res.setHeader('X-Robots-Tag', 'index, follow');
-    res.setHeader('Cache-Control', 'public, max-age=300');
-    res.type('html').send(renderIosAppPage(req.path.replace(/\/$/, '') === '/ios-app/privacy'));
+    res.setHeader('Cache-Control', privacy ? 'public, max-age=300' : 'public, max-age=0, must-revalidate');
+    res.type('html').send(renderIosAppPage(privacy, privacy ? null : await iosPageOffer()));
   });
 
   app.get("/sitemap.xml", async (req, res) => {
@@ -998,18 +1026,7 @@ ${allPages.map(page => `  <url>
     res.setHeader('Cache-Control', 'no-store');
     try {
       const billingPeriod = req.query.billingPeriod === 'annual' ? 'annual' : 'monthly';
-      const priceId = await resolvePremiumPriceId(billingPeriod);
-      const products = await billingCatalog.publicProducts();
-      const price = products.flatMap(product => product.prices).find(candidate => candidate.id === priceId);
-      const offer = configuredWebIntroCoupon('monthly') && configuredWebIntroCoupon('annual') && price?.unit_amount != null
-        ? webIntroOfferForPrice({ billingPeriod, regularUnitAmount: price.unit_amount,
-          currency: price.currency, firstTimeSubscriber: true,
-          couponId: configuredWebIntroCoupon(billingPeriod) })
-        : null;
-      return res.json({ active: Boolean(offer), billingPeriod,
-        ...(offer ? { introductoryUnitAmount: offer.introductoryUnitAmount,
-          regularUnitAmount: offer.regularUnitAmount, currency: price!.currency,
-          introductoryPayments: offer.introductoryPayments, offerEndsAt: offer.offerEndsAt } : {}) });
+      return res.json(await publicWebIntroQuote(billingPeriod));
     } catch (error) {
       console.warn('[checkout] public introductory offer unavailable', error);
       return res.json({ active: false });

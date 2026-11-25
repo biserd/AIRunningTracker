@@ -21,6 +21,7 @@
 .ios-button{background:var(--orange-ink);border-color:var(--orange-ink)}
 .ios-button-outline{background:transparent;color:var(--orange-ink)!important}
 .ios-actions{flex-wrap:wrap}.ios-download-final{margin-top:30px}
+.ios-web-offer{margin:30px auto;text-align:center}.ios-web-offer .ios-button{margin-top:14px}.ios-billing-heading{text-align:center;margin:24px 0 16px}
 .ios-footer{background:#333333;color:#fff}
 .ios-footer p,.ios-footer small{color:#cbd5e1}
 .ios-footer nav{border-color:#52525b}
