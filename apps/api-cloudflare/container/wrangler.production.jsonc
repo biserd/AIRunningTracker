@@ -51,7 +51,8 @@
   // Day 7 race predictor reminders and saved estimates (cc5fc2d; migration 0046).
   // Public App Store links and iPhone/iPad launch copy (2e0a2db; no database changes).
   // Keep the app page in sync with the live website promotion (d179023).
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:1b94936d1d927e595e87ac64b8b17aa40f7109414ddad9fdba69f2b9dd6d26e0",
+  // App launch and Black Friday web banner (e128a34); no sends or schema changes.
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:6f7e8a0870e2b147d789030f3c36004e71508c2c2dfd21ddcfd6f1788f4ee69b",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
