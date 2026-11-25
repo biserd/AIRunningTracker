@@ -50,7 +50,8 @@
   // GPT-6 Luna backend (b31ffd7), verified against the production OpenAI binding.
   // Day 7 race predictor reminders and saved estimates (cc5fc2d; migration 0046).
   // Public App Store links and iPhone/iPad launch copy (2e0a2db; no database changes).
-  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:9fa5c6cdb29c72904e3974eeb9672143c671ac6329a85c345d731b485ae91b92",
+  // Keep the app page in sync with the live website promotion (d179023).
+  "containers": [{ "class_name":"RunAnalyticsProduction","image":"registry.cloudflare.com/73d71a2bef58f7469ecb48e2b8e84c0e/aitracker-api-staging-runanalyticsweb@sha256:1b94936d1d927e595e87ac64b8b17aa40f7109414ddad9fdba69f2b9dd6d26e0",
     "instance_type":"standard-1","max_instances":2 }],
   "durable_objects": { "bindings": [{ "name":"WEB","class_name":"RunAnalyticsProduction" }] },
   "migrations": [{ "tag":"v1","new_sqlite_classes":["RunAnalyticsProduction"] }],
