@@ -95,9 +95,9 @@ struct RunHome: View {
                             if let pace = draft.recentPace { LabeledContent("Recent pace", value: runDuration(pace * (miles ? 1.609344 : 1)) + (miles ? " /mi" : " /km")) }
                             if let lap = draft.laps.last { Text("Lap \(lap.number): \(runDuration(lap.seconds)) · \(runPace(distance: lap.distance, seconds: lap.seconds, miles: miles)) /\(miles ? "mi" : "km")").font(.caption) }
                         } else {
-                            Text("Outdoor run").font(.caption).textCase(.uppercase).foregroundStyle(.secondary)
+                            Text("Outdoor run").font(.caption).textCase(.uppercase).foregroundStyle(RunDesign.mutedText)
                             Text("Ready to run?").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                            Text("Track distance, pace and time. Your route stays on this device.").foregroundStyle(.secondary)
+                            Text("Track distance, pace and time. Your route stays on this device.").foregroundStyle(RunDesign.mutedText)
                             Button("Start run") { recorder.startOrResume() }
                                 .buttonStyle(RunActionStyle())
                                 .disabled(!recorder.storageReady || !recorder.profileUnitsReady).accessibilityIdentifier("start-phone-run")

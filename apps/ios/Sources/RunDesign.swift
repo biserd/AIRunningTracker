@@ -10,6 +10,7 @@ enum RunDesign {
     static let actionLabel = Color("RunActionLabel")
     static let recovery = Color("RunRecoverySurface")
     static let trend = Color("RunTrend")
+    static let mutedText = Color("RunMutedText")
     static let minimumTarget: CGFloat = 44
     static let actionHeight: CGFloat = 52
     static let radius: CGFloat = 14
@@ -49,13 +50,13 @@ struct RunMetricTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(title).font(.caption).foregroundStyle(RunDesign.mutedText)
                 .textCase(.uppercase)
             Text(value)
                 .font(prominent ? .system(size: displaySize, weight: .bold) : .title2.bold())
                 .monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
-            if let detail { Text(detail).font(.footnote).foregroundStyle(.secondary) }
+            if let detail { Text(detail).font(.footnote).foregroundStyle(RunDesign.mutedText) }
         }
         .padding(RunDesign.insetPadding)
         .frame(maxWidth: .infinity, alignment: .leading)

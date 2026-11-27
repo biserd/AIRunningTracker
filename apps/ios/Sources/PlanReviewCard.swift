@@ -13,7 +13,7 @@ struct PlanReviewCard: View {
             Label(creating ? "Review new plan" : "Review plan change", systemImage: "calendar.badge.clock")
                 .font(.title3.bold())
                 .accessibilityAddTraits(.isHeader)
-            Text("Nothing changes until you confirm.").font(.callout).foregroundStyle(.secondary)
+            Text("Nothing changes until you confirm.").font(.callout).foregroundStyle(RunDesign.mutedText)
             Text(review.description)
                 .fixedSize(horizontal: false, vertical: true)
             if let details = review.details {
@@ -62,7 +62,7 @@ struct PlanReviewCard: View {
     }
     private func row(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).foregroundStyle(.secondary)
+            Text(title).foregroundStyle(RunDesign.mutedText)
             Text(value).fontWeight(.semibold)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
