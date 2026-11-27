@@ -40,3 +40,11 @@ test('requires Apple’s successful upload receipt even if altool exited zero', 
   assert.throws(() => confirmUploadReceipt(success + 'Failed to upload package.'), /Apple rejected/);
   assert.throws(() => confirmUploadReceipt('Transporter finished without a receipt'), /did not return/);
 });
+test('accepts Apple’s success receipt with warnings but not with errors or without a delivery UUID', () => {
+  const delivery = 'Delivery UUID: 76111388-62c9-4b47-9fc7-9ddd47ee5c60\n';
+  for (const warnings of ['1 warning', '2 warnings']) {
+    assert.doesNotThrow(() => confirmUploadReceipt(`UPLOAD SUCCEEDED with no errors, ${warnings}\n${delivery}`));
+  }
+  assert.throws(() => confirmUploadReceipt('UPLOAD SUCCEEDED with no errors, 1 warning'), /did not return/);
+  assert.throws(() => confirmUploadReceipt(`UPLOAD SUCCEEDED with 1 error, 2 warnings\n${delivery}`), /did not return/);
+});

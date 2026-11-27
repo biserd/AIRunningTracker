@@ -8,7 +8,7 @@ export function confirmUploadReceipt(log) {
   if (/\bUPLOAD FAILED\b|\bFailed to upload package\.|\bValidation failed \(\d+\)|\bERROR: \[altool\b/i.test(log)) {
     throw new Error('Apple rejected the TestFlight upload; see the preceding altool errors');
   }
-  if (!/^UPLOAD SUCCEEDED with no errors[ \t\r]*$/m.test(log) ||
+  if (!/^UPLOAD SUCCEEDED with no errors(?:, \d+ warnings?)?[ \t\r]*$/m.test(log) ||
       !/^Delivery UUID: [\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}[ \t\r]*$/im.test(log)) {
     throw new Error('altool did not return an Apple upload success receipt; check App Store Connect before retrying');
   }
