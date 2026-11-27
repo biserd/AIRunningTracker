@@ -44,6 +44,9 @@ import SwiftUI
                     if ProcessInfo.processInfo.arguments.contains("--test-garmin-display") {
                         store.garminConnection = NativeGarminStatus(available: true, connected: true, status: "connected", activityCount: 0)
                     }
+                    if ProcessInfo.processInfo.arguments.contains("--test-run-history") {
+                        store.runFeed = try? JSONDecoder().decode(NativeRunFeed.self, from: Data(Self.historyFeedFixture.utf8))
+                    }
                     if ProcessInfo.processInfo.arguments.contains("--test-run-display") { store.recorder.installRunDisplayFixture(running: ProcessInfo.processInfo.arguments.contains("--test-run-active")) }
                     return
                 }
@@ -58,6 +61,14 @@ import SwiftUI
                     if ProcessInfo.processInfo.arguments.contains("--test-coach-ux") {
                         store.snapshot = Snapshot(runner: Runner(id: 9001, name: "Demo runner", timezone: "UTC", unitPreference: "miles"), state: RunningState(today: "2026-11-08", goal: "Half marathon", days: []), canUseAI: true, version: 1)
                         store.companion = CompanionData(preferences: CompanionPreferences(notes: "", evening: false, weekly: false, hour: 18, quietStart: 22, quietEnd: 7), insights: [], briefings: [CoachBriefing(kind: "weekly", reference: "2026-11-08", title: "Your week in running", body: "You’re building toward your half marathon. You ran three times this week and kept your easy runs comfortable. Your next session is a relaxed long run. Keep the effort conversational and leave room to recover afterward.", date: "2026-11-08T12:00:00Z")], checkins: [])
+                    }
+                    if ProcessInfo.processInfo.arguments.contains("--test-run-history") {
+                        let runs = [RunSummary(id: 42, name: "Coaching history intervals", date: "2026-11-07", km: 5, minutes: 30)]
+                        store.snapshot = Snapshot(
+                            runner: Runner(id: 9002, name: "History fixture", timezone: "UTC", unitPreference: "miles"),
+                            state: RunningState(today: "2026-11-08", goal: "Half marathon", days: [], activities: runs),
+                            canUseAI: true, version: 1
+                        )
                     }
                     if ProcessInfo.processInfo.arguments.contains("--test-plan-review") {
                         let answer = #"{"id":"sample-only","description":"Move your intervals to the destination rest day. No other workouts change.","details":{"kind":"workout","planId":1,"dayId":2,"operation":"move","date":"2026-12-03"}}"#
@@ -74,6 +85,15 @@ import SwiftUI
             } message: { Text(store.error ?? "") }
         }
     }
+
+    #if DEBUG
+    private static let historyFeedFixture = """
+        {"activities":[
+            {"id":"garmin:sample","name":"Garmin park intervals","startDate":"2026-11-23T12:00:00Z","source":"garmin","sources":["garmin"],"distance":5250,"movingTime":1800},
+            {"id":"strava:42","name":"Saturday long run","startDate":"2026-11-21T12:00:00Z","source":"strava","sources":["strava"],"distance":13840,"movingTime":4800,"stravaRecordId":42}
+        ],"total":2,"totalPages":1,"page":1,"unitPreference":"miles"}
+        """
+    #endif
 }
 
 private struct NativeVisualTestSettings: ViewModifier {
@@ -97,6 +117,8 @@ struct CoachTabs: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var selected: CoachSection = ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") ? .coach : .runs
     @State private var draft = ""
+    @State private var runPath: [NativeRunRoute] = []
+    @State private var progressPath: [ProgressRoute] = []
     @State private var reminderChannel = "email"
     @State private var openedBriefing: CoachBriefing?
     @State private var briefingUnavailable = false
@@ -118,10 +140,10 @@ struct CoachTabs: View {
                     .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 300)
                 } detail: {
                     switch selected {
-                    case .runs: RunHome(recorder:store.recorder)
+                    case .runs: RunHome(recorder: store.recorder, historyPath: $runPath)
                     case .coach: coachingSection(plan: false)
                     case .plan: coachingSection(plan: true)
-                    case .progress: NavigationStack { AllSourceProgress() }
+                    case .progress: ProgressNavigation(path: $progressPath)
                     case .settings: SettingsView()
                     }
                 }.navigationSplitViewStyle(.balanced)
@@ -132,6 +154,10 @@ struct CoachTabs: View {
         .onReceive(NotificationCenter.default.publisher(for: .applePushOpen)) { _ in openPush() }
         .onAppear { openPush() }
         .onChange(of: store.requestedCoach) { _, _ in selected = .coach }
+        .onChange(of: store.onboarding?.appAccountToken) { _, _ in
+            runPath = []
+            progressPath = []
+        }
         .onChange(of: store.settingsSheet) { _, destination in
             if destination != nil { Task { await store.voice.end() } }
         }
@@ -173,12 +199,12 @@ struct CoachTabs: View {
     }
     private var compactTabs: some View {
         TabView(selection: $selected) {
-            RunHome(recorder:store.recorder).tabItem { Label("Run",systemImage:CoachSection.runs.symbol) }.tag(CoachSection.runs)
+            RunHome(recorder: store.recorder, historyPath: $runPath).tabItem { Label("Run",systemImage:CoachSection.runs.symbol) }.tag(CoachSection.runs)
             coachingSection(plan: false)
                 .tabItem { Label("Coach", systemImage: CoachSection.coach.symbol) }.tag(CoachSection.coach)
             coachingSection(plan: true)
                 .tabItem { Label("Plan", systemImage: CoachSection.plan.symbol) }.tag(CoachSection.plan)
-            NavigationStack { AllSourceProgress() }
+            ProgressNavigation(path: $progressPath)
                 .tabItem { Label("Progress", systemImage: CoachSection.progress.symbol) }.tag(CoachSection.progress)
             SettingsView().tabItem { Label("Settings", systemImage: CoachSection.settings.symbol) }.tag(CoachSection.settings)
         }

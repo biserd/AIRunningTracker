@@ -137,19 +137,38 @@ struct CoachBriefingView: View {
 }
 struct RunHistoryView:View {
     @EnvironmentObject var store:CoachStore
+    var selection: Int? = nil
+    var select: ((RunSummary) -> Void)? = nil
     var body:some View {
         List {
-            Section { Text("Your recent runs · last 90 days").font(.caption).foregroundStyle(.secondary) }
-            ForEach((store.snapshot?.state.activities ?? []).reversed()) { run in
-                NavigationLink { RunDetailView(run:run) } label: {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(run.name ?? "Run").font(.headline)
-                        Text("\(runnerDay(run.date, today: store.snapshot?.state.today)) · \(runnerDistance(run.km, units: store.snapshot?.runner.unitPreference ?? "km"))").font(.callout).foregroundStyle(.secondary)
-                    }.padding(.vertical, 4)
+            Section(select == nil ? "Recent runs · last 90 days" : "Browse · last 90 days") {
+                ForEach((store.snapshot?.state.activities ?? []).reversed()) { run in
+                    let isSelected = selection == run.id
+                    let row = RunHistoryRow(title: run.name ?? "Run",
+                                            subtitle: runnerDay(run.date, today: store.snapshot?.state.today),
+                                            distance: runnerDistance(run.km, units: store.snapshot?.runner.unitPreference ?? "km"),
+                                            selected: isSelected)
+                    if let select {
+                        Button { select(run) } label: { row }
+                            .buttonStyle(.plain)
+                            .listRowBackground(isSelected ? RunDesign.highlight : RunDesign.surface)
+                            .accessibilityAddTraits(isSelected ? .isSelected : [])
+                            .accessibilityIdentifier("progress-history-\(run.id)")
+                    } else {
+                        NavigationLink(value: ProgressRoute.run(.init(run: run))) { row }
+                            .accessibilityIdentifier("progress-history-\(run.id)")
+                    }
+                }
+                if store.snapshot?.state.activities?.isEmpty != false {
+                    ContentUnavailableView("No recorded runs available", systemImage: "figure.run")
                 }
             }
-            if store.snapshot?.state.activities?.isEmpty != false { Text("No recorded runs available.") }
-        }.navigationTitle("Run history").refreshable { await store.refreshSchedule(force:true) }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(select == nil ? RunDesign.canvas : RunDesign.inset)
+        .navigationTitle("Run history")
+        .refreshable { await store.refreshSchedule(force:true) }
     }
 }
 struct SavedCoachNotesView:View {

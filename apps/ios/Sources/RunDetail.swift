@@ -59,6 +59,7 @@ func runRoute(_ encoded:String)->[CLLocationCoordinate2D] {
 struct RunDetailView:View {
     @EnvironmentObject var store:CoachStore
     let run:RunSummary
+    var embeddedInHistory = false
     @State private var detail:RunDetail?
     @State private var failure:String?
     @State private var loading=false
@@ -66,8 +67,18 @@ struct RunDetailView:View {
     @State private var preparationFailure:String?
     @State private var analysisRefresh=0
     private var miles:Bool { store.snapshot?.runner.unitPreference == "miles" }
-    var body:some View {
+    @ViewBuilder var body:some View {
+        if embeddedInHistory { detailList }
+        else { detailList.navigationTitle(run.name ?? "Run").navigationBarTitleDisplayMode(.inline) }
+    }
+    private var detailList: some View {
         List {
+            if embeddedInHistory {
+                Section {
+                    Text(run.name ?? "Run").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("progress-history-detail-title")
+                }
+            }
             Section(runnerDay(run.date, today: store.snapshot?.state.today)) {
                 LabeledContent("Distance",value:runnerDistance(run.km,units:miles ? "miles" : "km"))
                 LabeledContent("Moving time",value:detail?.formattedDuration ?? (run.minutes > 0 ? "\(Int(run.minutes)) min" : (loading ? "Loading…" : "Not recorded")))
@@ -113,7 +124,8 @@ struct RunDetailView:View {
                     } else { Text("No route recorded for this run.").foregroundStyle(.secondary) }
                 }
             }
-        }.navigationTitle(run.name ?? "Run").navigationBarTitleDisplayMode(.inline)
+        }
+            .scrollContentBackground(.hidden).background(RunDesign.canvas)
             .task(id:run.id) { await load() }
             .refreshable { await load() }
     }

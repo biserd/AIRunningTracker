@@ -61,6 +61,7 @@ struct RunHome: View {
     @EnvironmentObject var store: CoachStore
     @Environment(\.dynamicTypeSize) private var typeSize
     @ObservedObject var recorder: PhoneRunRecorder
+    @Binding var historyPath: [NativeRunRoute]
     @State private var accountSheet = false
     @State private var settingsSheet = false
     @State private var finishSheet = false
@@ -75,7 +76,55 @@ struct RunHome: View {
         return (remote + pending.map(NativeRun.init(recording:))).sorted { $0.startDate > $1.startDate }
     }
     var body: some View {
-        NavigationStack {
+        GeometryReader { geometry in
+            let wide = RunHistoryLayout.usesSplit(width: geometry.size.width, accessibilitySize: typeSize.isAccessibilitySize)
+            if wide {
+                NavigationStack {
+                    if recorder.draft == nil && !historyPath.isEmpty {
+                        RunHistorySplit(width: geometry.size.width) {
+                            nativeHistory(wide: true)
+                        } detail: {
+                            if let selectedRun {
+                                NativeRunSummary(run: currentRun(selectedRun), miles: miles, recorder: recorder, embeddedInHistory: true)
+                                    .id(selectedRun.id)
+                            } else {
+                                RunHistoryPlaceholder()
+                            }
+                        }
+                        .navigationTitle("Run history").navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button { historyPath = [] } label: {
+                                    Label("Back to Run", systemImage: "chevron.backward")
+                                }.accessibilityIdentifier("native-history-back")
+                            }
+                        }
+                    } else {
+                        home(wide: true)
+                    }
+                }
+            } else {
+                NavigationStack(path: $historyPath) {
+                    home(wide: false)
+                        .navigationDestination(for: NativeRunRoute.self) { route in
+                            switch route {
+                            case .history: nativeHistory(wide: false).navigationTitle("Run history")
+                            case let .run(item):
+                                NativeRunSummary(run: currentRun(item.run), miles: miles, recorder: recorder)
+                                    .id(item.run.id)
+                            }
+                        }
+                }
+            }
+        }
+        .modifier(RunHistoryWidthFixture())
+        .task { await store.refreshRuns() }
+        .onChange(of: recorder.draft?.id) { _, id in
+            if id != nil { historyPath = [] }
+        }
+    }
+
+    private func home(wide: Bool) -> some View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: RunDesign.gap) {
@@ -132,20 +181,20 @@ struct RunHome: View {
                         Section { NativeGarminConnectionCard() }
                     }
                     Section("Recent runs") {
-                        if runs.isEmpty { ContentUnavailableView("Your running starts here", systemImage: "figure.run", description: Text("Record a run or connect Garmin or Strava.")) }
-                        ForEach(runs) { run in
-                            NavigationLink { NativeRunSummary(run: run, miles: miles, recorder: recorder) } label: {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(run.name).font(.headline)
-                                    Text("\(run.sourceName) · \(String(format: "%.2f", run.distance / (miles ? 1609.344 : 1000))) \(miles ? "mi" : "km") · \(runDuration(run.movingTime))").font(.subheadline)
-                                    if let date = run.date { Text(date, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(.secondary) }
-                                }
+                        if !runs.isEmpty {
+                            if wide {
+                                Button { historyPath = [.history] } label: { Label("All runs", systemImage: "list.bullet") }
+                                    .accessibilityIdentifier("open-native-run-history")
+                            } else {
+                                NavigationLink(value: NativeRunRoute.history) { Label("All runs", systemImage: "list.bullet") }
+                                    .accessibilityIdentifier("open-native-run-history")
                             }
                         }
-                        if let feed = store.runFeed, feed.page < feed.totalPages {
-                            Button("Load older runs") { Task { await store.loadMoreRuns() } }.buttonStyle(.bordered).disabled(store.refreshingRuns)
+                        if runs.isEmpty { ContentUnavailableView("Your running starts here", systemImage: "figure.run", description: Text("Record a run or connect Garmin or Strava.")) }
+                        ForEach(runs) { run in
+                            nativeHistoryRow(run, wide: wide)
                         }
-                        if let error = store.runFeedError { Text(error).font(.footnote).foregroundStyle(.secondary) }
+                        historyStatus
                     }
                     Section {
                         Button { settingsSheet = true } label: { Label("Run settings", systemImage: "gearshape") }
@@ -178,7 +227,6 @@ struct RunHome: View {
                 }
             }
             .refreshable { await store.refreshRuns() }
-            .task { await store.refreshRuns() }
             .onChange(of: recorder.draft?.id) { _, _ in
                 name = "Phone run"
                 effort = 0
@@ -212,6 +260,61 @@ struct RunHome: View {
             .confirmationDialog("Discard this unfinished run?", isPresented: $discard, titleVisibility: .visible) {
                 Button("Discard run", role: .destructive) { recorder.discard() }
             }
+    }
+
+    private var selectedRun: NativeRun? {
+        if case let .run(item)? = historyPath.last { return item.run }
+        return nil
+    }
+
+    private func currentRun(_ fallback: NativeRun) -> NativeRun {
+        runs.first { $0.id == fallback.id } ?? fallback
+    }
+
+    @ViewBuilder private var historyStatus: some View {
+        if let feed = store.runFeed, feed.page < feed.totalPages {
+            Button("Load older runs") { Task { await store.loadMoreRuns() } }
+                .buttonStyle(.bordered).disabled(store.refreshingRuns)
+        }
+        if let error = store.runFeedError { Text(error).font(.footnote).foregroundStyle(RunDesign.mutedText) }
+    }
+
+    private func nativeHistory(wide: Bool) -> some View {
+        let loadedRuns = runs
+        let displayedRuns = selectedRun.map { selected in
+            loadedRuns.contains(where: { $0.id == selected.id }) ? loadedRuns : loadedRuns + [selected]
+        } ?? loadedRuns
+        return List {
+            Section(wide ? "Browse" : "Recent runs") {
+                if displayedRuns.isEmpty { ContentUnavailableView("No runs yet", systemImage: "figure.run") }
+                ForEach(displayedRuns) { run in nativeHistoryRow(run, wide: wide) }
+                historyStatus
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(wide ? RunDesign.inset : RunDesign.canvas)
+        .refreshable { await store.refreshRuns() }
+    }
+
+    @ViewBuilder private func nativeHistoryRow(_ run: NativeRun, wide: Bool) -> some View {
+        let selected = wide && selectedRun?.id == run.id
+        let date = run.date?.formatted(.dateTime.month().day().hour().minute())
+        let subtitle = [date, run.sourceName, runDuration(run.movingTime)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        let distance = String(format: "%.2f %@", run.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km")
+        let label = RunHistoryRow(title: run.name, subtitle: subtitle, distance: distance, selected: selected)
+        if wide {
+            Button {
+                let prefix: [NativeRunRoute] = historyPath.first == .history ? [.history] : []
+                historyPath = prefix + [.run(.init(run: run))]
+            } label: { label }
+            .buttonStyle(.plain)
+            .listRowBackground(selected ? RunDesign.highlight : RunDesign.surface)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier("native-history-\(run.id)")
+        } else {
+            NavigationLink(value: NativeRunRoute.run(.init(run: run))) { label }
+                .accessibilityIdentifier("native-history-\(run.id)")
         }
     }
     private func recordingMetrics(_ draft: PhoneRecording) -> some View {
@@ -281,21 +384,59 @@ struct NativeRunSummary: View {
     let run: NativeRun
     let miles: Bool
     @ObservedObject var recorder: PhoneRunRecorder
+    var embeddedInHistory = false
     @State private var exportHealth = false
     private var recording: PhoneRecording? { recorder.saved.first { "phone:" + $0.id.uuidString.lowercased() == run.id } }
     private var segments: [[CLLocationCoordinate2D]] {
         guard let recording else { return [] }
         return Dictionary(grouping: recording.fixes, by: \.segment).sorted { $0.key < $1.key }.map { $0.value.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) } }
     }
-    var body: some View {
-        List {
+    @ViewBuilder var body: some View {
+        if embeddedInHistory { summary }
+        else { summary.navigationTitle(run.name).navigationBarTitleDisplayMode(.inline) }
+    }
+    private var summary: some View {
+        let distance = String(format: "%.2f %@", run.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km")
+        let pace = runPace(distance: run.distance, seconds: run.movingTime, miles: miles)
+        return List {
+            if embeddedInHistory {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        sourceAndDate
+                        Text(run.name).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                            .accessibilityIdentifier("native-history-detail-title")
+                    }.padding(.vertical, 8)
+                }.listRowBackground(Color.clear)
+                Section {
+                    HStack(alignment: .top, spacing: RunDesign.gap) {
+                        RunMetricTile(title: "Distance", value: distance)
+                        RunMetricTile(title: "Average pace", value: pace, detail: miles ? "min / mi" : "min / km")
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                }
+            }
             Section {
-                Text(run.sourceName).foregroundStyle(.secondary)
-                if let date = run.date { Text(date, format: .dateTime.month().day().year().hour().minute()) }
-                LabeledContent("Distance", value: String(format: "%.2f %@", run.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"))
+                if !embeddedInHistory {
+                    sourceAndDate
+                    LabeledContent("Distance", value: distance)
+                    LabeledContent("Average pace", value: pace + (miles ? " /mi" : " /km"))
+                }
                 LabeledContent("Running time", value: runDuration(run.movingTime))
-                LabeledContent("Average pace", value: runPace(distance: run.distance, seconds: run.movingTime, miles: miles) + (miles ? " /mi" : " /km"))
                 if let heart = run.averageHeartrate { LabeledContent("Average heart rate", value: "\(Int(heart)) bpm") }
+            }
+            if run.sources.contains("strava"),
+               let recordID = run.stravaRecordId, recordID > 0,
+               store.onboarding?.hasAccess == true, store.onboarding?.stravaConnected == true {
+                Section {
+                    NavigationLink {
+                        RunDetailView(run: RunSummary(id: recordID, name: run.name,
+                                                      date: String(run.startDate.prefix(10)),
+                                                      km: run.distance / 1000, minutes: run.movingTime / 60))
+                    } label: {
+                        Label("Open coach insight", systemImage: "sparkles")
+                    }
+                }
             }
             if let effort = recording?.effort ?? run.effort { Section("Effort") { Text("\(effort) / 10") } }
             if let notes = recording?.notes ?? run.notes, !notes.isEmpty { Section("Your notes") { Text(notes) } }
@@ -308,16 +449,22 @@ struct NativeRunSummary: View {
                 }
             }
             if !segments.isEmpty {
-                Section("Route on this iPhone") {
+                Section("Route on this device") {
                     Map { ForEach(segments.indices, id: \.self) { index in MapPolyline(coordinates: segments[index]).stroke(.orange, lineWidth: 4) } }
                         .frame(height: 240)
                 }
             }
 
-        }.navigationTitle(run.name).navigationBarTitleDisplayMode(.inline)
+        }
+        .scrollContentBackground(.hidden)
+        .background(RunDesign.canvas)
         .sheet(isPresented: $exportHealth) {
             if let recording { RunHealthExportView(run: recording, exporter: recorder.healthExport) }
         }
+    }
+    @ViewBuilder private var sourceAndDate: some View {
+        Text(run.sourceName).foregroundStyle(RunDesign.mutedText)
+        if let date = run.date { Text(date, format: .dateTime.month().day().year().hour().minute()) }
     }
 }
 struct AllSourceProgress: View {
@@ -349,7 +496,7 @@ struct AllSourceProgress: View {
             }
             Section("Explore") {
                 if store.onboarding?.hasAccess == true && store.onboarding?.stravaConnected == true {
-                    NavigationLink("Coach insights") { RunningProgressView() }
+                    NavigationLink("Coach insights", value: ProgressRoute.insights)
                 }
                 NavigationLink { NativeGarminRecoveryView() } label: {
                     VStack(alignment: .leading, spacing: 4) {

@@ -106,7 +106,9 @@ struct RunningProgressView:View {
         ScrollView {
             VStack(spacing:20) {
                 VStack(spacing: 0) {
-                    NavigationLink { RunHistoryView() } label: { progressLink("Run history", symbol: "figure.run") }.buttonStyle(.plain)
+                    NavigationLink(value: ProgressRoute.history) { progressLink("Run history", symbol: "figure.run") }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("open-coaching-run-history")
                     Divider()
                     NavigationLink { CoachInsightsView().id(store.snapshot?.runner.id) } label: { progressLink("Coach insights", symbol: "sparkles") }.buttonStyle(.plain)
                 }.padding(.horizontal).background(RunBrand.surface, in: RoundedRectangle(cornerRadius: 18))
