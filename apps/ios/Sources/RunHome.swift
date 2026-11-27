@@ -325,13 +325,15 @@ struct AllSourceProgress: View {
             if let overview = store.runOverview {
                 let unit = overview.unitPreference == "miles" ? "mi" : "km"
                 let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: RunDesign.gap)) : AnyLayout(HStackLayout(spacing: RunDesign.gap))
-                Section("This month") {
+                Section {
                     layout {
                         RunMetricTile(title: "Distance", value: "\(overview.stats.monthlyTotalDistance) \(unit)")
                         RunMetricTile(title: "Runs", value: String(overview.stats.monthlyTotalActivities))
                     }.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
                     LabeledContent("Running time", value: "\(overview.stats.monthlyTotalMinutes) min")
                     LabeledContent("Average pace", value: overview.stats.monthlyAvgPace + " /\(unit)")
+                } header: {
+                    Text("This month")
                 } footer: {
                     Text("All sources. Clear Garmin and Strava matches count once. Phone recordings stay separate.")
                 }
