@@ -9,9 +9,11 @@ import StoreKit
     enum PurchaseState:Equatable { case idle, purchasing, pending, cancelled, delivered }
     enum PurchaseError:Error { case unverified, wrongAccount, unknownProduct }
     @Published private(set) var products:[Product]=[]
+    @Published private(set) var loadingProducts=false
     @Published private(set) var state:PurchaseState = .idle
     @Published private(set) var error:String?
     private var updates:Task<Void,Never>?
+    private var pendingProductID:String?
     private let accountToken:UUID
     private let deliver:(String) async throws -> Void
 
@@ -32,19 +34,22 @@ import StoreKit
         await reconcile()
     }
     func reloadProducts() async {
+        guard !loadingProducts else { return }
+        loadingProducts=true
+        defer { loadingProducts=false }
         error=nil
         do { products=try await Product.products(for:Self.productIDs).sorted { $0.price < $1.price } }
         catch { self.error="Apple subscription options could not load. Please retry." }
     }
-    func stop() { updates?.cancel(); updates=nil; products=[]; state = .idle; error=nil }
+    func stop() { updates?.cancel(); updates=nil; products=[]; pendingProductID=nil; state = .idle; error=nil }
     deinit { updates?.cancel() }
     func purchase(_ product:Product) async {
-        guard state != .purchasing,Self.productIDs.contains(product.id) else { return }
+        guard state != .purchasing,state != .pending,Self.productIDs.contains(product.id) else { return }
         error=nil; state = .purchasing
         do {
             switch try await product.purchase(options:[.appAccountToken(accountToken)]) {
             case .success(let result):try await accept(result); state = .delivered
-            case .pending:state = .pending
+            case .pending:pendingProductID=product.id; state = .pending
             case .userCancelled:state = .cancelled
             @unknown default:state = .idle
             }
@@ -70,5 +75,9 @@ import StoreKit
         try await deliver(result.jwsRepresentation)
         guard !Task.isCancelled else { return }
         await transaction.finish()
+        if state == .pending, pendingProductID == transaction.productID {
+            pendingProductID=nil
+            state = .delivered
+        }
     }
 }

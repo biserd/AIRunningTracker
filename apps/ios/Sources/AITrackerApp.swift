@@ -34,7 +34,8 @@ import SwiftUI
                     return
                 }
                 if ProcessInfo.processInfo.arguments.contains("--test-standalone") {
-                    store.loading=false;store.needsSignIn=false;store.setupComplete=true
+                    store.loading=false;store.needsSignIn=false
+                    store.setupComplete = !ProcessInfo.processInfo.arguments.contains("--test-first-run-setup")
                     let token="DAD00000-0000-4000-8000-000000000001"
                     store.onboarding=NativeOnboarding(stravaConnected:false,syncStatus:nil,hasAccess:false,billingProvider:nil,appAccountToken:token,purchasesAvailable:false)
                     store.recorder.selectAccount(token)

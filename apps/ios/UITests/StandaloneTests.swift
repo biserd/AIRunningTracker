@@ -1,6 +1,23 @@
 import XCTest
 import UIKit
 final class StandaloneTests:XCTestCase {
+    func testNewRunnerCanContinueWithoutOpeningConnections() {
+        let app=XCUIApplication()
+        app.launchArguments=["--test-standalone", "--test-first-run-setup"]
+        app.launch()
+        let continueButton=app.buttons["setup-continue-to-run"]
+        XCTAssertTrue(continueButton.waitForExistence(timeout: 10))
+        XCTAssertTrue(continueButton.isHittable)
+        XCTAssertFalse(app.buttons["Connect Garmin"].exists)
+        XCTAssertFalse(app.buttons["Connect Strava"].exists)
+        capture("Setup prioritizes the first run without a provider")
+        continueButton.tap()
+        let start=app.buttons["start-phone-run"]
+        XCTAssertTrue(start.waitForExistence(timeout: 8))
+        XCTAssertTrue(start.isEnabled)
+        XCTAssertFalse(app.buttons["continue-apple-purchase"].exists)
+        capture("First Run screen reached in one setup tap")
+    }
     func testFreeAccountOpensRunWithoutProviderOrPaywall() {
         XCUIDevice.shared.orientation = UIDevice.current.userInterfaceIdiom == .pad ? .landscapeLeft : .portrait
         defer { XCUIDevice.shared.orientation = .portrait }
