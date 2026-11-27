@@ -11,7 +11,7 @@ final class NativeOfferPresentationTests: XCTestCase {
         XCTAssertEqual(standard.action, "Continue with Apple")
         XCTAssertEqual(standard.initialTerms, "Billed today.")
         XCTAssertEqual(promotion.action, "Continue with Apple")
-        XCTAssertEqual(promotion.initialTerms, "£3.99 today for 1 month, then renews at this price.")
+        XCTAssertEqual(promotion.initialTerms, "£3.99 today for 1 month, then £7.99 every 1 month.")
         XCTAssertEqual(standard.renewal, "€79.99 every 1 year")
     }
 

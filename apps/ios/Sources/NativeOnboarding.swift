@@ -80,14 +80,13 @@ struct NativeOnboardingView:View {
                             if managing {
                                 sourceOptions(status)
                             } else {
-                                DisclosureGroup("Connect Garmin or Strava", isExpanded: $showSources) {
+                                DisclosureGroup("Connect Garmin or Strava (optional)", isExpanded: $showSources) {
                                     sourceOptions(status).padding(.top, RunDesign.gap)
                                 }
                                 .padding(RunDesign.insetPadding)
                                 .frame(minHeight: RunDesign.actionHeight)
                                 .background(RunDesign.inset, in: RoundedRectangle(cornerRadius: RunDesign.radius))
                                 .accessibilityIdentifier("setup-optional-sources")
-                                Text("Connect or disconnect services anytime in Settings.").font(.footnote).foregroundStyle(.secondary)
                             }
                         }
                         if managing {
@@ -102,12 +101,12 @@ struct NativeOnboardingView:View {
                     } else if message == nil { ProgressView("Loading your account…") }
                     if busy { ProgressView("Please wait…") }
                     if let message { Text(message).foregroundStyle(.red) }
-                    Button("Refresh account") { Task { await reload() } }.buttonStyle(.bordered).disabled(busy)
-                    HStack {
-                        Button("Sign out") { Task { await store.signOut() } }
-                        Spacer()
-                        Button("Delete account",role:.destructive) { confirmDeletion=true }
-                    }.font(.footnote)
+                    if managing || store.onboarding == nil || message != nil {
+                        accountActions
+                    } else {
+                        DisclosureGroup("Account options") { accountActions.padding(.top, RunDesign.gap) }
+                            .frame(minHeight:RunDesign.minimumTarget)
+                    }
                 }.padding(24).frame(maxWidth:650).frame(maxWidth:.infinity)
             }.background(RunDesign.canvas.ignoresSafeArea())
             .toolbar { if managing { ToolbarItem(placement:.confirmationAction) { Button("Close") { dismiss() } } } }
@@ -119,6 +118,16 @@ struct NativeOnboardingView:View {
                 Button("Delete my account",role:.destructive) { Task { await delete() } }
             } message: { Text("This cannot be undone. Apple subscriptions must also be cancelled in Apple's subscription settings; deleting your account does not cancel Apple billing.") }
         }
+    }
+    private var accountActions: some View {
+        VStack(alignment:.leading,spacing:4) {
+            Button("Refresh account") { Task { await reload() } }.buttonStyle(.bordered).disabled(busy)
+                .frame(minHeight:RunDesign.minimumTarget)
+            Button("Sign out") { Task { await store.signOut() } }
+                .frame(minHeight:RunDesign.minimumTarget)
+            Button("Delete account",role:.destructive) { confirmDeletion=true }
+                .frame(minHeight:RunDesign.minimumTarget)
+        }.font(.callout)
     }
     private func sourceOptions(_ status: NativeOnboarding) -> some View {
         VStack(alignment: .leading, spacing: RunDesign.gap) {
@@ -257,7 +266,7 @@ struct NativeOfferPlan: Identifiable, Equatable {
     var initialTerms: String {
         switch introduction {
         case .some(.free(let duration)): "\(duration) free, then renews at this price."
-        case .some(.paid(let initialCharge)): "\(initialCharge), then renews at this price."
+        case .some(.paid(let initialCharge)): "\(initialCharge), then \(renewal)."
         case nil: "Billed today."
         }
     }

@@ -2,6 +2,8 @@
 
 [Editable Figma file](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG) · [iPhone screens](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=1-6) · [iPad screens](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=1-7) · [Prototype flows](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=1-9)
 
+Follow-on: [product UX and monetization audit and handoff](PRODUCT-UX-AND-MONETIZATION.md) · [editable paywall concepts and sample-to-Run prototype](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=30-2).
+
 ## Direction
 
 **Run → understand → decide.** Put the next meaningful action near the top, expose its prerequisites at the point of use, and keep the evidence available. Keep recording and review dependable even when data is missing. Preserve all existing routes, features, integrations, settings and authorizations. Sample activity, map, plan, prices and conversations in Figma are illustrative, not customer data or live availability.

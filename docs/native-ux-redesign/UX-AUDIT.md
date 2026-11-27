@@ -2,6 +2,8 @@
 
 [Editable Figma design](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG) · [Redesign](UX-REDESIGN.md) · [Design system](DESIGN-SYSTEM.md) · [Implementation plan](IMPLEMENTATION-PLAN.md) · [Implementation findings](UX-IMPLEMENTATION-REVIEW.md)
 
+Follow-on review: [steps to value, contextual upsells and subscription UX](PRODUCT-UX-AND-MONETIZATION.md), governed by the [product design standard](../../PRODUCT-DESIGN-PRINCIPLES.md).
+
 ## Scope and evidence
 
 Run Analytics serves runners who want to record or import a run, understand the effort, and decide what to do next. Free recording and basic history are valuable without a wearable; optional Apple Premium unlocks eligible voice/chat coaching, plan and analytical capabilities. Strava provides supported history-based coach context; direct Garmin activities and health summaries are deliberately not used as AI inputs. No retention, revenue or user-research dataset was provided for this design review.
