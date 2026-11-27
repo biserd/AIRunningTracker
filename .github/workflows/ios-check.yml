@@ -6,6 +6,11 @@ on:
   pull_request:
     paths: ['apps/ios/**', '.github/workflows/ios-check.yml']
   workflow_dispatch:
+    inputs:
+      extended_devices:
+        description: Also test a compact iPhone and compact iPad
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -13,9 +18,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [iPhone, iPad]
+        device: ${{ fromJSON(inputs.extended_devices && '["iPhone","iPad","Compact iPhone","Compact iPad"]' || '["iPhone","iPad"]') }}
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Select newest stable Xcode
@@ -31,8 +36,30 @@ jobs:
           xcodegen generate
       - name: Build and test without signing
         working-directory: apps/ios
+        env:
+          SIMULATOR_CLASS: ${{ matrix.device }}
         run: |
-          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); runtimes=sorted(d["devices"],key=lambda name:tuple(map(int,re.findall(r"\d+",name))),reverse=True); print(next(v["udid"] for runtime in runtimes for v in d["devices"][runtime] if v["name"].startswith("${{ matrix.device }}")))')
+          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,os,re,sys
+          data=json.load(sys.stdin)["devices"]
+          group=os.environ["SIMULATOR_CLASS"]
+          family=group.removeprefix("Compact ")
+          series=sorted(data,key=lambda name:tuple(map(int,re.findall(r"\d+",name))),reverse=True)
+          def size_rank(item):
+              name=item["name"]
+              if group == "Compact iPhone":
+                  if "Pro" in name or "Plus" in name or "Air" in name: return None
+                  return 0 if "SE" in name else 1 if re.search(r"\de\b",name) else 2
+              if group == "Compact iPad":
+                  if "13-inch" in name or "12.9-inch" in name: return None
+                  return 0 if "mini" in name else 1 if "11-inch" in name else 2
+              return 0
+          for runtime in series:
+              devices=[(size_rank(i),i) for i in data[runtime] if i["name"].startswith(family)]
+              eligible=[pair for pair in devices if pair[0] is not None]
+              if eligible:
+                  print(min(eligible,key=lambda pair:pair[0])[1]["udid"])
+                  break
+          else: sys.exit("No simulator found for " + group)')
           xcrun simctl list devices available | grep "$DEVICE_ID"
           xcodebuild -project AITracker.xcodeproj -scheme AITracker -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO test
       - name: Verify recording background mode
