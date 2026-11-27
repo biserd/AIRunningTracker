@@ -1,6 +1,6 @@
 # Run Analytics · Product UX and monetization
 
-[Product standards](../../PRODUCT-DESIGN-PRINCIPLES.md) · [Prior audit](UX-AUDIT.md) · [Existing design](UX-REDESIGN.md) · [Editable Figma concepts and prototypes](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=30-2) · [Updated simulator check](https://github.com/biserd/AIRunningTracker/actions/runs/46020384143)
+[Product standards](../../PRODUCT-DESIGN-PRINCIPLES.md) · [Prior audit](UX-AUDIT.md) · [Existing design](UX-REDESIGN.md) · [Editable Figma concepts and prototypes](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=30-2) · [Updated simulator check](https://github.com/biserd/AIRunningTracker/actions/runs/46020948349)
 
 ## Decision
 
@@ -39,7 +39,7 @@ Counts below come from the source paths and named fixtures, not live user analyt
 | [B · Demonstration](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=31-140) | Explains what users get with a tangible coaching example. | Uses space and must be labeled as a sample, not a promised personalized result. | Keep as a candidate for testing; sample-first onboarding is independent of payment. |
 | [C · Context](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=31-276) | Ties the purchase to the job users deliberately opened. | Depends on honest, matched entry context. Needs a stable fallback for Account. | Implemented entry-aware copy and an adaptive offers sheet. |
 
-All three have iPhone and expanded-iPad versions in light and dark. The [Figma before/after board](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=31-524) complements the numeric audit. “First value,” “Context → Plans → Apple,” and restoration/management are clickable Figma flows. Figma dollars, dates, and confirmation are illustrative; production uses StoreKit.
+All three have iPhone and expanded-iPad versions in light and dark. The selected design also has a [500-point dark iPad specimen](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=33-258). The [Figma before/after board](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=31-524) complements the numeric audit. “First value,” “Context → Plans → Apple,” and restoration/management are clickable Figma flows. Figma dollars, dates, and confirmation are illustrative; production uses StoreKit.
 
 | Design state | SwiftUI mapping and invariant |
 | --- | --- |
@@ -80,5 +80,5 @@ Server billing deduplication can use existing transaction and notification IDs o
 ## Validation boundaries
 
 - Prior native simulator baseline: [the unsigned jobs in build 45](https://github.com/biserd/AIRunningTracker/actions/runs/45995108915), including Run and Progress history. The original setup's decorative card, optional connectors and competing account actions are visible in `DFA666CE-52B5-445F-B846-AD86AC5A4BD6.png` in the [iPhone 17 Pro artifact](https://github.com/biserd/AIRunningTracker/actions/runs/45995108915/artifacts/15195958602) and `9D8432D9-ED80-49D6-A989-5D18B06CAB6E.png` in the [iPad Pro 13-inch artifact](https://github.com/biserd/AIRunningTracker/actions/runs/45995108915/artifacts/15196098667). Figma renders are **design evidence only**.
-- The [updated unsigned suite](https://github.com/biserd/AIRunningTracker/actions/runs/46020384143) runs the actual app with offline preview offers, signed-out sample, no-default selection, paid and free-trial labels, dismissal and retained free recording, plus existing regression tests. See artifacts for actual device dimensions and screenshots. A mock offer never reaches StoreKit purchases.
+- The [updated unsigned suite](https://github.com/biserd/AIRunningTracker/actions/runs/46020948349) is configured for a standard and compact iPhone and iPad. It exercises the actual app with offline preview offers, signed-out sample, no-default selection, paid and free-trial labels, dismissal and retained free recording, plus existing regression tests. See completed artifacts for device dimensions and screenshots. A mock offer never reaches StoreKit purchases.
 - No production telemetry, allocation, amount, product ID, renewal policy, eligibility rule, signed transaction verification, external subscription setting, or release was changed. Actual Apple purchase/restore/cancel, VoiceOver, Reduce Motion and real iPad multitasking still need separate device checks. Do not treat simulator counts as user timings or real purchases.
