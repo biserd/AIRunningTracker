@@ -1,5 +1,6 @@
 name: iOS simulator check
 on:
+  workflow_call:
   push:
     branches: [codex/ios-testflight]
     paths: ['apps/ios/**', '.github/workflows/ios-check.yml']

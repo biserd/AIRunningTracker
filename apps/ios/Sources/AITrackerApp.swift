@@ -151,6 +151,9 @@ struct CoachTabs: View {
                 compactTabs
             }
         }
+        #if DEBUG
+        .modifier(RunHistoryWidthFixture())
+        #endif
         .onReceive(NotificationCenter.default.publisher(for: .applePushOpen)) { _ in openPush() }
         .onAppear { openPush() }
         .onChange(of: store.requestedCoach) { _, _ in selected = .coach }

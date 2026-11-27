@@ -30,6 +30,13 @@ enum RunHistoryLayout {
     static func listWidth(for width: CGFloat) -> CGFloat {
         min(320, max(256, width * 0.32))
     }
+
+    static func progressStackPath(_ path: [ProgressRoute], split: Bool) -> [ProgressRoute] {
+        // In the split layout the selected run is shown inside the history
+        // destination, rather than as another screen on top of it.
+        if split, path.contains(.history), case .some(.run(_)) = path.last { return Array(path.dropLast()) }
+        return path
+    }
 }
 
 /// Only the history panes subdivide the available detail area. The app's
@@ -88,35 +95,46 @@ struct RunHistoryPlaceholder: View {
     }
 }
 
-/// Drives a real max-width proposal for the history content in UI tests,
-/// without pretending that a simulator can resize a Stage Manager window.
+#if DEBUG
+private struct RunHistoryWidthLimitKey: EnvironmentKey {
+    static let defaultValue: CGFloat = .infinity
+}
+
+extension EnvironmentValues {
+    var runHistoryWidthLimit: CGFloat {
+        get { self[RunHistoryWidthLimitKey.self] }
+        set { self[RunHistoryWidthLimitKey.self] = newValue }
+    }
+}
+
+/// Changes the width passed to the history layout policy, not the OS window.
+/// The control belongs to the app shell so a navigation destination cannot hide it.
 struct RunHistoryWidthFixture: ViewModifier {
-    #if DEBUG
     @State private var narrow = false
-    #endif
 
     @ViewBuilder func body(content: Content) -> some View {
-        #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--test-history-resize") {
-            VStack(spacing: 0) {
-                content.frame(maxWidth: narrow ? 500 : .infinity)
-                    .frame(maxWidth: .infinity)
-                Button(narrow ? "Use full width" : "Use narrow width") { narrow.toggle() }
-                    .frame(minHeight: RunDesign.minimumTarget)
-                    .accessibilityIdentifier("history-test-resize")
-            }
+            content.environment(\.runHistoryWidthLimit, narrow ? 500 : .infinity)
+                .overlay(alignment: .bottomTrailing) {
+                    Button(narrow ? "Use full width" : "Use narrow width") { narrow.toggle() }
+                        .buttonStyle(.borderedProminent)
+                        .frame(minHeight: RunDesign.minimumTarget)
+                        .padding()
+                        .accessibilityIdentifier("history-test-resize")
+                }
         } else {
             content
         }
-        #else
-        content
-        #endif
     }
 }
+#endif
 
 struct ProgressNavigation: View {
     @EnvironmentObject var store: CoachStore
     @Environment(\.dynamicTypeSize) private var typeSize
+    #if DEBUG
+    @Environment(\.runHistoryWidthLimit) private var widthLimit
+    #endif
     @Binding var path: [ProgressRoute]
 
     private var canOpenCoachHistory: Bool {
@@ -125,49 +143,65 @@ struct ProgressNavigation: View {
 
     var body: some View {
         GeometryReader { geometry in
-            if !canOpenCoachHistory {
-                NavigationStack { AllSourceProgress() }
-            } else if path.contains(.history),
-               RunHistoryLayout.usesSplit(width: geometry.size.width, accessibilitySize: typeSize.isAccessibilitySize) {
-                NavigationStack {
-                    RunHistorySplit(width: geometry.size.width) {
-                        RunHistoryView(selection: selectedID) { run in
-                            path = [.insights, .history, .run(.init(run: run))]
-                        }
-                    } detail: {
-                        if case let .run(item)? = path.last {
-                            RunDetailView(run: item.run, embeddedInHistory: true).id(item.run.id)
-                        } else {
-                            RunHistoryPlaceholder()
-                        }
-                    }
-                    .navigationTitle("Run history")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button { path = [.insights] } label: {
-                                Label("Back to Progress", systemImage: "chevron.backward")
-                            }.accessibilityIdentifier("progress-history-back")
-                        }
-                    }
-                }
-            } else {
-                NavigationStack(path: $path) {
-                    AllSourceProgress()
-                        .navigationDestination(for: ProgressRoute.self) { route in
+            let width = availableWidth(geometry.size.width)
+            let split = RunHistoryLayout.usesSplit(width: width, accessibilitySize: typeSize.isAccessibilitySize)
+            // Keep the same stack alive throughout link pushes, back gestures and
+            // resizing. Swapping stacks when the history link appended to the path
+            // terminated the app on the iPad simulator.
+            NavigationStack(path: stackPath(split: split)) {
+                AllSourceProgress()
+                    .navigationDestination(for: ProgressRoute.self) { route in
+                        if canOpenCoachHistory {
                             switch route {
                             case .insights: RunningProgressView()
-                            case .history: RunHistoryView()
+                            case .history:
+                                if split { wideHistory(width: width) }
+                                else { RunHistoryView() }
                             case let .run(item): RunDetailView(run: item.run).id(item.run.id)
                             }
                         }
-                }
+                    }
             }
         }
-        .modifier(RunHistoryWidthFixture())
         .onChange(of: canOpenCoachHistory) { _, canOpen in
             if !canOpen { path = [] }
         }
+    }
+
+    private func stackPath(split: Bool) -> Binding<[ProgressRoute]> {
+        Binding(
+            get: { RunHistoryLayout.progressStackPath(path, split: split) },
+            set: { updated in
+                if updated != RunHistoryLayout.progressStackPath(path, split: split) {
+                    path = updated
+                }
+            }
+        )
+    }
+
+    private func availableWidth(_ width: CGFloat) -> CGFloat {
+        #if DEBUG
+        min(width, widthLimit)
+        #else
+        width
+        #endif
+    }
+
+    private func wideHistory(width: CGFloat) -> some View {
+        RunHistorySplit(width: width) {
+            RunHistoryView(selection: selectedID) { run in
+                let history = RunHistoryLayout.progressStackPath(path, split: true)
+                path = history + [.run(.init(run: run))]
+            }
+        } detail: {
+            if case let .run(item)? = path.last {
+                RunDetailView(run: item.run, embeddedInHistory: true).id(item.run.id)
+            } else {
+                RunHistoryPlaceholder()
+            }
+        }
+        .navigationTitle("Run history")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var selectedID: Int? {

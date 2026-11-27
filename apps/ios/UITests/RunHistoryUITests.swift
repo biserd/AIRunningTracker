@@ -50,10 +50,12 @@ final class RunHistoryUITests: XCTestCase {
         capture("Expanded Run history with Strava run selected")
 
         let resize = app.buttons["history-test-resize"]
+        XCTAssertTrue(resize.isHittable)
         resize.tap()
         XCTAssertTrue(app.navigationBars["Saturday long run"].waitForExistence(timeout: 8))
         XCTAssertFalse(wideBack.exists)
-        capture("Same selected run after a 500-point width proposal")
+        capture("Same selected run with a 500-point layout input")
+        XCTAssertTrue(resize.isHittable)
         resize.tap()
         XCTAssertTrue(wideBack.waitForExistence(timeout: 8))
         XCTAssertTrue(detail.waitForExistence(timeout: 8))
@@ -70,6 +72,8 @@ final class RunHistoryUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--test-adaptive-layout", "--test-insights", "--test-run-history", "--test-calendar-navigation"]
         app.launch()
+        if UIDevice.current.userInterfaceIdiom == .pad { XCUIDevice.shared.orientation = .landscapeLeft }
+        defer { XCUIDevice.shared.orientation = .portrait }
         let sidebar = app.descendants(matching: .any)["sidebar-progress"].firstMatch
         if sidebar.waitForExistence(timeout: 3) { sidebar.tap() }
         else { app.tabBars.buttons["Progress"].tap() }
@@ -79,11 +83,18 @@ final class RunHistoryUITests: XCTestCase {
         let history = app.descendants(matching: .any)["open-coaching-run-history"].firstMatch
         XCTAssertTrue(history.waitForExistence(timeout: 8))
         history.tap()
+        XCTAssertTrue(app.navigationBars["Run history"].waitForExistence(timeout: 8))
+        let wide = app.staticTexts["Select a run"].exists
+        if UIDevice.current.userInterfaceIdiom == .pad, app.frame.width >= 1300 {
+            XCTAssertTrue(wide, "Wide iPad Progress must use the history/detail presentation")
+        }
         let coachingRun = app.descendants(matching: .any)["progress-history-42"].firstMatch
         XCTAssertTrue(coachingRun.waitForExistence(timeout: 8))
         coachingRun.tap()
-        if app.buttons["progress-history-back"].exists {
-            XCTAssertEqual(app.staticTexts["progress-history-detail-title"].label, "Coaching history intervals")
+        if wide {
+            let detail = app.staticTexts["progress-history-detail-title"]
+            XCTAssertTrue(detail.waitForExistence(timeout: 8))
+            XCTAssertEqual(detail.label, "Coaching history intervals")
             XCTAssertTrue(coachingRun.isHittable)
         } else {
             XCTAssertTrue(app.navigationBars["Coaching history intervals"].waitForExistence(timeout: 8))

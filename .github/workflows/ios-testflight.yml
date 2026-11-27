@@ -27,9 +27,12 @@ jobs:
           APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           VERSION_AUDIT_ONLY: ${{ startsWith(github.ref, 'refs/tags/ios-version-audit-') }}
         run: node apps/ios/scripts/testflight-version.mjs
-  testflight:
+  simulator-check:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/ios-testflight-')
     needs: version
+    uses: ./.github/workflows/ios-check.yml
+  testflight:
+    needs: [version, simulator-check]
     runs-on: macos-15
     timeout-minutes: 50
     env:
@@ -72,18 +75,6 @@ jobs:
           security find-certificate -c "Apple Distribution" -p "$KEYCHAIN_PATH" > "$RUNNER_TEMP/distribution-certificate.pem"
           export SIGNING_CERTIFICATE_PATH="$RUNNER_TEMP/distribution-certificate.pem"
           node apps/ios/scripts/prepare-testflight-signing.mjs
-      - name: Run simulator tests before signing
-        working-directory: apps/ios
-        run: |
-          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for vs in d["devices"].values() for v in vs if v["name"].startswith("iPhone")))')
-          xcodebuild -project AITracker.xcodeproj -scheme AITracker -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO test
-      - name: Preserve failed simulator results
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: testflight-simulator-failure
-          path: apps/ios/DerivedData/Logs/Test
-          retention-days: 7
       - name: Archive and export signed app
         working-directory: apps/ios
         run: |

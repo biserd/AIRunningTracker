@@ -22,4 +22,12 @@ final class RunHistoryLayoutTests: XCTestCase {
         XCTAssertEqual(cached.run.name, "Original title")
         XCTAssertEqual(Set([cached, RunHistoryItem(run: refreshed), RunHistoryItem(run: other)]).count, 2)
     }
+
+    func testWideProgressKeepsTheSelectedRunInTheHistoryDestination() {
+        let run = RunSummary(id: 42, name: "Selected", date: "2026-11-21", km: 8, minutes: 40)
+        let path: [ProgressRoute] = [.insights, .history, .run(.init(run: run))]
+        XCTAssertEqual(RunHistoryLayout.progressStackPath(path, split: true), [.insights, .history])
+        XCTAssertEqual(RunHistoryLayout.progressStackPath(path, split: false), path)
+        XCTAssertEqual(RunHistoryLayout.progressStackPath([.insights], split: true), [.insights])
+    }
 }

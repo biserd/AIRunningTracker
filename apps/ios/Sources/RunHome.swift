@@ -60,6 +60,9 @@ func runPace(distance: Double, seconds: Double, miles: Bool) -> String {
 struct RunHome: View {
     @EnvironmentObject var store: CoachStore
     @Environment(\.dynamicTypeSize) private var typeSize
+    #if DEBUG
+    @Environment(\.runHistoryWidthLimit) private var widthLimit
+    #endif
     @ObservedObject var recorder: PhoneRunRecorder
     @Binding var historyPath: [NativeRunRoute]
     @State private var accountSheet = false
@@ -77,11 +80,16 @@ struct RunHome: View {
     }
     var body: some View {
         GeometryReader { geometry in
-            let wide = RunHistoryLayout.usesSplit(width: geometry.size.width, accessibilitySize: typeSize.isAccessibilitySize)
+            #if DEBUG
+            let width = min(geometry.size.width, widthLimit)
+            #else
+            let width = geometry.size.width
+            #endif
+            let wide = RunHistoryLayout.usesSplit(width: width, accessibilitySize: typeSize.isAccessibilitySize)
             if wide {
                 NavigationStack {
                     if recorder.draft == nil && !historyPath.isEmpty {
-                        RunHistorySplit(width: geometry.size.width) {
+                        RunHistorySplit(width: width) {
                             nativeHistory(wide: true)
                         } detail: {
                             if let selectedRun {
@@ -117,7 +125,6 @@ struct RunHome: View {
                 }
             }
         }
-        .modifier(RunHistoryWidthFixture())
         .task { await store.refreshRuns() }
         .onChange(of: recorder.draft?.id) { _, id in
             if id != nil { historyPath = [] }
