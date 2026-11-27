@@ -24,6 +24,12 @@ Figma refinements were made in the same file: [active recording](https://www.fig
 - The native calendar retains its current chronological, scrollable multi-week layout and range controls. The single week visible in Figma is not a removal of historical navigation. The iPad retains native sidebar navigation; a new persistent third column was not added.
 - StoreKit controls localized price, promotional eligibility, renewal interval, pending approval, signed transaction and account delivery. Figma costs are examples, not static pricing strings. Selection is a local choice and cannot charge the account.
 
+### Adaptive Run and Progress history
+
+The [iPad history list](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=4-2170), [iPad detail](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=4-2295) and [compact history](https://www.figma.com/design/EyKSVPyHnIfRqWAXS5CGdG?node-id=4-810) informed the follow-up. The top-level navigation is unchanged. History shows a list and selected detail together when the content area is at least 720 points wide. Narrow windows and accessibility text sizes use a native drill-in stack with the same selected run. Recent runs still open directly. Run history includes supported recording sources and can load older runs; Progress keeps the separate, access-controlled 90-day coaching history.
+
+The UI fixtures exercise the scoped histories, dark mode at the largest accessibility text size, and an expanded → 500-point → expanded width proposal with the same run selected. They do not simulate an actual Stage Manager window resize or verify VoiceOver, pointer focus, or keyboard focus.
+
 ## Before and after
 
 | Journey | Baseline observed | Implementation target / measurable check |
