@@ -98,6 +98,26 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Coaching update"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "leave room to recover afterward")).firstMatch.exists)
     }
+    func testProposedMoveShowsDateAndCanKeepExistingPlan() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--test-adaptive-layout", "--test-coach-ux", "--test-plan-review"]
+        app.launch()
+        let keep = app.buttons["keep-current-plan"]
+        let apply = app.buttons["apply-plan-review"]
+        XCTAssertTrue(app.staticTexts["Review plan change"].waitForExistence(timeout: 10))
+        for _ in 0..<4 where !keep.isHittable { app.swipeUp() }
+        XCTAssertTrue(app.staticTexts["Nothing changes until you confirm."].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "December 3")).firstMatch.exists)
+        XCTAssertTrue(apply.exists)
+        XCTAssertTrue(keep.isHittable)
+        let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        capture.name = "Plan move review shows the destination and safe exit"
+        capture.lifetime = .keepAlways
+        add(capture)
+        keep.tap()
+        XCTAssertFalse(apply.exists)
+        XCTAssertTrue(app.navigationBars["Let’s talk running"].exists)
+    }
     private func tapSetting(_ title: String, app: XCUIApplication) {
         let button = app.buttons["settings-\(title)"]
         for _ in 0..<5 { if button.isHittable { break }; app.swipeUp() }

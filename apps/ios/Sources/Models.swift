@@ -26,7 +26,25 @@ struct Message: Decodable, Identifiable {
     enum CodingKeys: String, CodingKey { case role, content }
 }
 struct CoachStatus: Decodable { let configured: Bool; let history: [Message] }
-struct Review: Decodable, Identifiable { let id, description: String }
+struct Review: Decodable, Identifiable {
+    let id, description: String
+    var details: Details? = nil
+
+    struct Details: Decodable {
+        let kind: String
+        var planId: Int?
+        var dayId: Int?
+        var operation: String?
+        var minutes: Int?
+        var date: String?
+        var raceDate: String?
+        var goalType: String?
+        var preferredRunDays: [String]?
+        var maxWeeklyHours: Double?
+        var constraints: String?
+        var targetTime: String?
+    }
+}
 struct Answer: Decodable { let message: String; let planReview: Review?; let reminderProposal: ReminderReview?; var handled:Bool? = nil }
 struct ReminderReview: Decodable { let id, kind, title, localTime, timezone: String; var dueAt:Double? = nil; var appleOnly:Bool? = nil; var recurrence:String? = nil }
 struct Confirmation: Decodable { let message: String }

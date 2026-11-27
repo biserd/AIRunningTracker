@@ -54,6 +54,21 @@ final class ContractTests: XCTestCase {
         let fixture = #"{"message":"Review this change","planReview":{"id":"review-id","description":"Easier week","details":{"kind":"adjust"}}}"#
         let answer = try JSONDecoder().decode(Answer.self, from: Data(fixture.utf8))
         XCTAssertEqual(answer.planReview?.id, "review-id")
+        XCTAssertEqual(answer.planReview?.details?.kind, "adjust")
+    }
+    func testPlanReviewDecodesCreateAndMoveMetadataWithoutRequiringIt() throws {
+        let create = #"{"id":"draft","description":"Create a separate plan","details":{"kind":"create","raceDate":"2026-12-16","preferredRunDays":["monday","saturday"],"maxWeeklyHours":12.5}}"#
+        let move = #"{"id":"move","description":"Move intervals","details":{"kind":"workout","planId":50,"dayId":25,"operation":"move","minutes":null,"date":"2026-12-03"}}"#
+        let older = #"{"id":"older","description":"Review this plan"}"#
+        let decoder = JSONDecoder()
+        let createDetails = try decoder.decode(Review.self, from: Data(create.utf8)).details
+        XCTAssertEqual(createDetails?.raceDate, "2026-12-16")
+        XCTAssertEqual(createDetails?.preferredRunDays, ["monday","saturday"])
+        XCTAssertEqual(createDetails?.maxWeeklyHours, 12.5)
+        let moveDetails = try decoder.decode(Review.self, from: Data(move.utf8)).details
+        XCTAssertEqual(moveDetails?.operation, "move")
+        XCTAssertEqual(moveDetails?.date, "2026-12-03")
+        XCTAssertNil(try decoder.decode(Review.self, from: Data(older.utf8)).details)
     }
     func testSignInLinkRejectsUntrustedHosts() throws {
         XCTAssertEqual(try SignInLink.token(from: "https://new.aitracker.run/auth/magic-link?token=sample"), "sample")

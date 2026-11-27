@@ -340,7 +340,14 @@ import Combine
             self.review = nil
             await refresh()
             messages.append(Message(role: "assistant", content: result.message))
-        } catch { report(error) }
+        } catch {
+            // An expired, stale or uncertain server action cannot be safely
+            // repeated from the same review. Show the server's recovery message.
+            if case APIError.server(let status, _) = error, status == 409 || status == 503 {
+                if self.review?.id == review.id { self.review = nil }
+            }
+            report(error)
+        }
     }
     func signOut() async {
         recorder.selectAccount(nil); runFeed=nil; runOverview=nil; runFeedError=nil; garminConnection=nil; garminStatusError=nil; setupComplete=false

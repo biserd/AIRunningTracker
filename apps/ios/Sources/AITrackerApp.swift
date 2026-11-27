@@ -57,6 +57,10 @@ import SwiftUI
                         store.snapshot = Snapshot(runner: Runner(id: 9001, name: "Demo runner", timezone: "UTC", unitPreference: "miles"), state: RunningState(today: "2026-11-08", goal: "Half marathon", days: []), canUseAI: true, version: 1)
                         store.companion = CompanionData(preferences: CompanionPreferences(notes: "", evening: false, weekly: false, hour: 18, quietStart: 22, quietEnd: 7), insights: [], briefings: [CoachBriefing(kind: "weekly", reference: "2026-11-08", title: "Your week in running", body: "You’re building toward your half marathon. You ran three times this week and kept your easy runs comfortable. Your next session is a relaxed long run. Keep the effort conversational and leave room to recover afterward.", date: "2026-11-08T12:00:00Z")], checkins: [])
                     }
+                    if ProcessInfo.processInfo.arguments.contains("--test-plan-review") {
+                        let answer = #"{"id":"sample-only","description":"Move your intervals to the destination rest day. No other workouts change.","details":{"kind":"workout","planId":1,"dayId":2,"operation":"move","date":"2026-12-03"}}"#
+                        store.review = try? JSONDecoder().decode(Review.self, from: Data(answer.utf8))
+                    }
                     store.busy = ProcessInfo.processInfo.arguments.contains("--test-pending-coach-request")
                     return
                 }
@@ -221,6 +225,7 @@ struct CoachTabs: View {
 
 struct ChatView: View {
     @EnvironmentObject var store: CoachStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var text: String
     @Binding var channel: String
     @FocusState private var composerFocused: Bool
@@ -262,11 +267,17 @@ struct ChatView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 18)).id(message.id)
                             }
                             if store.busy { ProgressView("Coach is thinking…").accessibilityLabel("Coach is preparing a reply") }
-                            ChatReviewCards(channel:$channel)
+                            ChatReviewCards(channel:$channel).id("coach-review")
                         }.padding().frame(maxWidth: 820).frame(maxWidth: .infinity)
                     }
                     .onChange(of: store.messages.count) { _, _ in
-                        if let id = store.messages.last?.id { withAnimation { proxy.scrollTo(id, anchor: .bottom) } }
+                        if store.review == nil, let id = store.messages.last?.id {
+                            withAnimation(reduceMotion ? nil : .default) { proxy.scrollTo(id, anchor: .bottom) }
+                        }
+                    }
+                    .onChange(of: store.review?.id) { _, review in
+                        guard review != nil else { return }
+                        withAnimation(reduceMotion ? nil : .default) { proxy.scrollTo("coach-review", anchor: .top) }
                     }
                 }
                 HStack(alignment: .bottom, spacing: 10) {
@@ -274,7 +285,8 @@ struct ChatView: View {
                         .accessibilityIdentifier("coach-composer")
                         .focused($composerFocused)
                     Button { let message = text; text = ""; Task { await store.send(message) } } label: {
-                        Image(systemName: "arrow.up").font(.headline.bold()).frame(width: 28, height: 28)
+                        Image(systemName: "arrow.up").font(.headline.bold())
+                            .frame(minWidth: RunDesign.minimumTarget, minHeight: RunDesign.minimumTarget)
                     }
                     .runPrimaryActionStyle()
                     .buttonBorderShape(.circle)
@@ -331,13 +343,11 @@ struct ChatReviewCards:View {
             }.padding().background(RunBrand.orange.opacity(0.1),in:RoundedRectangle(cornerRadius:18))
         }
         if let review=store.review {
-            VStack(alignment:.leading,spacing:12) {
-                Text("Review plan change").font(.headline)
-                Text(review.description)
-                Text("Nothing changes until you confirm.").font(.caption).foregroundStyle(.secondary)
-                Button("Save my plan") { Task { await store.confirmPlan() } }.buttonStyle(.borderedProminent).disabled(store.busy)
-                Button("Dismiss",role:.cancel) { store.review=nil }.disabled(store.busy)
-            }.padding().background(RunBrand.orange.opacity(0.1),in:RoundedRectangle(cornerRadius:18))
+            PlanReviewCard(review: review, working: store.busy) {
+                Task { await store.confirmPlan() }
+            } keepCurrent: {
+                store.review = nil
+            }
         }
     }
     private var destination:String {
