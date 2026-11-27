@@ -39,6 +39,15 @@ final class ProductJourneyUITests: XCTestCase {
         let proceed = app.buttons["continue-apple-purchase"]
         XCTAssertTrue(proceed.waitForExistence(timeout:8))
         XCTAssertFalse(proceed.isEnabled)
+        let outcome = app.staticTexts["Build a plan for your next race"]
+        let choose = app.staticTexts["Choose a plan"]
+        XCTAssertTrue(outcome.exists && choose.exists)
+        if app.frame.width >= 1250 {
+            let alignedSideBySide = NSPredicate { _, _ in choose.frame.minX > outcome.frame.minX + 200 }
+            XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:alignedSideBySide,object:nil)],timeout:4),.completed)
+        } else if app.frame.width < 600 {
+            XCTAssertLessThan(abs(choose.frame.minX - outcome.frame.minX), 5)
+        }
         let monthly = app.descendants(matching:.any)["offer-monthly"].firstMatch
         XCTAssertTrue(monthly.exists)
         XCTAssertTrue(monthly.label.contains("$7.99"))

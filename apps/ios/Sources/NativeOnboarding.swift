@@ -222,8 +222,12 @@ enum NativePaywallEntry: String, Identifiable {
 struct NativePaywallSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var store: CoachStore
+    @State private var contentWidth: CGFloat = 0
     @ObservedObject var subscriptions: AppleSubscriptions
     let entry: NativePaywallEntry
+
+    private let maximumWidth: CGFloat = 830
+    private let padding: CGFloat = 20
 
     private var activated: Bool {
         store.onboarding?.hasAccess == true && store.onboarding?.billingProvider == "apple"
@@ -235,10 +239,14 @@ struct NativePaywallSheet: View {
     private var content: some View {
         NavigationStack {
             ScrollView {
-                NativePaywall(subscriptions:subscriptions, entry:entry, activated:activated, openCoaching:{ dismiss() })
+                NativePaywall(subscriptions:subscriptions, entry:entry, activated:activated,
+                              contentWidth:contentWidth, openCoaching:{ dismiss() })
                     .modifier(NativeVisualTestSettings())
-                    .padding(20).frame(maxWidth:830).frame(maxWidth:.infinity)
+                    .padding(padding).frame(maxWidth:maximumWidth).frame(maxWidth:.infinity)
             }
+            .onGeometryChange(for: CGFloat.self) { geometry in
+                max(0, min(geometry.size.width, maximumWidth) - padding * 2)
+            } action: { contentWidth = $0 }
             .background(RunDesign.canvas.ignoresSafeArea())
             .navigationTitle("Premium").navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -282,6 +290,7 @@ struct NativePaywall:View {
     @ObservedObject var subscriptions:AppleSubscriptions
     let entry:NativePaywallEntry
     let activated:Bool
+    let contentWidth:CGFloat
     let openCoaching:()->Void
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var eligible:Set<String>=[]
@@ -303,16 +312,12 @@ struct NativePaywall:View {
                     Button("Done",action:openCoaching).buttonStyle(RunActionStyle())
                     ManageAppleSubscription()
                 }
-            } else if typeSize.isAccessibilitySize {
-                VStack(alignment:.leading,spacing:20) { outcome; purchase }
             } else {
-                ViewThatFits(in:.horizontal) {
-                    HStack(alignment:.top,spacing:20) {
-                        outcome.frame(minWidth:278,maxWidth:.infinity,alignment:.leading)
-                        purchase.frame(minWidth:278,maxWidth:.infinity,alignment:.leading)
-                    }
-                    VStack(alignment:.leading,spacing:20) { outcome; purchase }
-                }
+                // Two readable columns and a gutter must fit in the sheet, not merely on the device.
+                let sideBySide = contentWidth >= 596 && !typeSize.isAccessibilitySize
+                let layout = sideBySide ? AnyLayout(HStackLayout(alignment:.top,spacing:20))
+                                        : AnyLayout(VStackLayout(alignment:.leading,spacing:20))
+                layout { outcome; purchase }
             }
         }
         .task(id:subscriptions.products.map(\.id)) {
