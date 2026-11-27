@@ -33,7 +33,7 @@ struct ActivityContributionCard: View {
     @EnvironmentObject var store: CoachStore
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showAll = false
-    @State private var selected: NativeActivityCalendar.Day?
+    @State private var selectedDate: String?
     @State private var availableWidth: CGFloat = 0
 
     init(calendar: NativeActivityCalendar) {
@@ -42,19 +42,22 @@ struct ActivityContributionCard: View {
     }
     private var weeks: [ActivityWeek] { showAll ? allWeeks : Array(allWeeks.suffix(12)) }
     private var cell: CGFloat {
-        max(28, min(sizeClass == .regular ? 48 : 32, floor((availableWidth - 38) / CGFloat(max(1, weeks.count))) - 4))
+        max(RunDesign.minimumTarget, min(sizeClass == .regular ? 56 : 48, floor((availableWidth - 38) / CGFloat(max(1, weeks.count))) - 4))
+    }
+    private var selected: NativeActivityCalendar.Day? {
+        calendar.days.first { $0.date == selectedDate }
     }
     private var maximum: Double { max(1, calendar.days.map(\.totalDistanceKm).filter(\.isFinite).max() ?? 0) }
 
     var body: some View {
-        InsightCard(title: "Activity calendar", symbol: "calendar", color: RunBrand.teal) {
+        InsightCard(title: "Activity calendar", symbol: "calendar", color: RunDesign.trend) {
             if weeks.isEmpty { Text("Your activity grid will appear when your runs sync.").foregroundStyle(.secondary) }
             else {
                 Picker("Activity history", selection: $showAll) {
                     Text("Last 12 weeks").tag(false)
                     Text("Last 6 months").tag(true)
-                }.pickerStyle(.menu).tint(RunBrand.orange).accessibilityIdentifier("activity-history-range")
-                Text("Weeks run left to right. Tap a day to open its runs.").font(.callout).foregroundStyle(.secondary)
+                }.pickerStyle(.menu).tint(RunDesign.action).accessibilityIdentifier("activity-history-range")
+                Text("Swipe to browse weeks. Choose a day to see its runs.").font(.callout).foregroundStyle(.secondary)
                 HStack(alignment: .top, spacing: 6) {
                     VStack(spacing: 4) {
                         Color.clear.frame(height: 24)
@@ -83,11 +86,11 @@ struct ActivityContributionCard: View {
                     } }
                 HStack(spacing: 5) {
                     Text("Less")
-                    ForEach(0..<5) { level in RoundedRectangle(cornerRadius: 2).fill(RunBrand.teal.opacity(level == 0 ? 0.08 : 0.2 + Double(level) * 0.18)).frame(width: 12, height: 12) }
+                    ForEach(0..<5) { level in RoundedRectangle(cornerRadius: 2).fill(RunDesign.trend.opacity(level == 0 ? 0.08 : 0.2 + Double(level) * 0.18)).frame(width: 12, height: 12) }
                     Text("More")
                     Spacer()
                     Text("Daily distance")
-                }.font(.caption2).foregroundStyle(.secondary).accessibilityElement(children: .ignore).accessibilityLabel("Darker squares mean more running distance")
+                }.font(.caption2).foregroundStyle(.secondary).accessibilityElement(children: .ignore).accessibilityLabel("Stronger color means more running distance")
                 if let selected {
                     Divider()
                     Text(runnerDay(selected.date, today: store.snapshot?.state.today)).font(.headline)
@@ -111,19 +114,38 @@ struct ActivityContributionCard: View {
                     }
                 }
             }
-        }.onChange(of: showAll) { _, _ in selected = nil }
+        }.onChange(of: showAll) { _, _ in
+            if let selectedDate, !weeks.contains(where: { $0.days.contains(where: { $0?.date == selectedDate }) }) {
+                self.selectedDate = nil
+            }
+        }
     }
     private func dayButton(_ day: NativeActivityCalendar.Day) -> some View {
         let distance = day.totalDistanceKm.isFinite ? max(0, day.totalDistanceKm) : 0
-        return Button { selected = day } label: {
-            RoundedRectangle(cornerRadius: 5)
-                .fill(RunBrand.teal.opacity(distance > 0 ? 0.2 + 0.72 * min(1, distance / maximum) : 0.08))
-                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(selected?.id == day.id ? RunBrand.orange : .clear, lineWidth: 3))
+        let isSelected = selectedDate == day.date
+        let number = day.date.split(separator: "-").last.flatMap { Int($0) }.map { String($0) } ?? ""
+        let shape = RoundedRectangle(cornerRadius: 8)
+        return Button { selectedDate = day.date } label: {
+            Text(number)
+                .font(.caption.monospacedDigit().weight(isSelected ? .bold : .regular))
+                .foregroundStyle(.primary)
+                .minimumScaleFactor(0.65)
+                .lineLimit(1)
                 .frame(width: cell, height: cell)
+                .background {
+                    if isSelected { shape.fill(RunDesign.highlight) }
+                    else if distance > 0 {
+                        shape.fill(RunDesign.recovery)
+                        shape.fill(RunDesign.trend.opacity(0.18 * min(1, distance / maximum)))
+                    } else { shape.fill(RunDesign.inset) }
+                }
+                .overlay(shape.strokeBorder(isSelected ? RunDesign.action : .clear, lineWidth: 2))
+                .contentShape(shape)
         }.buttonStyle(.plain)
             .accessibilityIdentifier("activity-day-\(day.date)")
-            .accessibilityLabel("\(day.date), \(runnerDistance(distance, units: calendar.unitPreference)), \(day.activities.count) runs")
-            .accessibilityAddTraits(selected?.id == day.id ? .isSelected : [])
+            .accessibilityLabel(runnerDay(day.date, today: store.snapshot?.state.today))
+            .accessibilityValue("\(runnerDistance(distance, units: calendar.unitPreference)), \(day.activities.count) \(day.activities.count == 1 ? "run" : "runs")")
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
     private func monthLabel(_ week: ActivityWeek, first: Bool) -> String {
         let day = first ? week.days.compactMap { $0 }.first : week.days.compactMap { $0 }.first { $0.date.hasSuffix("-01") }

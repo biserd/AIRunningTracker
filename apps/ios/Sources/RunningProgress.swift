@@ -101,6 +101,7 @@ struct RunningProgressView:View {
     @State private var calendar:NativeActivityCalendar?
     @State private var failures:[String]=[]
     @State private var loading=false
+    @State private var displayedRunner: Int?
     var body:some View {
         ScrollView {
             VStack(spacing:20) {
@@ -123,7 +124,7 @@ struct RunningProgressView:View {
                 if let score {
                     InsightCard(title:"Runner Score",symbol:"trophy",color:RunBrand.orange) {
                         Text("\(Int(score.totalScore.rounded())) / 100").font(.largeTitle.bold()).foregroundStyle(RunBrand.orange)
-                        Text("Last 30 days · \(score.recentRunCount) runs").font(.caption).foregroundStyle(.secondary)
+                        Text("Strava · Last 30 days · \(score.recentRunCount) runs").font(.caption).foregroundStyle(.secondary)
                         if score.isProvisional { Text("Early estimate. More runs will build a clearer picture.").font(.callout) }
                         Text(String(format:"%+.0f runs versus the previous 30 days",score.trends.monthlyChange)).font(.callout)
                         DisclosureGroup("Score breakdown") {
@@ -140,7 +141,7 @@ struct RunningProgressView:View {
                     ActivityContributionCard(calendar: calendar)
                 }
             }.padding(20).frame(maxWidth:760).frame(maxWidth:.infinity)
-        }.background(RunBrand.canvas).navigationTitle("Progress")
+        }.background(RunDesign.canvas).navigationTitle("Progress")
             .task(id:store.snapshot?.runner.id) { await load() }.refreshable { await store.refreshSchedule(force: true); await load() }
     }
     private func progressLink(_ title: String, symbol: String) -> some View {
@@ -174,14 +175,23 @@ struct RunningProgressView:View {
         }
         #endif
         guard !loading,let id=store.snapshot?.runner.id else { return }
-        loading=true; failures=[]; score=nil; calendar=nil
+        if displayedRunner != id {
+            score=nil; calendar=nil; displayedRunner=id
+        }
+        loading=true; failures=[]
         defer { loading=false }
         async let s=fetch { try await store.api.runnerScore(id) }
         async let c=fetch { try await store.api.activityCalendar() }
         let results=await(s,c)
         guard !Task.isCancelled,store.snapshot?.runner.id==id,!store.needsSignIn else { return }
-        switch results.0 { case .success(let value):score=value; case .failure:failures.append("Runner Score could not load.") }
-        switch results.1 { case .success(let value):calendar=value; case .failure:failures.append("Running distance and activity calendar could not load.") }
+        switch results.0 {
+        case .success(let value): score=value
+        case .failure: failures.append(score == nil ? "Runner Score could not load." : "Runner Score could not refresh. Showing the previous score.")
+        }
+        switch results.1 {
+        case .success(let value): calendar=value
+        case .failure: failures.append(calendar == nil ? "Running distance and activity calendar could not load." : "Mileage and activity calendar could not refresh. Showing the previous data.")
+        }
     }
     @MainActor private func fetch<T>(_ action:() async throws -> T) async -> Result<T,Error> { do { return .success(try await action()) } catch { return .failure(error) } }
 }

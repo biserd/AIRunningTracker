@@ -41,7 +41,7 @@ struct MileageProgressCard: View {
                 chart
                 Text(period == .weekly ? "Tap a week · Monday–Sunday" : "Tap a month to see its total")
                     .font(.caption).foregroundStyle(.secondary)
-                Text("Synced runs · \(unit) · same UTC dates as your activity calendar")
+                Text("Eligible synced runs · \(unit) · UTC dates")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }.onChange(of: period) { _, _ in selection = nil }
@@ -51,7 +51,7 @@ struct MileageProgressCard: View {
     private var chart: some View {
         Chart(Array(buckets.enumerated()), id: \.element.id) { index, bucket in
             BarMark(x: .value("Period", index), y: .value("Distance", bucket.distance(units: calendar.unitPreference)))
-                .foregroundStyle(index == selectedIndex ? RunBrand.orange : RunBrand.orange.opacity(0.4))
+                .foregroundStyle(index == selectedIndex ? RunDesign.action : RunDesign.trend)
                 .cornerRadius(4)
                 .accessibilityLabel(detail(bucket))
                 .accessibilityValue(runnerDistance(bucket.distanceKm, units: calendar.unitPreference))

@@ -319,26 +319,44 @@ struct NativeRunSummary: View {
 }
 struct AllSourceProgress: View {
     @EnvironmentObject var store: CoachStore
+    @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
         List {
-            Section("Garmin") {
-                NavigationLink { NativeGarminRecoveryView() } label: { Label("Sleep, HRV & recovery", systemImage: "heart.text.square") }
-                    .accessibilityIdentifier("garmin-recovery")
-            }
             if let overview = store.runOverview {
+                let unit = overview.unitPreference == "miles" ? "mi" : "km"
+                let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: RunDesign.gap)) : AnyLayout(HStackLayout(spacing: RunDesign.gap))
                 Section("This month") {
-                    LabeledContent("Distance", value: overview.stats.monthlyTotalDistance + (overview.unitPreference == "miles" ? " mi" : " km"))
-                    LabeledContent("Runs", value: String(overview.stats.monthlyTotalActivities))
+                    layout {
+                        RunMetricTile(title: "Distance", value: "\(overview.stats.monthlyTotalDistance) \(unit)")
+                        RunMetricTile(title: "Runs", value: String(overview.stats.monthlyTotalActivities))
+                    }.listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
                     LabeledContent("Running time", value: "\(overview.stats.monthlyTotalMinutes) min")
-                    LabeledContent("Average pace", value: overview.stats.monthlyAvgPace + (overview.unitPreference == "miles" ? " /mi" : " /km"))
+                    LabeledContent("Average pace", value: overview.stats.monthlyAvgPace + " /\(unit)")
+                } footer: {
+                    Text("All sources. Clear Garmin and Strava matches count once. Phone recordings stay separate.")
                 }
             } else { ContentUnavailableView("Your progress", systemImage: "chart.bar.xaxis", description: Text("Record or sync a run to start building your history.")) }
-            Section { Text("RunAnalytics, Garmin and Strava runs contribute to these totals. Clear Garmin and Strava matches count once. Phone recordings stay separate.").font(.footnote).foregroundStyle(.secondary) }
-            if let error = store.runFeedError { Text(error).foregroundStyle(.secondary) }
-            if store.onboarding?.hasAccess == true && store.onboarding?.stravaConnected == true {
-                NavigationLink("Coach insights") { RunningProgressView() }
+            if let error = store.runFeedError {
+                Section {
+                    Text(error).foregroundStyle(.secondary)
+                    Button("Retry") { Task { await store.refreshRuns() } }
+                }
             }
-        }.navigationTitle("Progress").task { await store.refreshRuns() }.refreshable { await store.refreshRuns() }
+            Section("Explore") {
+                if store.onboarding?.hasAccess == true && store.onboarding?.stravaConnected == true {
+                    NavigationLink("Coach insights") { RunningProgressView() }
+                }
+                NavigationLink { NativeGarminRecoveryView() } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("Garmin recovery", systemImage: "heart.text.square")
+                        Text("Private health summaries. Not shared with your AI coach.").font(.footnote).foregroundStyle(.secondary)
+                    }.padding(.vertical, 4)
+                }.accessibilityIdentifier("garmin-recovery")
+            }
+        }
+        .frame(maxWidth: RunDesign.readableWidth).frame(maxWidth: .infinity)
+        .scrollContentBackground(.hidden).background(RunDesign.canvas.ignoresSafeArea())
+        .navigationTitle("Progress").task { await store.refreshRuns() }.refreshable { await store.refreshRuns() }
     }
 }
 

@@ -68,6 +68,8 @@ final class InsightLayoutTests:XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(day.waitForExistence(timeout: 5)); XCTAssertTrue(day.isHittable)
+        XCTAssertGreaterThanOrEqual(day.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(day.frame.height, 44)
         day.tap()
         let run = app.buttons["calendar-run-182"]
         for _ in 0..<3 {

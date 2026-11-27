@@ -8,6 +8,8 @@ enum RunDesign {
     static let highlight = Color("RunHighlight")
     static let action = Color("RunAction")
     static let actionLabel = Color("RunActionLabel")
+    static let recovery = Color("RunRecoverySurface")
+    static let trend = Color("RunTrend")
     static let minimumTarget: CGFloat = 44
     static let actionHeight: CGFloat = 52
     static let radius: CGFloat = 14
