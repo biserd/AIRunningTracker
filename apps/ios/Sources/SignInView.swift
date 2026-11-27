@@ -29,6 +29,7 @@ struct SignInView: View {
     @State private var signup = false
     @State private var acceptedTerms = false
     @State private var showReviewer = false
+    @State private var showSampleRun = false
     @FocusState private var emailFocused: Bool
 
     var body: some View {
@@ -46,6 +47,10 @@ struct SignInView: View {
                         .accessibilityAddTraits(.isHeader)
                     Text("Record a run and see your progress. Sign in by email, no password or watch required.")
                         .font(.body).foregroundStyle(.secondary)
+                    Button("See a sample run", systemImage: "chart.bar.xaxis") { showSampleRun = true }
+                        .font(.headline).foregroundStyle(RunDesign.action)
+                        .frame(minHeight: RunDesign.minimumTarget)
+                        .accessibilityIdentifier("open-sample-run")
                 }
 
                 VStack(alignment: .leading, spacing: 18) {
@@ -128,6 +133,7 @@ struct SignInView: View {
         .background(RunDesign.canvas.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented:$showReviewer) { ReviewerSignInView() }
+        .sheet(isPresented:$showSampleRun) { SampleRunPreview() }
     }
 
     private func sendLink() {
@@ -139,6 +145,34 @@ struct SignInView: View {
             defer { sending = false }
             if await store.requestSignInLink(email: requestedEmail,signup:signup) {
                 sentTo = requestedEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+    }
+}
+
+/// Deliberately local and read-only. It cannot load, save or share a runner's data.
+struct SampleRunPreview: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: RunDesign.insetPadding) {
+                    Text("Example data · Not your activity")
+                        .font(.callout).foregroundStyle(RunDesign.mutedText)
+                    Text("5 km in 30 minutes").font(.title.bold()).accessibilityAddTraits(.isHeader)
+                    LabeledContent("Average pace", value: "6:00/km")
+                    Divider()
+                    Text("One useful next step").font(.headline).accessibilityAddTraits(.isHeader)
+                    Text("Keep your next easy run at a pace where you can speak in full sentences.")
+                }
+                .padding(.horizontal, 24).padding(.vertical, 20)
+                .frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
+            }
+            .background(RunDesign.canvas.ignoresSafeArea())
+            .navigationTitle("Sample run").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Back to sign-in") { dismiss() } }
             }
         }
     }

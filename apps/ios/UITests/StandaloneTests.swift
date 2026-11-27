@@ -32,7 +32,8 @@ final class StandaloneTests:XCTestCase {
             XCTAssertTrue(coach.waitForExistence(timeout: 5)); coach.tap()
         }
         else { app.tabBars.buttons["Coach"].tap() }
-        XCTAssertTrue(app.staticTexts["Your optional running coach"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.staticTexts["Know what to run next"].waitForExistence(timeout:5))
+        XCTAssertFalse(app.buttons["continue-apple-purchase"].exists)
         if UIDevice.current.userInterfaceIdiom == .pad { app.descendants(matching:.any)["sidebar-runs"].firstMatch.tap() }
         else { app.tabBars.buttons["Run"].tap() }
         XCTAssertTrue(app.buttons["start-phone-run"].waitForExistence(timeout:5))

@@ -38,7 +38,11 @@ import SwiftUI
                     store.loading=false;store.needsSignIn=false
                     store.setupComplete = !ProcessInfo.processInfo.arguments.contains("--test-first-run-setup")
                     let token="DAD00000-0000-4000-8000-000000000001"
-                    store.onboarding=NativeOnboarding(stravaConnected:false,syncStatus:nil,hasAccess:false,billingProvider:nil,appAccountToken:token,purchasesAvailable:false)
+                    let offerPreview=ProcessInfo.processInfo.arguments.contains("--test-premium-ux")
+                    store.onboarding=NativeOnboarding(stravaConnected:false,syncStatus:nil,hasAccess:false,billingProvider:nil,appAccountToken:token,purchasesAvailable:offerPreview)
+                    if offerPreview, let accountToken=UUID(uuidString:token) {
+                        store.subscriptions=AppleSubscriptions(accountToken:accountToken) { _ in throw APIError.invalidResponse }
+                    }
                     store.recorder.selectAccount(token)
                     store.recorder.applyProfileUnits(ProcessInfo.processInfo.arguments.contains("--test-profile-miles") ? "miles" : "km")
                     if ProcessInfo.processInfo.arguments.contains("--test-garmin-display") {
@@ -123,6 +127,7 @@ struct CoachTabs: View {
     @State private var openedBriefing: CoachBriefing?
     @State private var briefingUnavailable = false
     @State private var openingBriefing = false
+    @State private var premiumEntry: NativePaywallEntry?
     var body: some View {
         Group {
             if sizeClass == .regular {
@@ -160,6 +165,10 @@ struct CoachTabs: View {
         .onChange(of: store.onboarding?.appAccountToken) { _, _ in
             runPath = []
             progressPath = []
+            premiumEntry = nil
+        }
+        .sheet(item:$premiumEntry) { entry in
+            if let subscriptions=store.subscriptions { NativePaywallSheet(subscriptions:subscriptions, entry:entry) }
         }
         .onChange(of: store.settingsSheet) { _, destination in
             if destination != nil { Task { await store.voice.end() } }
@@ -216,15 +225,26 @@ struct CoachTabs: View {
         if store.onboarding?.hasAccess == true || ProcessInfo.processInfo.arguments.contains("--test-adaptive-layout") {
             if plan { ScheduleView() } else { ChatView(text:$draft,channel:$reminderChannel) }
         } else {
+            let entry: NativePaywallEntry = plan ? .plan : .coach
             NavigationStack {
                 ScrollView {
-                    VStack(alignment:.leading,spacing:24) {
-                        Text("Your optional running coach").font(.largeTitle.bold())
-                        Text("Keep recording and reviewing runs for free. Add a subscription when you want personal coaching.")
-                        Text("Garmin and phone runs appear in your history and totals. Garmin data is not shared with the AI coach.").font(.footnote).foregroundStyle(.secondary)
-                        if let subscriptions=store.subscriptions { NativePaywall(subscriptions:subscriptions) }
-                    }.padding(24).frame(maxWidth:650)
-                }.navigationTitle(plan ? "Plan" : "Coach")
+                    VStack(alignment:.leading,spacing:RunDesign.insetPadding) {
+                        Text(entry.title).font(.title.bold()).accessibilityAddTraits(.isHeader)
+                        Text(entry.promise)
+                        if store.onboarding?.purchasesAvailable == true, store.subscriptions != nil {
+                            Button(entry.action) { premiumEntry=entry }
+                                .buttonStyle(RunActionStyle()).accessibilityIdentifier("open-contextual-premium")
+                        } else {
+                            Text("Apple plans are unavailable right now.").font(.callout).foregroundStyle(RunDesign.mutedText)
+                        }
+                        Button("Back to Run") { selected = .runs }
+                            .frame(minHeight:RunDesign.minimumTarget)
+                        Text("Recording and basic run history stay free.")
+                            .font(.footnote).foregroundStyle(RunDesign.mutedText)
+                    }.padding(24).frame(maxWidth:560,alignment:.leading).frame(maxWidth:.infinity)
+                }
+                .background(RunDesign.canvas.ignoresSafeArea())
+                .navigationTitle(plan ? "Plan" : "Coach")
             }
         }
     }
