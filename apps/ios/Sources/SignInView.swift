@@ -42,9 +42,10 @@ struct SignInView: View {
                 }.padding(.top, 36)
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Your running.\nYour coach.").font(.system(.largeTitle, design: .rounded).bold())
-                    Text("Sign in with a link. No password needed.")
-                        .font(.title3).foregroundStyle(.secondary)
+                    Text("Make sense of\nyour running.").font(.largeTitle.bold())
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Record a run and see your progress. Sign in by email, no password or watch required.")
+                        .font(.body).foregroundStyle(.secondary)
                 }
 
                 VStack(alignment: .leading, spacing: 18) {
@@ -85,7 +86,7 @@ struct SignInView: View {
                             Text(sending ? "Sending your link…" : sentTo == nil && store.signInFailure == nil ? "Email me a sign-in link" : "Send a new link")
                                 .font(.headline)
                         }.frame(maxWidth: .infinity).padding(.vertical, 12)
-                    }.buttonStyle(.borderedProminent).buttonBorderShape(.roundedRectangle(radius: 12))
+                    }.buttonStyle(RunActionStyle())
                         .disabled(store.busy || (signup && !acceptedTerms) || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                     if let sentTo, store.signInFailure == nil && !store.verifyingSignIn {
@@ -95,7 +96,7 @@ struct SignInView: View {
                     } else {
                         Text(signup ? "Verify your email to start recording runs. Garmin and Strava are optional." : "Use the email for your existing account.").font(.callout).foregroundStyle(.secondary)
                     }
-                }.padding(24).runGlassSurface()
+                }.padding(20).background(RunDesign.surface, in: RoundedRectangle(cornerRadius: RunDesign.panelRadius))
 
                 DisclosureGroup(isExpanded: $showLink) {
                     VStack(alignment: .leading, spacing: 16) {
@@ -112,19 +113,19 @@ struct SignInView: View {
                         } label: {
                             HStack {
                                 if store.busy && !sending { ProgressView().tint(.white) }
-                                Text("Open my coach").font(.headline)
+                                Text("Open Run Analytics").font(.headline)
                             }.frame(maxWidth: .infinity).padding(.vertical, 10)
                         }.buttonStyle(.borderedProminent).disabled(store.busy || link.isEmpty)
                     }.padding(.top, 16)
                 } label: {
                     Text("Trouble signing in?").font(.headline)
-                }.padding(24).runGlassSurface()
+                }.padding(20).background(RunDesign.surface, in: RoundedRectangle(cornerRadius: RunDesign.panelRadius))
 
                 Label("Your account. Your running data.", systemImage: "lock.shield")
                     .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }.frame(maxWidth: 480).padding(24).frame(maxWidth: .infinity)
         }
-        .background { RunAmbientBackdrop() }
+        .background(RunDesign.canvas.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented:$showReviewer) { ReviewerSignInView() }
     }

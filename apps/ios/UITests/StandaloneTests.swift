@@ -90,9 +90,7 @@ final class StandaloneTests:XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchArguments = [
-            "--test-standalone", "--test-run-display", "--test-run-active",
-            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
-            "-AppleInterfaceStyle", "Dark"
+            "--test-standalone", "--test-run-display", "--test-run-active", "--test-dark-accessibility"
         ]
         app.launch()
         let pause = app.buttons["run-pause-resume"]
@@ -101,7 +99,7 @@ final class StandaloneTests:XCTestCase {
         XCTAssertTrue(pause.isHittable)
         XCTAssertTrue(finish.isHittable)
         XCTAssertGreaterThanOrEqual(finish.frame.height, 44)
-        capture("Recording controls with dark appearance and accessibility size requested")
+        capture("Recording controls in dark appearance with accessibility size 5")
         pause.tap()
         XCTAssertEqual(pause.label, "Resume")
         finish.tap()

@@ -81,15 +81,18 @@ struct RunHome: View {
                     VStack(alignment: .leading, spacing: RunDesign.gap) {
                         if let draft = recorder.draft {
                             recordingMetrics(draft)
-                            LiveRunMap(recording: draft).frame(height: 180)
-                                .clipShape(RoundedRectangle(cornerRadius: RunDesign.radius))
-                                .accessibilityIdentifier("live-run-map")
-                            Text(draft.running ? recorder.gpsStatus : "GPS paused").font(.caption).foregroundStyle(.secondary)
+                            if typeSize.isAccessibilitySize { lapButton(draft) }
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Route on this device").font(.headline).accessibilityAddTraits(.isHeader)
+                                LiveRunMap(recording: draft).frame(height: 180)
+                                    .clipShape(RoundedRectangle(cornerRadius: RunDesign.radius))
+                                    .accessibilityIdentifier("live-run-map")
+                                Text(draft.running ? recorder.gpsStatus : "GPS paused").font(.caption).foregroundStyle(.secondary)
+                            }
                             if let bpm = recorder.heartRate.bpm { Label("\(bpm) bpm", systemImage: "heart.fill").foregroundStyle(.red) }
                             let lastMark = draft.lapMarks?.last
                             LabeledContent("Current lap pace", value: runPace(distance: draft.distance - (lastMark?.distance ?? 0), seconds: draft.seconds - (lastMark?.seconds ?? 0), miles: miles) + (miles ? " /mi" : " /km"))
                             if let pace = draft.recentPace { LabeledContent("Recent pace", value: runDuration(pace * (miles ? 1.609344 : 1)) + (miles ? " /mi" : " /km")) }
-                            if typeSize.isAccessibilitySize { lapButton(draft) }
                             if let lap = draft.laps.last { Text("Lap \(lap.number): \(runDuration(lap.seconds)) · \(runPace(distance: lap.distance, seconds: lap.seconds, miles: miles)) /\(miles ? "mi" : "km")").font(.caption) }
                         } else {
                             Text("Outdoor run").font(.caption).textCase(.uppercase).foregroundStyle(.secondary)
@@ -212,13 +215,13 @@ struct RunHome: View {
         }
     }
     private func recordingMetrics(_ draft: PhoneRecording) -> some View {
-        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: RunDesign.gap)) : AnyLayout(HStackLayout(spacing: RunDesign.gap))
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: RunDesign.gap)) : AnyLayout(HStackLayout(alignment: .top, spacing: RunDesign.gap))
         return VStack(alignment: .leading, spacing: RunDesign.gap) {
             Label(draft.running ? "Recording" : "Paused", systemImage: draft.running ? "record.circle" : "pause.circle")
                 .font(.headline).accessibilityAddTraits(.isHeader)
             RunMetricTile(title: "Active time", value: runDuration(draft.seconds), detail: "Excludes pauses", prominent: true)
             layout {
-                RunMetricTile(title: "Distance", value: String(format: "%.2f %@", draft.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"))
+                RunMetricTile(title: "Distance", value: String(format: "%.2f %@", draft.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"), detail: "Since start")
                 RunMetricTile(title: "Average pace", value: runPace(distance: draft.distance, seconds: draft.seconds, miles: miles), detail: miles ? "min / mi" : "min / km")
             }
         }
@@ -376,6 +379,7 @@ struct LiveRunMap: View {
     }
 }
 struct RunSplitSection: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let title: String
     let splits: [RunSplit]
     let miles: Bool
@@ -383,13 +387,27 @@ struct RunSplitSection: View {
         if !splits.isEmpty {
             Section(title) {
                 ForEach(splits) { split in
-                    HStack {
-                        Text("\(split.number)")
-                        Spacer()
-                        Text(String(format: "%.2f %@", split.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"))
-                        Text(runDuration(split.seconds)).monospacedDigit()
-                        Text(runPace(distance: split.distance, seconds: split.seconds, miles: miles) + (miles ? " /mi" : " /km")).monospacedDigit()
-                    }.font(.caption)
+                    let distance = String(format: "%.2f %@", split.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km")
+                    let time = runDuration(split.seconds)
+                    let pace = runPace(distance: split.distance, seconds: split.seconds, miles: miles) + (miles ? " /mi" : " /km")
+                    if typeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("\(title == "Manual laps" ? "Lap" : "Split") \(split.number)").font(.headline)
+                            Text(distance)
+                            Text("Time: \(time)")
+                            Text("Pace: \(pace)")
+                        }.accessibilityElement(children: .combine)
+                    } else {
+                        HStack {
+                            Text("\(split.number)")
+                            Spacer()
+                            Text(distance)
+                            Text(time).monospacedDigit()
+                            Text(pace).monospacedDigit()
+                        }.font(.caption)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(title == "Manual laps" ? "Lap" : "Split") \(split.number), \(distance), time \(time), pace \(pace)")
+                    }
                 }
             }
         }

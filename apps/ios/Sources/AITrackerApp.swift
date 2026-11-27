@@ -13,6 +13,7 @@ import SwiftUI
                 else { CoachTabs() }
             }
             .environmentObject(store)
+            .modifier(NativeVisualTestSettings())
             .onReceive(NotificationCenter.default.publisher(for: .applePushToken)) { event in
                 if let token = event.object as? String { Task { do { try await store.push.received(token: token) } catch { store.report(error) } } }
             }
@@ -72,6 +73,22 @@ import SwiftUI
                 Button("OK") { store.error = nil }
             } message: { Text(store.error ?? "") }
         }
+    }
+}
+
+private struct NativeVisualTestSettings: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--test-dark-accessibility") {
+            content
+                .preferredColorScheme(.dark)
+                .environment(\.dynamicTypeSize, .accessibility5)
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
     }
 }
 
@@ -245,16 +262,18 @@ struct ChatView: View {
                         LazyVStack(alignment: .leading, spacing: 16) {
                             if store.messages.isEmpty {
                                 if let briefing = store.companion?.briefings.first {
-                                    Text(briefing.title).font(.headline)
+                                    Text(briefing.title).font(.headline).accessibilityAddTraits(.isHeader)
                                     Text(briefing.body).font(.body).lineLimit(3)
                                     Button { selectedBriefing = briefing } label: {
-                                        Label("Read summary", systemImage: "doc.text").frame(maxWidth: .infinity, minHeight: 30)
-                                    }.buttonStyle(.bordered).controlSize(.large)
+                                        Label("Read summary", systemImage: "doc.text")
+                                            .frame(minHeight: RunDesign.minimumTarget)
+                                    }.buttonStyle(.borderless)
                                 } else { Text("How are you feeling today?").font(.title2).foregroundStyle(.secondary) }
                             }
                             Button { showingCheckIn = true } label: {
-                                Label("Daily check-in", systemImage: "checkmark.circle").frame(maxWidth: .infinity, minHeight: 30)
-                            }.buttonStyle(.bordered).controlSize(.large).accessibilityIdentifier("coach-check-in")
+                                Label("Daily check-in", systemImage: "checkmark.circle")
+                                    .frame(minHeight: RunDesign.minimumTarget)
+                            }.buttonStyle(.borderless).accessibilityIdentifier("coach-check-in")
                             ForEach(store.messages) { message in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(message.role == "user" ? "You" : "Coach").font(.caption.bold()).foregroundStyle(.secondary)
@@ -264,8 +283,8 @@ struct ChatView: View {
                                         CoachMessageContent(content: message.content)
                                     }
                                 }.padding().frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(message.role == "user" ? RunBrand.orange.opacity(0.10) : RunBrand.surface)
-                                    .clipShape(RoundedRectangle(cornerRadius: 18)).id(message.id)
+                                    .background(message.role == "user" ? RunDesign.inset : RunDesign.surface)
+                                    .clipShape(RoundedRectangle(cornerRadius: RunDesign.radius)).id(message.id)
                             }
                             if store.busy { ProgressView("Coach is thinking…").accessibilityLabel("Coach is preparing a reply") }
                             ChatReviewCards(channel:$channel).id("coach-review")
@@ -299,7 +318,7 @@ struct ChatView: View {
                 .runGlassSurface(cornerRadius: 22)
                 .padding(.horizontal)
                 .padding(.bottom, 8)
-            }.background { RunAmbientBackdrop() }.navigationTitle("Let’s talk running")
+            }.background(RunDesign.canvas.ignoresSafeArea()).navigationTitle("Let’s talk running")
                 .sheet(isPresented: $showingCheckIn) {
                     NavigationStack {
                         ScrollView { CoachCompanionCards().padding().frame(maxWidth: 700).frame(maxWidth: .infinity) }
