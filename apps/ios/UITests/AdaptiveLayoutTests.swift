@@ -120,9 +120,13 @@ final class AdaptiveLayoutTests: XCTestCase {
     }
     private func tapSetting(_ title: String, app: XCUIApplication) {
         let button = app.buttons["settings-\(title)"]
-        for _ in 0..<5 { if button.isHittable { break }; app.swipeUp() }
-        if !button.isHittable { for _ in 0..<5 { if button.isHittable { break }; app.swipeDown() } }
-        XCTAssertTrue(button.isHittable)
+        for _ in 0..<5 where !button.exists { app.swipeUp() }
+        for _ in 0..<5 where !button.exists { app.swipeDown() }
+        guard button.waitForExistence(timeout: 5) else {
+            return XCTFail("Missing Settings row: \(title)")
+        }
+        // XCTest scrolls an existing List row into view when tapping it.
+        // Each caller checks the destination, including on compact phones.
         button.tap()
     }
 }
