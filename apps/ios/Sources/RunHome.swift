@@ -59,6 +59,7 @@ func runPace(distance: Double, seconds: Double, miles: Bool) -> String {
 
 struct RunHome: View {
     @EnvironmentObject var store: CoachStore
+    @Environment(\.dynamicTypeSize) private var typeSize
     @ObservedObject var recorder: PhoneRunRecorder
     @State private var accountSheet = false
     @State private var settingsSheet = false
@@ -77,30 +78,25 @@ struct RunHome: View {
         NavigationStack {
             List {
                 Section {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: RunDesign.gap) {
                         if let draft = recorder.draft {
-                            Label(draft.running ? "Recording" : "Paused", systemImage: draft.running ? "record.circle" : "pause.circle")
-                                .font(.headline).foregroundStyle(RunBrand.orange)
-                            HStack(spacing: 12) {
-                                metric("Distance", String(format: "%.2f %@", draft.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"))
-                                metric("Time", runDuration(draft.seconds))
-                                metric("Pace", runPace(distance: draft.distance, seconds: draft.seconds, miles: miles))
-                            }
-                            LiveRunMap(recording: draft).frame(height: 180).clipShape(RoundedRectangle(cornerRadius: 14)).accessibilityIdentifier("live-run-map")
+                            recordingMetrics(draft)
+                            LiveRunMap(recording: draft).frame(height: 180)
+                                .clipShape(RoundedRectangle(cornerRadius: RunDesign.radius))
+                                .accessibilityIdentifier("live-run-map")
                             Text(draft.running ? recorder.gpsStatus : "GPS paused").font(.caption).foregroundStyle(.secondary)
                             if let bpm = recorder.heartRate.bpm { Label("\(bpm) bpm", systemImage: "heart.fill").foregroundStyle(.red) }
                             let lastMark = draft.lapMarks?.last
                             LabeledContent("Current lap pace", value: runPace(distance: draft.distance - (lastMark?.distance ?? 0), seconds: draft.seconds - (lastMark?.seconds ?? 0), miles: miles) + (miles ? " /mi" : " /km"))
                             if let pace = draft.recentPace { LabeledContent("Recent pace", value: runDuration(pace * (miles ? 1.609344 : 1)) + (miles ? " /mi" : " /km")) }
-                            Button { recorder.markLap() } label: { Label("Mark lap", systemImage: "flag").frame(maxWidth: .infinity, minHeight: 30) }
-                                .buttonStyle(.bordered).controlSize(.large).disabled(!draft.running)
+                            if typeSize.isAccessibilitySize { lapButton(draft) }
                             if let lap = draft.laps.last { Text("Lap \(lap.number): \(runDuration(lap.seconds)) · \(runPace(distance: lap.distance, seconds: lap.seconds, miles: miles)) /\(miles ? "mi" : "km")").font(.caption) }
                         } else {
-                            Text("Ready for a run?").font(.title2.bold())
-                            Text("Your route, pace and distance. Just press Start.").foregroundStyle(.secondary)
-                            Text("Saved runs also appear on your RunAnalytics web dashboard.").font(.footnote).foregroundStyle(.secondary)
-                            Button { recorder.startOrResume() } label: { Label("Start run", systemImage: "figure.run").frame(maxWidth: .infinity, minHeight: 32) }
-                                .buttonStyle(.borderedProminent).controlSize(.large)
+                            Text("Outdoor run").font(.caption).textCase(.uppercase).foregroundStyle(.secondary)
+                            Text("Ready to run?").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                            Text("Track distance, pace and time. Your route stays on this device.").foregroundStyle(.secondary)
+                            Button("Start run") { recorder.startOrResume() }
+                                .buttonStyle(RunActionStyle())
                                 .disabled(!recorder.storageReady || !recorder.profileUnitsReady).accessibilityIdentifier("start-phone-run")
                             if !recorder.profileUnitsReady {
                                 if store.runFeedError != nil {
@@ -111,9 +107,14 @@ struct RunHome: View {
                         }
                         if let message = recorder.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
                         if recorder.permissionDenied {
-                            Link("Open iPhone Settings", destination: URL(string: UIApplication.openSettingsURLString)!).buttonStyle(.bordered)
+                            Link("Open device settings", destination: URL(string: UIApplication.openSettingsURLString)!).buttonStyle(.bordered)
                         }
-                    }.padding(.vertical, 8)
+                    }
+                    .padding(RunDesign.insetPadding)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(recorder.draft == nil ? RunDesign.highlight : RunDesign.canvas, in: RoundedRectangle(cornerRadius: RunDesign.panelRadius))
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
                 }
                 if let draft = recorder.draft {
                     RunSplitSection(title: "Splits", splits: draft.splits(unit: miles ? 1609.344 : 1000), miles: miles)
@@ -144,32 +145,42 @@ struct RunHome: View {
                         if let error = store.runFeedError { Text(error).font(.footnote).foregroundStyle(.secondary) }
                     }
                     Section {
-                        Button { accountSheet = true } label: { Label("Garmin & Strava connections", systemImage: "link").frame(maxWidth: .infinity, minHeight: 30) }.buttonStyle(.bordered)
-                    }
+                        Button { settingsSheet = true } label: { Label("Run settings", systemImage: "gearshape") }
+                            .buttonStyle(RunActionStyle(prominence: .secondary))
+                            .accessibilityIdentifier("run-settings-row")
+                        Button { accountSheet = true } label: { Label("Garmin & Strava connections", systemImage: "link") }
+                            .buttonStyle(RunActionStyle(prominence: .secondary))
+                    }.listRowBackground(RunDesign.surface)
                 }
             }
+            .frame(maxWidth: RunDesign.readableWidth).frame(maxWidth: .infinity)
+            .scrollContentBackground(.hidden)
+            .background(RunDesign.canvas.ignoresSafeArea())
             .navigationTitle("Run")
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if let draft = recorder.draft {
-                    HStack(spacing: 12) {
-                        Button { draft.running ? recorder.pause() : recorder.startOrResume() } label: {
-                            Label(draft.running ? "Pause" : "Resume", systemImage: draft.running ? "pause.fill" : "play.fill").frame(maxWidth: .infinity, minHeight: 34)
-                        }.buttonStyle(.borderedProminent).accessibilityIdentifier("run-pause-resume")
-                        Button { recorder.pause(); finishSheet = true } label: { Label("Finish", systemImage: "stop.fill").frame(maxWidth: .infinity, minHeight: 34) }
-                            .buttonStyle(.bordered).accessibilityIdentifier("finish-phone-run")
-                    }.controlSize(.large).padding(16).frame(maxWidth: 760).frame(maxWidth: .infinity).background(.bar)
+                    recordingActions(draft)
                 }
             }
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button { settingsSheet = true } label: { Image(systemName: "gearshape").frame(minWidth: 32, minHeight: 32) }.accessibilityLabel("Run settings")
+                    Button { settingsSheet = true } label: {
+                        Image(systemName: "gearshape").frame(minWidth: RunDesign.minimumTarget, minHeight: RunDesign.minimumTarget)
+                    }.accessibilityLabel("Run settings").accessibilityIdentifier("run-toolbar-settings")
                     if recorder.draft != nil {
-                        Menu { Button("Discard run", role: .destructive) { discard = true } } label: { Image(systemName: "ellipsis.circle").frame(minWidth: 32, minHeight: 32) }.accessibilityLabel("More run options")
+                        Menu { Button("Discard run", role: .destructive) { discard = true } } label: {
+                            Image(systemName: "ellipsis.circle").frame(minWidth: RunDesign.minimumTarget, minHeight: RunDesign.minimumTarget)
+                        }.accessibilityLabel("More run options")
                     }
                 }
             }
             .refreshable { await store.refreshRuns() }
             .task { await store.refreshRuns() }
+            .onChange(of: recorder.draft?.id) { _, _ in
+                name = "Phone run"
+                effort = 0
+                notes = ""
+            }
             .sheet(isPresented: $accountSheet) { NativeOnboardingView(managing: true) }
             .sheet(isPresented: $settingsSheet) { RunRecordingSettings(recorder: recorder) }
             .sheet(isPresented: $finishSheet) {
@@ -200,8 +211,44 @@ struct RunHome: View {
             }
         }
     }
-    private func metric(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) { Text(label).font(.caption).foregroundStyle(.secondary); Text(value).font(.title3.monospacedDigit().bold()) }.frame(maxWidth: .infinity, alignment: .leading)
+    private func recordingMetrics(_ draft: PhoneRecording) -> some View {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: RunDesign.gap)) : AnyLayout(HStackLayout(spacing: RunDesign.gap))
+        return VStack(alignment: .leading, spacing: RunDesign.gap) {
+            Label(draft.running ? "Recording" : "Paused", systemImage: draft.running ? "record.circle" : "pause.circle")
+                .font(.headline).accessibilityAddTraits(.isHeader)
+            RunMetricTile(title: "Active time", value: runDuration(draft.seconds), detail: "Excludes pauses", prominent: true)
+            layout {
+                RunMetricTile(title: "Distance", value: String(format: "%.2f %@", draft.distance / (miles ? 1609.344 : 1000), miles ? "mi" : "km"))
+                RunMetricTile(title: "Average pace", value: runPace(distance: draft.distance, seconds: draft.seconds, miles: miles), detail: miles ? "min / mi" : "min / km")
+            }
+        }
+    }
+
+    private func lapButton(_ draft: PhoneRecording) -> some View {
+        Button("Mark lap") { recorder.markLap() }
+            .buttonStyle(RunActionStyle(prominence: .secondary))
+            .disabled(!draft.running)
+            .accessibilityIdentifier("run-mark-lap")
+    }
+
+    private func recordingActions(_ draft: PhoneRecording) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Button(draft.running ? "Pause" : "Resume") {
+                    draft.running ? recorder.pause() : recorder.startOrResume()
+                }
+                .buttonStyle(RunActionStyle()).accessibilityIdentifier("run-pause-resume")
+                if !typeSize.isAccessibilitySize { lapButton(draft) }
+            }
+            Button("Finish") {
+                recorder.pause()
+                finishSheet = true
+            }
+            .buttonStyle(RunActionStyle(prominence: .secondary)).accessibilityIdentifier("finish-phone-run")
+        }
+        .padding(.horizontal, RunDesign.insetPadding).padding(.vertical, 8)
+        .frame(maxWidth: RunDesign.readableWidth).frame(maxWidth: .infinity)
+        .background(.bar)
     }
 }
 struct RunRecordingSettings: View {

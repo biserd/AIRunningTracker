@@ -23,7 +23,12 @@ final class StandaloneTests:XCTestCase {
     func testRecordingDisplayAndEffortFormAreReachable() {
         let app=XCUIApplication();app.launchArguments=["--test-standalone","--test-run-display"];app.launch()
         XCTAssertTrue(app.descendants(matching:.any)["live-run-map"].firstMatch.waitForExistence(timeout:10))
-        XCTAssertTrue(app.staticTexts["Current lap pace"].exists)
+        let lapPace = app.staticTexts["Current lap pace"]
+        for _ in 0..<4 where !lapPace.isHittable {
+            let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0.07, dy: 0.63))
+            edge.press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.07, dy: 0.31)))
+        }
+        XCTAssertTrue(lapPace.exists)
         XCTAssertTrue(app.buttons["finish-phone-run"].exists)
         capture("Standalone live route and recording metrics")
         for _ in 0..<4 { if app.buttons["finish-phone-run"].isHittable { break }; app.swipeUp() }
@@ -43,11 +48,16 @@ final class StandaloneTests:XCTestCase {
         XCTAssertFalse(app.buttons["Disconnect sensor"].exists)
         let pause = app.buttons["run-pause-resume"], finish = app.buttons["finish-phone-run"]
         XCTAssertTrue(pause.isHittable); XCTAssertTrue(finish.isHittable)
+        let lap = app.buttons["run-mark-lap"]
+        XCTAssertTrue(lap.isHittable)
+        XCTAssertTrue(lap.isEnabled)
+        XCTAssertGreaterThanOrEqual(lap.frame.height, 44)
         capture("Simple recording with saved miles and pinned controls")
         pause.tap()
         XCTAssertTrue(app.staticTexts["Paused"].waitForExistence(timeout: 5))
         XCTAssertEqual(pause.label, "Resume")
-        app.buttons["Run settings"].tap()
+        XCTAssertFalse(lap.isEnabled)
+        app.buttons["run-toolbar-settings"].tap()
         XCTAssertTrue(app.navigationBars["Run settings"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@ OR value == %@", "Miles", "Miles")).firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Connect heart-rate sensor"].exists)
@@ -58,6 +68,27 @@ final class StandaloneTests:XCTestCase {
         finish.tap()
         XCTAssertTrue(app.buttons["Save run"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Save run"].isHittable)
+    }
+    func testRecordingControlsRemainReachableAtAccessibilityTextSize() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "--test-standalone", "--test-run-display", "--test-run-active",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+            "-AppleInterfaceStyle", "Dark"
+        ]
+        app.launch()
+        let pause = app.buttons["run-pause-resume"]
+        let finish = app.buttons["finish-phone-run"]
+        XCTAssertTrue(pause.waitForExistence(timeout: 10))
+        XCTAssertTrue(pause.isHittable)
+        XCTAssertTrue(finish.isHittable)
+        XCTAssertGreaterThanOrEqual(finish.frame.height, 44)
+        capture("Recording controls with dark appearance and accessibility size requested")
+        pause.tap()
+        XCTAssertEqual(pause.label, "Resume")
+        finish.tap()
+        XCTAssertTrue(app.navigationBars["Save your run"].waitForExistence(timeout: 8))
     }
     func testGarminConnectionAndRecoveryAreVisibleWithoutStrava() {
         XCUIDevice.shared.orientation = UIDevice.current.userInterfaceIdiom == .pad ? .landscapeLeft : .portrait
