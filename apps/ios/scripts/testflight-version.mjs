@@ -42,7 +42,7 @@ export async function readIOSVersions(api) {
   const base = `/v1/apps/${encodeURIComponent(appID)}`;
   const [store, beta] = await Promise.all([
     api('GET', base + '/appStoreVersions?filter%5Bplatform%5D=IOS&limit=200'),
-    api('GET', base + '/preReleaseVersions?filter%5Bplatform%5D=IOS&limit=200'),
+    api('GET', base + '/preReleaseVersions?limit=200'),
   ]);
   if (![store, beta].every(report => Array.isArray(report.data) && !report.links?.next)) {
     throw new Error('Could not confirm the complete iOS version list in App Store Connect');
