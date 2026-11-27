@@ -100,7 +100,7 @@ import SwiftUI
     #endif
 }
 
-private struct NativeVisualTestSettings: ViewModifier {
+struct NativeVisualTestSettings: ViewModifier {
     @ViewBuilder func body(content: Content) -> some View {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--test-dark-accessibility") {

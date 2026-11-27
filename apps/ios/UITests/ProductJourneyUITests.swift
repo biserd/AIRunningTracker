@@ -11,7 +11,9 @@ final class ProductJourneyUITests: XCTestCase {
         sample.tap()
         XCTAssertTrue(app.navigationBars["Sample run"].waitForExistence(timeout:8))
         XCTAssertTrue(app.staticTexts["Example data · Not your activity"].exists)
-        XCTAssertTrue(app.staticTexts["5 km in 30 minutes"].exists)
+        let result = app.staticTexts["5 km in 30 minutes"]
+        XCTAssertTrue(result.exists)
+        XCTAssertGreaterThanOrEqual(result.frame.height, 40, "The sample sheet should receive large accessibility type")
         XCTAssertFalse(app.buttons["continue-apple-purchase"].exists)
         attach("Signed-out example · dark · accessibility size")
         app.buttons["Back to sign-in"].tap()
@@ -70,6 +72,9 @@ final class ProductJourneyUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Premium"].waitForExistence(timeout:8))
         let close = app.buttons["dismiss-premium"]
         XCTAssertTrue(close.isHittable)
+        let headline = app.staticTexts["Know what to run next"]
+        XCTAssertTrue(headline.exists)
+        XCTAssertGreaterThanOrEqual(headline.frame.height, 40, "The offer sheet should receive large accessibility type")
         attach("Coach Premium · dark · accessibility size")
         close.tap()
         XCTAssertTrue(discover.waitForExistence(timeout:8))

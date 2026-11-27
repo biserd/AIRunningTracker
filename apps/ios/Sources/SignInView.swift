@@ -166,6 +166,7 @@ struct SampleRunPreview: View {
                     Text("One useful next step").font(.headline).accessibilityAddTraits(.isHeader)
                     Text("Keep your next easy run at a pace where you can speak in full sentences.")
                 }
+                .modifier(NativeVisualTestSettings())
                 .padding(.horizontal, 24).padding(.vertical, 20)
                 .frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
             }
@@ -175,6 +176,7 @@ struct SampleRunPreview: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Back to sign-in") { dismiss() } }
             }
         }
+        .tint(RunDesign.action)
     }
 }
 

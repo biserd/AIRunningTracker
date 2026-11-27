@@ -236,6 +236,7 @@ struct NativePaywallSheet: View {
         NavigationStack {
             ScrollView {
                 NativePaywall(subscriptions:subscriptions, entry:entry, activated:activated, openCoaching:{ dismiss() })
+                    .modifier(NativeVisualTestSettings())
                     .padding(20).frame(maxWidth:830).frame(maxWidth:.infinity)
             }
             .background(RunDesign.canvas.ignoresSafeArea())
@@ -250,6 +251,7 @@ struct NativePaywallSheet: View {
                 }
             }
         }
+        .tint(RunDesign.action)
         .interactiveDismissDisabled(subscriptions.state == .purchasing)
     }
 }
