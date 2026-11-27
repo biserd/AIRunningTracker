@@ -109,7 +109,7 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Nothing changes until you confirm."].exists)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "December 3")).firstMatch.exists)
         XCTAssertTrue(apply.exists)
-        XCTAssertTrue(keep.isHittable)
+        guard keep.isHittable else { return XCTFail("Keep current plan must be independently reachable") }
         let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         capture.name = "Plan move review shows the destination and safe exit"
         capture.lifetime = .keepAlways

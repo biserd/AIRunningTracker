@@ -35,7 +35,6 @@ struct PlanReviewCard: View {
         .padding(RunDesign.insetPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RunDesign.highlight, in: RoundedRectangle(cornerRadius: RunDesign.panelRadius))
-        .accessibilityIdentifier("coach-plan-review")
     }
 
     @ViewBuilder private func detailsList(_ details: Review.Details) -> some View {
