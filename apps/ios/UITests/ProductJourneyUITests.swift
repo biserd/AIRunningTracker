@@ -39,9 +39,11 @@ final class ProductJourneyUITests: XCTestCase {
         let proceed = app.buttons["continue-apple-purchase"]
         XCTAssertTrue(proceed.waitForExistence(timeout:8))
         XCTAssertFalse(proceed.isEnabled)
-        let outcome = app.staticTexts["Build a plan for your next race"]
-        let choose = app.staticTexts["Choose a plan"]
+        let outcome = app.staticTexts["premium-sheet-benefit-heading"]
+        let choose = app.staticTexts["premium-sheet-offers-heading"]
         XCTAssertTrue(outcome.exists && choose.exists)
+        XCTAssertEqual(outcome.label, "Build a plan for your next race")
+        XCTAssertEqual(choose.label, "Choose a plan")
         if app.frame.width >= 1250 {
             let alignedSideBySide = NSPredicate { _, _ in choose.frame.minX > outcome.frame.minX + 200 }
             XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:alignedSideBySide,object:nil)],timeout:4),.completed)
@@ -81,8 +83,9 @@ final class ProductJourneyUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Premium"].waitForExistence(timeout:8))
         let close = app.buttons["dismiss-premium"]
         XCTAssertTrue(close.isHittable)
-        let headline = app.staticTexts["Know what to run next"]
+        let headline = app.staticTexts["premium-sheet-benefit-heading"]
         XCTAssertTrue(headline.exists)
+        XCTAssertEqual(headline.label, "Know what to run next")
         XCTAssertGreaterThanOrEqual(headline.frame.height, 40, "The offer sheet should receive large accessibility type")
         attach("Coach Premium · dark · accessibility size")
         close.tap()

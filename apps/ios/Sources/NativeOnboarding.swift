@@ -341,6 +341,7 @@ struct NativePaywall:View {
         VStack(alignment:.leading,spacing:RunDesign.gap) {
             Text("Run Analytics Premium").font(.footnote).foregroundStyle(RunDesign.mutedText)
             Text(entry.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("premium-sheet-benefit-heading")
             Text(entry.promise)
             comparison("Stays free","Record GPS runs and review your basic history and totals.")
             comparison("With Premium","Voice and chat coaching, training plans, and eligible coaching insights.")
@@ -366,6 +367,7 @@ struct NativePaywall:View {
                 Button("Retry loading plans") { Task { await subscriptions.reloadProducts() } }.buttonStyle(.bordered)
             } else {
                 Text("Choose a plan").font(.headline).accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("premium-sheet-offers-heading")
                 ForEach(offers) { offer in option(offer) }
                 if !eligibilityLoaded { ProgressView("Checking trial eligibility…").font(.footnote) }
                 Text("Auto-renews unless canceled at least 24 hours before renewal. Manage in Apple subscriptions.")
